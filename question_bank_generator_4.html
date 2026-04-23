@@ -1698,6 +1698,24 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   };
 
   const cp = existingCp || { completedSteps: new Set(), loResult: '', totalQ: 0 };
+
+  // On a fresh run (not a retry), skip steps whose output file already exists
+  if (!existingCp) {
+    const stepFiles = [
+      ['prereq',     ch + '/' + ch + '/' + ch + '_Prerequisites.txt'],
+      ['terms',      fp('Terms.txt')],
+      ['lo',         fp('LO.txt')],
+      ['plt',        fp('PLT.txt')],
+      ['glossary',   ch + '/' + ch + '/' + ch + '_Glossary.txt'],
+      ['objective',  fp('Objective.json')],
+      ['subjective', fp('Subjective.json')],
+    ];
+    for (const [stepId, filePath] of stepFiles) {
+      if (state.generatedFiles[filePath] !== undefined) cp.completedSteps.add(stepId);
+    }
+    if (state.generatedFiles[fp('LO.txt')]) cp.loResult = state.generatedFiles[fp('LO.txt')];
+  }
+
   agentCheckpoints[conceptKey] = { cp, item };
 
   let loResult = cp.loResult;
