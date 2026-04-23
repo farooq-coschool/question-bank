@@ -1728,15 +1728,22 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       return undefined;
     }
     logStep(scopeLabel, stepName, stepIcon, 'running');
+    const safeKey = encodeURIComponent(conceptKey);
+    const retryBtn = `<button onclick="retryAgent(decodeURIComponent('${safeKey}'))" style="margin-left:8px;padding:2px 8px;border-radius:4px;border:1px solid #e74c3c;background:transparent;color:#e74c3c;cursor:pointer;font-size:11px;vertical-align:middle">↺ Retry this concept</button>`;
+    // 3-minute timeout — shows retry button if Claude hangs with no response
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('Timed out after 3 min — click Retry')), 180000);
+    });
     try {
-      const result = await fn();
+      const result = await Promise.race([fn(), timeoutPromise]);
+      clearTimeout(timeoutId);
       cp.completedSteps.add(stepId);
       return result;
     } catch (e) {
+      clearTimeout(timeoutId);
       const errMsg = e.message || 'API error';
-      const safeKey = encodeURIComponent(conceptKey);
-      const btn = `<button onclick="retryAgent(decodeURIComponent('${safeKey}'))" style="margin-left:8px;padding:2px 8px;border-radius:4px;border:1px solid #e74c3c;background:transparent;color:#e74c3c;cursor:pointer;font-size:11px;vertical-align:middle">↺ Retry this concept</button>`;
-      logStep(scopeLabel, stepName, stepIcon, 'error', errMsg + btn);
+      logStep(scopeLabel, stepName, stepIcon, 'error', errMsg + retryBtn);
       throw Object.assign(new Error(errMsg), { conceptKey, step: stepId });
     }
   }
