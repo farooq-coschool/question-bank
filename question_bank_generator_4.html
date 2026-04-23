@@ -1792,7 +1792,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // OBJECTIVE
   const objQ = await runStep('objective', 'Objective Questions', '❓', true, async () => {
     const includeRA = !isNano;
-    const result = await callClaude(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 8000);
+    const result = await callClaude(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 20000);
     const parsed = parseJSON(result);
     saveFile(fp('Objective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
@@ -1803,7 +1803,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
 
   // SUBJECTIVE
   const subjQ = await runStep('subjective', 'Subjective Questions', '✍️', !isNano, async () => {
-    const result = await callClaude(buildSubjectivePrompt(name, item, masterPrompt, loResult), 8000);
+    const result = await callClaude(buildSubjectivePrompt(name, item, masterPrompt, loResult), 20000);
     const parsed = parseJSON(result);
     saveFile(fp('Subjective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
