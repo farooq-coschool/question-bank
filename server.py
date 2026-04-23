@@ -21,6 +21,7 @@ import json
 import urllib.request
 import urllib.error
 from http.server import HTTPServer, SimpleHTTPRequestHandler
+from socketserver import ThreadingMixIn
 
 ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 
@@ -44,6 +45,10 @@ API_KEYS = {
 
 # Headers from the client that are forwarded as-is (no api key here)
 FORWARDED_HEADERS = {'content-type', 'anthropic-version'}
+
+
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    daemon_threads = True
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -109,7 +114,7 @@ class Handler(SimpleHTTPRequestHandler):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     host = '0.0.0.0'   # bind to all interfaces for cloud hosting
-    server = HTTPServer((host, port), Handler)
+    server = ThreadedHTTPServer((host, port), Handler)
     print(f'Serving on http://{host}:{port}')
     print(f'Open: http://localhost:{port}/question_bank_generator_4.html')
     server.serve_forever()
