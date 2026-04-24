@@ -547,16 +547,37 @@
         </div>
       </div>
 
-      <!-- TEXTBOOK PDF UPLOAD -->
+      <!-- TEXTBOOK UPLOAD (PDF or Images) -->
       <div class="card">
-        <div class="card-title">📄 Upload Textbook PDF</div>
-        <div class="card-sub">Upload the full textbook PDF. Claude reads all pages directly as the primary knowledge source for question generation.</div>
+        <div class="card-title">📄 Upload Textbook</div>
+        <div class="card-sub">Upload the textbook as a PDF or as one or more images. Claude reads all pages directly as the primary knowledge source.</div>
         <div class="form-group">
-          <div class="img-upload-area" id="pdfUploadArea" onclick="document.getElementById('textbookPdfInput').click()" style="cursor:pointer">
-            <div class="img-upload-icon">📄</div>
-            <div class="img-upload-text" id="pdfUploadText">Click to upload textbook PDF</div>
-            <div class="img-upload-sub">PDF only — Claude reads all pages directly (max 32 MB)</div>
-            <input type="file" id="textbookPdfInput" accept="application/pdf" style="display:none" onchange="loadTextbookPdf(this.files[0])">
+          <div style="display:flex;gap:10px;margin-bottom:12px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:500;">
+              <input type="radio" name="tbUploadMode" value="pdf" checked onchange="onTbModeChange('pdf')" style="accent-color:var(--accent)"> 📄 PDF
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:500;">
+              <input type="radio" name="tbUploadMode" value="images" onchange="onTbModeChange('images')" style="accent-color:var(--accent)"> 🖼️ Images (JPG / PNG)
+            </label>
+          </div>
+          <!-- PDF mode -->
+          <div id="tbPdfArea">
+            <div class="img-upload-area" id="pdfUploadArea" onclick="document.getElementById('textbookPdfInput').click()" style="cursor:pointer">
+              <div class="img-upload-icon">📄</div>
+              <div class="img-upload-text" id="pdfUploadText">Click to upload textbook PDF</div>
+              <div class="img-upload-sub">PDF only — Claude reads all pages directly (max 32 MB)</div>
+              <input type="file" id="textbookPdfInput" accept="application/pdf" style="display:none" onchange="loadTextbookPdf(this.files[0])">
+            </div>
+          </div>
+          <!-- Image mode -->
+          <div id="tbImagesArea" style="display:none">
+            <div class="img-upload-area" onclick="document.getElementById('textbookImagesInput').click()" style="cursor:pointer">
+              <div class="img-upload-icon">🖼️</div>
+              <div class="img-upload-text" id="tbImagesUploadText">Click to upload images</div>
+              <div class="img-upload-sub">JPG / PNG — select multiple pages (max 5 MB each)</div>
+              <input type="file" id="textbookImagesInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple style="display:none" onchange="loadTextbookImages(this.files)">
+            </div>
+            <div id="tbImagesPreview" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;"></div>
           </div>
           <div id="pdfStatus" style="margin-top:10px;font-size:13px;color:var(--text2)"></div>
         </div>
@@ -682,6 +703,54 @@
           ⚠️ <span id="genErrorMsg"></span>
         </div>
 
+        <!-- GENERATION MODE -->
+        <div style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface);">
+          <div style="font-weight:600;font-size:13px;color:var(--text);margin-bottom:10px;">⚙️ Generation Mode</div>
+          <div style="display:flex;gap:20px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+              <input type="radio" name="genMode" value="full" checked onchange="onGenModeChange('full')" style="accent-color:var(--accent)"> Full Generation (Terms → LO → PLT → Questions)
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+              <input type="radio" name="genMode" value="questions" onchange="onGenModeChange('questions')" style="accent-color:var(--accent)"> Questions Only
+            </label>
+          </div>
+
+          <!-- Questions-only options (hidden by default) -->
+          <div id="questionsModePanel" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;">Generate:</div>
+            <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px;">
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                <input type="radio" name="qType" value="both" checked onchange="state.questionsType='both'" style="accent-color:var(--accent)"> Both (Objective + Subjective)
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                <input type="radio" name="qType" value="objective" onchange="state.questionsType='objective'" style="accent-color:var(--accent)"> Objective Only
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                <input type="radio" name="qType" value="subjective" onchange="state.questionsType='subjective'" style="accent-color:var(--accent)"> Subjective Only
+              </label>
+            </div>
+
+            <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;">📝 Learning Outcomes</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
+              Option 1 — Paste LOs directly (used for all selected concepts):
+            </div>
+            <textarea id="loTextarea" placeholder="Paste Learning Outcomes here (one per line)..." onchange="state.globalLOText=this.value" oninput="state.globalLOText=this.value"
+              style="width:100%;min-height:100px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;resize:vertical;box-sizing:border-box;font-family:monospace;"></textarea>
+
+            <div style="font-size:12px;color:var(--muted);margin:10px 0 8px;">
+              Option 2 — Select folder containing <code>*_LO.txt</code> files (auto-maps to concepts by filename):
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <label style="padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:var(--card);font-size:12px;cursor:pointer;color:var(--text);">
+                📁 Choose LO Folder
+                <input type="file" id="loFolderInput" webkitdirectory multiple accept=".txt" style="display:none" onchange="loadLOsFromFolder(this.files)">
+              </label>
+              <span id="loFolderStatus" style="font-size:12px;color:var(--muted);">No folder selected</span>
+            </div>
+            <div id="loFolderPreview" style="margin-top:8px;font-size:11px;color:var(--muted);max-height:80px;overflow-y:auto;"></div>
+          </div>
+        </div>
+
         <!-- CONCEPT SELECTION -->
         <div id="conceptSelectionCard" style="margin-bottom:16px;border:1px solid var(--border);border-radius:10px;padding:16px;background:var(--surface);">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -771,12 +840,17 @@ const state = {
   pltPerSubtopic: {},
   textbookPdfBase64: null,
   textbookPdfName: null,
+  textbookImages: [],       // [{base64, mimeType, name}] for image-mode uploads
   counts: {},
   promptCounts: {},
   generatedFiles: {},
   generatedConceptKeys: new Set(),
   downloadedFilePaths: new Set(),
   currentPage: 1,
+  genMode: 'full',          // 'full' | 'questions'
+  questionsType: 'both',    // 'both' | 'objective' | 'subjective'
+  providedLOs: {},          // conceptName -> loText (questions-only mode)
+  globalLOText: '',         // manual LO textarea content
 };
 
 // ============================================================
@@ -1046,6 +1120,41 @@ function loadTextbookPdf(file) {
   reader.readAsDataURL(file);
 }
 
+function onTbModeChange(mode) {
+  document.getElementById('tbPdfArea').style.display = mode === 'pdf' ? '' : 'none';
+  document.getElementById('tbImagesArea').style.display = mode === 'images' ? '' : 'none';
+  if (mode === 'pdf') { state.textbookImages = []; }
+  else { state.textbookPdfBase64 = null; state.textbookPdfName = null; }
+}
+
+function loadTextbookImages(files) {
+  if (!files || !files.length) return;
+  state.textbookImages = [];
+  const MAX = 5 * 1024 * 1024;
+  const preview = document.getElementById('tbImagesPreview');
+  preview.innerHTML = '';
+  let loaded = 0;
+  Array.from(files).forEach((file, i) => {
+    if (file.size > MAX) { alert(`${file.name} exceeds 5 MB — skipped.`); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      const base64 = dataUrl.split(',')[1];
+      state.textbookImages.push({ base64, mimeType: file.type, name: file.name });
+      loaded++;
+      const thumb = document.createElement('div');
+      thumb.style.cssText = 'font-size:11px;text-align:center;color:var(--muted);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      thumb.innerHTML = `<img src="${dataUrl}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;border:1px solid var(--border);"><br>${file.name}`;
+      preview.appendChild(thumb);
+      if (loaded === files.length) {
+        document.getElementById('tbImagesUploadText').textContent = `✅ ${loaded} image${loaded > 1 ? 's' : ''} loaded — click to replace`;
+        document.getElementById('pdfStatus').innerHTML = `<span style="color:var(--success)">✓ ${loaded} image${loaded > 1 ? 's' : ''} ready for Claude</span>`;
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 /**
  * Generic Claude API caller — pass a model explicitly.
  * Used for text-only prompts. Automatically includes textbook PDF if uploaded.
@@ -1054,6 +1163,10 @@ async function callClaude(userText, maxTokens, model) {
   const content = [];
   if (state.textbookPdfBase64) {
     content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: state.textbookPdfBase64 } });
+  } else if (state.textbookImages && state.textbookImages.length) {
+    for (const img of state.textbookImages) {
+      content.push({ type: 'image', source: { type: 'base64', media_type: img.mimeType, data: img.base64 } });
+    }
   }
   content.push({ type: 'text', text: userText });
 
@@ -1748,22 +1861,32 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     }
   }
 
+  const questionsOnly = state.genMode === 'questions';
+  const doObjective  = !questionsOnly || state.questionsType !== 'subjective';
+  const doSubjective = !questionsOnly || state.questionsType !== 'objective';
+
+  // In questions-only mode, use provided LO; otherwise generate Terms → LO → PLT first
+  if (questionsOnly) {
+    const provided = getLOForConcept(name);
+    if (provided) { loResult = provided; cp.loResult = loResult; }
+  }
+
   // PREREQ
-  await runStep('prereq', 'Pre-requisites', '🔍', isChapter && !isEnglish, async () => {
+  await runStep('prereq', 'Pre-requisites', '🔍', !questionsOnly && isChapter && !isEnglish, async () => {
     const result = await callClaude(buildPrereqPrompt(name, masterPrompt), 4000);
     saveFile(ch + '/' + ch + '/' + ch + '_Prerequisites.txt', result);
     logStep(scopeLabel, 'Pre-requisites', '🔍', 'done', countLines(result) + ' lines');
   });
 
   // TERMS
-  await runStep('terms', 'Terms & Definitions', '📝', true, async () => {
+  await runStep('terms', 'Terms & Definitions', '📝', !questionsOnly, async () => {
     const result = await callClaude(buildTermsPrompt(name, item, masterPrompt), 3000);
     saveFile(fp('Terms.txt'), result);
     logStep(scopeLabel, 'Terms & Definitions', '📝', 'done');
   });
 
   // LEARNING OUTCOMES — capture for PLT
-  const loRes = await runStep('lo', 'Learning Outcomes', '🎯', true, async () => {
+  const loRes = await runStep('lo', 'Learning Outcomes', '🎯', !questionsOnly, async () => {
     const result = await callClaude(buildLOPrompt(name, item, masterPrompt), 2000);
     saveFile(fp('LO.txt'), result);
     logStep(scopeLabel, 'Learning Outcomes', '🎯', 'done');
@@ -1771,8 +1894,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   });
   if (loRes !== undefined) { loResult = loRes; cp.loResult = loResult; }
 
-  // PLT — token budget scales with LO count so all LOs get full PLT coverage
-  const doPLT = !isNano && (isChapter || (item.level === 'subtopic' && item.includePLT));
+  // PLT — runs for chapter, subtopic (if PLT enabled), and nano concepts
+  const doPLT = !questionsOnly && (isChapter || (item.level === 'subtopic' && item.includePLT) || isNano);
   await runStep('plt', 'PLT', '📖', doPLT, async () => {
     const loLines = (loResult || '').split('\n').filter(l => /LO\d+|^\s*\d+[\.\)]/i.test(l.trim()));
     const loCount = loLines.length || 10;
@@ -1783,16 +1906,16 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   });
 
   // GLOSSARY
-  await runStep('glossary', 'Glossary', '📚', isChapter && !isEnglish, async () => {
+  await runStep('glossary', 'Glossary', '📚', !questionsOnly && isChapter && !isEnglish, async () => {
     const result = await callClaude(buildGlossaryPrompt(name, masterPrompt), 3000);
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
     logStep(scopeLabel, 'Glossary', '📚', 'done');
   });
 
   // OBJECTIVE
-  const objQ = await runStep('objective', 'Objective Questions', '❓', true, async () => {
+  const objQ = await runStep('objective', 'Objective Questions', '❓', doObjective, async () => {
     const includeRA = !isNano;
-    const result = await callClaude(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 20000);
+    const result = await callClaude(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 13000);
     const parsed = parseJSON(result);
     saveFile(fp('Objective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
@@ -1802,7 +1925,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   if (objQ !== undefined) { addedQ += objQ; cp.totalQ += objQ; }
 
   // SUBJECTIVE
-  const subjQ = await runStep('subjective', 'Subjective Questions', '✍️', !isNano, async () => {
+  const subjQ = await runStep('subjective', 'Subjective Questions', '✍️', !isNano && doSubjective, async () => {
     const result = await callClaude(buildSubjectivePrompt(name, item, masterPrompt, loResult), 20000);
     const parsed = parseJSON(result);
     saveFile(fp('Subjective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
@@ -2155,6 +2278,16 @@ function buildSubjectivePrompt(conceptName, item, masterPrompt, loText) {
   "marks": "1"
 }`;
 
+  const mtfExample = `{
+  "questionType": "LA",
+  "question_type_tag": "MTF",
+  "cognitiveLevel": "Understanding",
+  "difficultyLevel": "Easy",
+  "marks": "5",
+  "question": "Match the following:\\n<!-- CUSTOM_TABLE_START -->\\n<style>\\n.custom-tablevz4xat {background-color: #f7fafc;padding: 8px;border-collapse: collapse;width: auto;}\\n.custom-tablevz4xat th,.custom-tablevz4xat td {font-size: 12px;padding: 2px 8px;border: 1px solid #000;}\\n.custom-tablevz4xat th {font-weight: 600;}\\n</style>\\n<table class=\\"custom-tablevz4xat\\">\\n<thead>\\n<tr><th>Column A</th><th>Column B</th></tr>\\n</thead>\\n<tbody>\\n<tr><td>(1) Term 1</td><td>(P) Definition 1</td></tr>\\n<tr><td>(2) Term 2</td><td>(Q) Definition 2</td></tr>\\n<tr><td>(3) Alkene + \\\\(\\\\text{H}_2\\\\) [Ni]</td><td>(R) Alkane</td></tr>\\n</tbody>\\n</table>\\n<!-- CUSTOM_TABLE_END -->",
+  "solution": "(1)\\\\(\\\\rightarrow\\\\)(P), (2)\\\\(\\\\rightarrow\\\\)(Q), (3)\\\\(\\\\rightarrow\\\\)(R)"
+}`;
+
   const formatSpec = `
 
 ---
@@ -2176,10 +2309,15 @@ ${plainExample}
 For special question types (FIB, MTF, T/F, Differentiate, etc.) — include question_type_tag:
 ${taggedExample}
 
+For MTF (Match the Following) questions — MUST use this exact HTML table format with LaTeX using \\( \\) for inline math:
+${mtfExample}
+
 MANDATORY RULES:
-- "marks" must be a string containing only the number — e.g. "1", "2", "5"
-- "question_type_tag" is optional — include it ONLY when the question is a special type (FIB, MTF, T/F, Differentiate, Name the following, Location, Choose odd one out, Arrange in correct order, etc.)
-- For table-based questions (match the following, differentiate) use markdown table syntax inside the string value
+- "marks" must be a string: VSA = "1" or "2" only · SA = "3" or "4" only · LA = "5" only
+- "questionType" must match marks: VSA→1or2, SA→3or4, LA→5
+- "question_type_tag" is optional — include ONLY for special types (FIB, MTF, T/F, Differentiate, Name the following, Location, Choose odd one out, Arrange in correct order, etc.)
+- MTF questions MUST embed the table as HTML using <!-- CUSTOM_TABLE_START --> / <!-- CUSTOM_TABLE_END --> with a unique CSS class. Use \\( \\) for LaTeX inline math inside table cells.
+- All LaTeX math MUST use \\( ... \\) for inline — never use $ or $$ delimiters
 - Allowed field names ONLY: cognitiveLevel, difficultyLevel, questionType, question_type_tag, question, solution, marks
 - FORBIDDEN fields (do not use): options, answers, stem, type_tag, answer, correct_answer, explanation, hint, topic`;
 
@@ -2397,6 +2535,51 @@ async function downloadAll() {
   }
 }
 
+function onGenModeChange(mode) {
+  state.genMode = mode;
+  document.getElementById('questionsModePanel').style.display = mode === 'questions' ? '' : 'none';
+}
+
+function loadLOsFromFolder(files) {
+  if (!files || !files.length) return;
+  state.providedLOs = {};
+  const loFiles = Array.from(files).filter(f => f.name.endsWith('_LO.txt'));
+  if (!loFiles.length) {
+    document.getElementById('loFolderStatus').textContent = 'No *_LO.txt files found in selected folder.';
+    return;
+  }
+  let loaded = 0;
+  const preview = document.getElementById('loFolderPreview');
+  preview.innerHTML = '';
+  loFiles.forEach(file => {
+    // Derive concept name from filename: "ConceptName_LO.txt" → "ConceptName"
+    const conceptName = file.name.replace(/_LO\.txt$/i, '').replace(/_/g, ' ');
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      state.providedLOs[conceptName] = ev.target.result;
+      loaded++;
+      preview.innerHTML += `<div>✓ ${conceptName}</div>`;
+      if (loaded === loFiles.length) {
+        document.getElementById('loFolderStatus').textContent = `${loaded} LO file${loaded > 1 ? 's' : ''} loaded`;
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
+function getLOForConcept(conceptName) {
+  if (state.globalLOText) return state.globalLOText;
+  // Try exact match first
+  if (state.providedLOs[conceptName]) return state.providedLOs[conceptName];
+  // Try partial match
+  for (const key of Object.keys(state.providedLOs)) {
+    if (conceptName.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(conceptName.toLowerCase())) {
+      return state.providedLOs[key];
+    }
+  }
+  return '';
+}
+
 function generateMore() {
   goToPage(4);
   // Re-render checkboxes — already-generated concepts get unchecked + "✓ Already generated" badge
@@ -2419,6 +2602,11 @@ function startOver() {
   state.counts = {};
   state.generatedConceptKeys = new Set();
   state.downloadedFilePaths = new Set();
+  state.genMode = 'full';
+  state.questionsType = 'both';
+  state.providedLOs = {};
+  state.globalLOText = '';
+  state.textbookImages = [];
   uploadedImageBase64 = null;
   uploadedImageMimeType = null;
   document.getElementById('imgPreviewWrap').style.display = 'none';
