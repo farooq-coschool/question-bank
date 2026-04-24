@@ -564,10 +564,11 @@
           <div id="tbPdfArea">
             <div class="img-upload-area" id="pdfUploadArea" onclick="document.getElementById('textbookPdfInput').click()" style="cursor:pointer">
               <div class="img-upload-icon">📄</div>
-              <div class="img-upload-text" id="pdfUploadText">Click to upload textbook PDF</div>
-              <div class="img-upload-sub">PDF only — Claude reads all pages directly (max 32 MB)</div>
-              <input type="file" id="textbookPdfInput" accept="application/pdf" style="display:none" onchange="loadTextbookPdf(this.files[0])">
+              <div class="img-upload-text" id="pdfUploadText">Click to upload textbook PDF(s)</div>
+              <div class="img-upload-sub">Select one or more PDFs — up to 100 MB each</div>
+              <input type="file" id="textbookPdfInput" accept="application/pdf" multiple style="display:none" onchange="loadTextbookPdfs(this.files)">
             </div>
+            <div id="pdfListPreview" style="margin-top:8px;display:flex;flex-direction:column;gap:4px;"></div>
           </div>
           <!-- Image mode -->
           <div id="tbImagesArea" style="display:none">
@@ -840,6 +841,7 @@ const state = {
   pltPerSubtopic: {},
   textbookPdfBase64: null,
   textbookPdfName: null,
+  textbookPdfs: [],         // [{base64, name}] — supports multiple PDFs
   textbookImages: [],       // [{base64, mimeType, name}] for image-mode uploads
   counts: {},
   promptCounts: {},
@@ -1099,32 +1101,52 @@ function removeImage() {
   document.querySelector('.img-upload-sub').textContent = 'Supports JPG, PNG, WEBP, GIF — screenshots, photos of textbooks, PDFs printed as images';
 }
 
-function loadTextbookPdf(file) {
-  if (!file) return;
-  const MAX_PDF_BYTES = 32 * 1024 * 1024;
-  if (file.size > MAX_PDF_BYTES) {
-    alert(`PDF is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max allowed is 32 MB.`);
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const dataUrl = ev.target.result;
-    state.textbookPdfBase64 = dataUrl.split(',')[1];
-    state.textbookPdfName = file.name;
-    const mb = (file.size / 1024 / 1024).toFixed(1);
-    const statusEl = document.getElementById('pdfStatus');
-    if (statusEl) statusEl.innerHTML = `<span style="color:var(--success)">✓ Loaded: <strong>${file.name}</strong> (${mb} MB) — Claude will read all pages</span>`;
-    const textEl = document.getElementById('pdfUploadText');
-    if (textEl) textEl.textContent = `✅ ${file.name} loaded — click to replace`;
-  };
-  reader.readAsDataURL(file);
+function loadTextbookPdfs(files) {
+  if (!files || !files.length) return;
+  const MAX_PDF_BYTES = 100 * 1024 * 1024;
+  state.textbookPdfs = [];   // array of {base64, name}
+  state.textbookPdfBase64 = null;
+  state.textbookPdfName = null;
+  const listEl = document.getElementById('pdfListPreview');
+  if (listEl) listEl.innerHTML = '';
+  let loaded = 0;
+  const allFiles = Array.from(files);
+  allFiles.forEach(file => {
+    if (file.size > MAX_PDF_BYTES) {
+      alert(`${file.name} is too large (${(file.size/1024/1024).toFixed(1)} MB). Max is 100 MB — skipped.`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target.result.split(',')[1];
+      state.textbookPdfs.push({ base64, name: file.name });
+      // Keep first PDF in legacy field so old code paths still work
+      if (state.textbookPdfs.length === 1) {
+        state.textbookPdfBase64 = base64;
+        state.textbookPdfName = file.name;
+      }
+      loaded++;
+      const mb = (file.size / 1024 / 1024).toFixed(1);
+      if (listEl) {
+        const row = document.createElement('div');
+        row.style.cssText = 'font-size:12px;color:var(--success);display:flex;align-items:center;gap:6px;';
+        row.innerHTML = `✓ <strong>${file.name}</strong> (${mb} MB)`;
+        listEl.appendChild(row);
+      }
+      if (loaded === allFiles.length) {
+        document.getElementById('pdfUploadText').textContent = `✅ ${loaded} PDF${loaded > 1 ? 's' : ''} loaded — click to replace`;
+        document.getElementById('pdfStatus').innerHTML = `<span style="color:var(--success)">✓ ${loaded} PDF${loaded > 1 ? 's' : ''} ready — Claude will read all pages</span>`;
+      }
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function onTbModeChange(mode) {
   document.getElementById('tbPdfArea').style.display = mode === 'pdf' ? '' : 'none';
   document.getElementById('tbImagesArea').style.display = mode === 'images' ? '' : 'none';
   if (mode === 'pdf') { state.textbookImages = []; }
-  else { state.textbookPdfBase64 = null; state.textbookPdfName = null; }
+  else { state.textbookPdfBase64 = null; state.textbookPdfName = null; state.textbookPdfs = []; }
 }
 
 function loadTextbookImages(files) {
@@ -1161,7 +1183,11 @@ function loadTextbookImages(files) {
  */
 async function callClaude(userText, maxTokens, model) {
   const content = [];
-  if (state.textbookPdfBase64) {
+  if (state.textbookPdfs && state.textbookPdfs.length) {
+    for (const pdf of state.textbookPdfs) {
+      content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdf.base64 } });
+    }
+  } else if (state.textbookPdfBase64) {
     content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: state.textbookPdfBase64 } });
   } else if (state.textbookImages && state.textbookImages.length) {
     for (const img of state.textbookImages) {
@@ -2607,6 +2633,7 @@ function startOver() {
   state.providedLOs = {};
   state.globalLOText = '';
   state.textbookImages = [];
+  state.textbookPdfs = [];
   uploadedImageBase64 = null;
   uploadedImageMimeType = null;
   document.getElementById('imgPreviewWrap').style.display = 'none';
