@@ -714,9 +714,12 @@
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
               <input type="radio" name="genMode" value="questions" onchange="onGenModeChange('questions')" style="accent-color:var(--accent)"> Questions Only
             </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+              <input type="radio" name="genMode" value="plt" onchange="onGenModeChange('plt')" style="accent-color:var(--accent)"> PLT Only
+            </label>
           </div>
 
-          <!-- Questions-only options (hidden by default) -->
+          <!-- Questions-only sub-options (hidden by default) -->
           <div id="questionsModePanel" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
             <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;">Generate:</div>
             <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px;">
@@ -730,7 +733,10 @@
                 <input type="radio" name="qType" value="subjective" onchange="state.questionsType='subjective'" style="accent-color:var(--accent)"> Subjective Only
               </label>
             </div>
+          </div>
 
+          <!-- LO input panel — shown for Questions Only and PLT Only -->
+          <div id="loInputPanel" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
             <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;">📝 Learning Outcomes</div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
               Option 1 — Paste LOs directly (used for all selected concepts):
@@ -1888,31 +1894,32 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   }
 
   const questionsOnly = state.genMode === 'questions';
-  const doObjective  = !questionsOnly || state.questionsType !== 'subjective';
-  const doSubjective = !questionsOnly || state.questionsType !== 'objective';
+  const pltOnly      = state.genMode === 'plt';
+  const doObjective  = !questionsOnly && !pltOnly || (questionsOnly && state.questionsType !== 'subjective');
+  const doSubjective = !questionsOnly && !pltOnly || (questionsOnly && state.questionsType !== 'objective');
 
-  // In questions-only mode, use provided LO; otherwise generate Terms → LO → PLT first
-  if (questionsOnly) {
+  // In questions-only or PLT-only mode, use provided LO instead of generating it
+  if (questionsOnly || pltOnly) {
     const provided = getLOForConcept(name);
     if (provided) { loResult = provided; cp.loResult = loResult; }
   }
 
   // PREREQ
-  await runStep('prereq', 'Pre-requisites', '🔍', !questionsOnly && isChapter && !isEnglish, async () => {
+  await runStep('prereq', 'Pre-requisites', '🔍', !questionsOnly && !pltOnly && isChapter && !isEnglish, async () => {
     const result = await callClaude(buildPrereqPrompt(name, masterPrompt), 4000);
     saveFile(ch + '/' + ch + '/' + ch + '_Prerequisites.txt', result);
     logStep(scopeLabel, 'Pre-requisites', '🔍', 'done', countLines(result) + ' lines');
   });
 
   // TERMS
-  await runStep('terms', 'Terms & Definitions', '📝', !questionsOnly, async () => {
+  await runStep('terms', 'Terms & Definitions', '📝', !questionsOnly && !pltOnly, async () => {
     const result = await callClaude(buildTermsPrompt(name, item, masterPrompt), 3000);
     saveFile(fp('Terms.txt'), result);
     logStep(scopeLabel, 'Terms & Definitions', '📝', 'done');
   });
 
   // LEARNING OUTCOMES — capture for PLT
-  const loRes = await runStep('lo', 'Learning Outcomes', '🎯', !questionsOnly, async () => {
+  const loRes = await runStep('lo', 'Learning Outcomes', '🎯', !questionsOnly && !pltOnly, async () => {
     const result = await callClaude(buildLOPrompt(name, item, masterPrompt), 2000);
     saveFile(fp('LO.txt'), result);
     logStep(scopeLabel, 'Learning Outcomes', '🎯', 'done');
@@ -1920,8 +1927,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   });
   if (loRes !== undefined) { loResult = loRes; cp.loResult = loResult; }
 
-  // PLT — runs for chapter, subtopic (if PLT enabled), and nano concepts
-  const doPLT = !questionsOnly && (isChapter || (item.level === 'subtopic' && item.includePLT) || isNano);
+  // PLT — runs for chapter, subtopic (if PLT enabled), nano, and always in PLT-only mode
+  const doPLT = pltOnly || (!questionsOnly && (isChapter || (item.level === 'subtopic' && item.includePLT) || isNano));
   await runStep('plt', 'PLT', '📖', doPLT, async () => {
     const loLines = (loResult || '').split('\n').filter(l => /LO\d+|^\s*\d+[\.\)]/i.test(l.trim()));
     const loCount = loLines.length || 10;
@@ -1932,7 +1939,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   });
 
   // GLOSSARY
-  await runStep('glossary', 'Glossary', '📚', !questionsOnly && isChapter && !isEnglish, async () => {
+  await runStep('glossary', 'Glossary', '📚', !questionsOnly && !pltOnly && isChapter && !isEnglish, async () => {
     const result = await callClaude(buildGlossaryPrompt(name, masterPrompt), 3000);
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
     logStep(scopeLabel, 'Glossary', '📚', 'done');
@@ -2564,6 +2571,7 @@ async function downloadAll() {
 function onGenModeChange(mode) {
   state.genMode = mode;
   document.getElementById('questionsModePanel').style.display = mode === 'questions' ? '' : 'none';
+  document.getElementById('loInputPanel').style.display = (mode === 'questions' || mode === 'plt') ? '' : 'none';
 }
 
 function loadLOsFromFolder(files) {
