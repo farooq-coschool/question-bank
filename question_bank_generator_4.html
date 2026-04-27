@@ -1502,7 +1502,7 @@ function renderCountsTable() {
 
   const extractCounts = (section) => {
     const results = [];
-    const re = /\[Number of ([^\]]+)\]:\s*([^\n\r]+)/g;
+    const re = /\[Number of ([^\]]+)\]:[ \t]*([^\n\r]+)/g;
     let m;
     while ((m = re.exec(section)) !== null) {
       const label = m[1].trim();
