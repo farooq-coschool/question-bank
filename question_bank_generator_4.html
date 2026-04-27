@@ -1943,21 +1943,21 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
 
   // PREREQ
   await runStep('prereq', 'Pre-requisites', '🔍', !questionsOnly && !pltOnly && isChapter && !isEnglish, async () => {
-    const result = await callClaude(buildPrereqPrompt(name, baseMasterPrompt), 4000);
+    const result = await callClaude(buildPrereqPrompt(name, baseMasterPrompt), 40000);
     saveFile(ch + '/' + ch + '/' + ch + '_Prerequisites.txt', result);
     logStep(scopeLabel, 'Pre-requisites', '🔍', 'done', countLines(result) + ' lines');
   });
 
   // TERMS — skipped for English
   await runStep('terms', 'Terms and Definition', '📝', !questionsOnly && !pltOnly && !isEnglish, async () => {
-    const result = await callClaude(buildTermsPrompt(name, item, baseMasterPrompt), 3000);
+    const result = await callClaude(buildTermsPrompt(name, item, baseMasterPrompt), 40000);
     saveFile(fp('Terms.txt'), result);
     logStep(scopeLabel, 'Terms and Definition', '📝', 'done');
   });
 
   // LEARNING OUTCOMES — capture for PLT
   const loRes = await runStep('lo', 'Learning Outcomes', '🎯', !questionsOnly && !pltOnly, async () => {
-    const result = await callClaude(buildLOPrompt(name, item, baseMasterPrompt), 2000);
+    const result = await callClaude(buildLOPrompt(name, item, baseMasterPrompt), 40000);
     saveFile(fp('LO.txt'), result);
     logStep(scopeLabel, 'Learning Outcomes', '🎯', 'done');
     return result;
@@ -1969,15 +1969,14 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   await runStep('plt', 'PLT', '📖', doPLT, async () => {
     const loLines = (loResult || '').split('\n').filter(l => /LO\d+|^\s*\d+[\.\)]/i.test(l.trim()));
     const loCount = loLines.length || 10;
-    const pltTokens = Math.min(16000, Math.max(4000, loCount * 500));
-    const result = await callClaude(buildPLTPrompt(name, item, baseMasterPrompt, loResult), pltTokens);
+    const result = await callClaude(buildPLTPrompt(name, item, baseMasterPrompt, loResult), 40000);
     saveFile(fp('PLT.txt'), result);
     logStep(scopeLabel, 'PLT', '📖', 'done', loCount + ' LOs covered');
   });
 
   // GLOSSARY
   await runStep('glossary', 'Glossary', '📚', !questionsOnly && !pltOnly && isChapter && !isEnglish, async () => {
-    const result = await callClaude(buildGlossaryPrompt(name, baseMasterPrompt), 3000);
+    const result = await callClaude(buildGlossaryPrompt(name, baseMasterPrompt), 40000);
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
     logStep(scopeLabel, 'Glossary', '📚', 'done');
   });
@@ -1985,7 +1984,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // OBJECTIVE
   const objQ = await runStep('objective', 'Objective Questions', '❓', doObjective, async () => {
     const includeRA = !isNano;
-    const result = await callClaude(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 13000);
+    const result = await callClaude(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 40000);
     const parsed = parseJSON(result);
     saveFile(fp('Objective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
@@ -1996,7 +1995,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
 
   // SUBJECTIVE
   const subjQ = await runStep('subjective', 'Subjective Questions', '✍️', !isNano && doSubjective, async () => {
-    const result = await callClaude(buildSubjectivePrompt(name, item, masterPrompt, loResult), 20000);
+    const result = await callClaude(buildSubjectivePrompt(name, item, masterPrompt, loResult), 40000);
     const parsed = parseJSON(result);
     saveFile(fp('Subjective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
@@ -2009,7 +2008,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
   const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '🔗',
     isMathCBSE && !isChapter && doObjective, async () => {
-    const result = await callClaude(buildRADescPrompt(name, item, masterPrompt, loResult), 8000);
+    const result = await callClaude(buildRADescPrompt(name, item, masterPrompt, loResult), 40000);
     const parsed = parseJSON(result);
     saveFile(fp('ReasonAssertion.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
