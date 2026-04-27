@@ -53,6 +53,14 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
 class Handler(SimpleHTTPRequestHandler):
 
+    def end_headers(self):
+        # Prevent browser caching of HTML files so updates are always picked up
+        if hasattr(self, 'path') and self.path.endswith('.html'):
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
+        super().end_headers()
+
     def do_OPTIONS(self):
         self._cors()
 
