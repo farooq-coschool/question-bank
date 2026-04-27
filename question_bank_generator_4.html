@@ -2151,7 +2151,7 @@ Generate pre-requisite questions as per the prompt above.`;
 }
 
 function buildTermsPrompt(conceptName, item, masterPrompt) {
-  const raw = extractSection(masterPrompt, 'TERMS') || extractSection(masterPrompt, 'TERMS_AND_DEFINITIONS') || extractSection(masterPrompt, 'TERMS_DEFINITIONS') || extractSection(masterPrompt, 'TERMS_DEFINITIONS_CREATION_PROMPT') || masterPrompt;
+  const raw = extractSection(masterPrompt, 'TERMS_DEFINITIONS_CREATION_PROMPT') || extractSection(masterPrompt, 'TERMS_AND_DEFINITIONS') || extractSection(masterPrompt, 'TERMS_DEFINITIONS') || extractSection(masterPrompt, 'TERMS') || masterPrompt;
   console.log('[buildTermsPrompt] promptKey:', getPromptKey(), '| section starts:', (raw||'').substring(0,80));
   const section = fillPlaceholders(raw, conceptName, item, '');
   const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
