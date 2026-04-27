@@ -1685,7 +1685,7 @@ function getPromptKey() {
 // Steps for ICSE Science subjects
 const SCIENCE_STEPS = [
   { id:'prereq', name:'Pre-requisite Questions', icon:'🔍' },
-  { id:'terms',  name:'Terms & Definitions',     icon:'📝' },
+  { id:'terms',  name:'Terms and Definition',     icon:'📝' },
   { id:'lo',     name:'Learning Outcomes',        icon:'🎯' },
   { id:'plt',    name:'Proficiency Level Transcript (PLT)', icon:'📖' },
   { id:'glossary',name:'Glossary',               icon:'📚' },
@@ -1936,10 +1936,10 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   });
 
   // TERMS — skipped for English
-  await runStep('terms', 'Terms & Definitions', '📝', !questionsOnly && !pltOnly && !isEnglish, async () => {
+  await runStep('terms', 'Terms and Definition', '📝', !questionsOnly && !pltOnly && !isEnglish, async () => {
     const result = await callClaude(buildTermsPrompt(name, item, baseMasterPrompt), 3000);
     saveFile(fp('Terms.txt'), result);
-    logStep(scopeLabel, 'Terms & Definitions', '📝', 'done');
+    logStep(scopeLabel, 'Terms and Definition', '📝', 'done');
   });
 
   // LEARNING OUTCOMES — capture for PLT
