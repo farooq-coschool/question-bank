@@ -2137,7 +2137,7 @@ async function startGeneration() {
 // PROMPT BUILDERS
 // ============================================================
 function buildPrereqPrompt(conceptName, masterPrompt) {
-  const section = fillPlaceholders(extractSection(masterPrompt, 'PRE_REQUISITE_CREATION_PROMPT'), conceptName, null, '');
+  const section = fillPlaceholders(extractSection(masterPrompt, 'PRE_REQUISITE_CREATION_PROMPT') || masterPrompt, conceptName, null, '');
   return `${section}
 
 ---
@@ -2152,7 +2152,7 @@ Generate pre-requisite questions as per the prompt above.`;
 }
 
 function buildTermsPrompt(conceptName, item, masterPrompt) {
-  const raw = extractSection(masterPrompt, 'TERMS') || extractSection(masterPrompt, 'TERMS_AND_DEFINITIONS') || extractSection(masterPrompt, 'TERMS_DEFINITIONS');
+  const raw = extractSection(masterPrompt, 'TERMS') || extractSection(masterPrompt, 'TERMS_AND_DEFINITIONS') || extractSection(masterPrompt, 'TERMS_DEFINITIONS') || extractSection(masterPrompt, 'TERMS_DEFINITIONS_CREATION_PROMPT') || masterPrompt;
   const section = fillPlaceholders(raw, conceptName, item, '');
   const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
   return `${section}
@@ -2170,7 +2170,7 @@ Generate terms and definitions as per the prompt above.`;
 }
 
 function buildLOPrompt(conceptName, item, masterPrompt) {
-  const section = fillPlaceholders(extractSection(masterPrompt, 'LEARNING_OUTCOMES_CREATION_PROMPT') || extractSection(masterPrompt, 'LEARNING_OUTCOMES'), conceptName, item, '');
+  const section = fillPlaceholders(extractSection(masterPrompt, 'LEARNING_OUTCOMES_CREATION_PROMPT') || extractSection(masterPrompt, 'LEARNING_OUTCOMES') || masterPrompt, conceptName, item, '');
   return `${section}
 
 ---
@@ -2185,7 +2185,7 @@ Generate learning outcomes as per the prompt above.`;
 }
 
 function buildPLTPrompt(conceptName, item, masterPrompt, loText) {
-  const section = fillPlaceholders(extractSection(masterPrompt, 'PLT_CREATION_PROMPT'), conceptName, item, loText);
+  const section = fillPlaceholders(extractSection(masterPrompt, 'PLT_CREATION_PROMPT') || masterPrompt, conceptName, item, loText);
   return `${section}
 
 ---
@@ -2202,7 +2202,7 @@ Generate PLT (Proficiency Level Transcript) as per the prompt above.`;
 }
 
 function buildGlossaryPrompt(conceptName, masterPrompt) {
-  const section = fillPlaceholders(extractSection(masterPrompt, 'GLOSSARY_CREATION_PROMPT'), conceptName, null, '');
+  const section = fillPlaceholders(extractSection(masterPrompt, 'GLOSSARY_CREATION_PROMPT') || masterPrompt, conceptName, null, '');
   return `${section}
 
 ---
@@ -2242,7 +2242,7 @@ function applyPromptCountEdits(text) {
 
 function buildObjectivePrompt(conceptName, item, masterPrompt, includeRA, loText) {
   if (includeRA === undefined) includeRA = true;
-  const section = applyPromptCountEdits(fillPlaceholders(extractSection(masterPrompt, 'OBJECTIVE_CREATION_PROMPT'), conceptName, item, loText));
+  const section = applyPromptCountEdits(fillPlaceholders(extractSection(masterPrompt, 'OBJECTIVE_CREATION_PROMPT') || masterPrompt, conceptName, item, loText));
   const countsText = objectiveCountsToText(state.counts, includeRA);
   const isEnglish = state.subject === 'English';
 
@@ -2327,7 +2327,7 @@ MANDATORY RULES:
 }
 
 function buildSubjectivePrompt(conceptName, item, masterPrompt, loText) {
-  let section = applyPromptCountEdits(fillPlaceholders(extractSection(masterPrompt, 'SUBJECTIVE_CREATION_PROMPT'), conceptName, item, loText));
+  let section = applyPromptCountEdits(fillPlaceholders(extractSection(masterPrompt, 'SUBJECTIVE_CREATION_PROMPT') || masterPrompt, conceptName, item, loText));
   if (state.subject === 'English' && state.curriculum === 'CBSE' && state.grammarFlag === 'Yes') {
     const grammarPrompt = PROMPTS['ENGLISH_CBSE_GRAMMAR'];
     if (grammarPrompt) section = applyPromptCountEdits(fillPlaceholders(grammarPrompt, conceptName, item, loText));
@@ -2417,6 +2417,7 @@ MANDATORY RULES:
 // HELPERS
 // ============================================================
 function fillPlaceholders(text, conceptName, item, loText) {
+  if (!text) return '';
   const nanos = (item && item.nanoConcepts) ? item.nanoConcepts.join(', ') : '';
   const scriptNote = state.textbookPdfBase64
     ? 'Refer to the attached textbook PDF document.'
@@ -2452,7 +2453,7 @@ function fillPlaceholders(text, conceptName, item, loText) {
 }
 
 function extractSection(prompt, sectionName) {
-  if (!prompt) return `[${sectionName} — no prompt defined]`;
+  if (!prompt) return null;
   const esc = sectionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const patterns = [
     new RegExp(`## ${esc}[\\s\\S]*?(?=\\n---\\n|## [A-Z]|$)`, 'i'),
@@ -2465,7 +2466,7 @@ function extractSection(prompt, sectionName) {
       if (m && m[0].length > 50) return m[0].trim();
     } catch (_) {}
   }
-  return prompt;
+  return null;
 }
 
 function parseJSON(text) {
