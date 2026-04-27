@@ -1911,8 +1911,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     logStep(scopeLabel, 'Pre-requisites', '🔍', 'done', countLines(result) + ' lines');
   });
 
-  // TERMS
-  await runStep('terms', 'Terms & Definitions', '📝', !questionsOnly && !pltOnly, async () => {
+  // TERMS — skipped for English
+  await runStep('terms', 'Terms & Definitions', '📝', !questionsOnly && !pltOnly && !isEnglish, async () => {
     const result = await callClaude(buildTermsPrompt(name, item, masterPrompt), 3000);
     saveFile(fp('Terms.txt'), result);
     logStep(scopeLabel, 'Terms & Definitions', '📝', 'done');
@@ -1927,8 +1927,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   });
   if (loRes !== undefined) { loResult = loRes; cp.loResult = loResult; }
 
-  // PLT — runs for chapter, subtopic (if PLT enabled), nano, and always in PLT-only mode
-  const doPLT = pltOnly || (!questionsOnly && (isChapter || (item.level === 'subtopic' && item.includePLT) || isNano));
+  // PLT — skipped for English; runs for chapter, subtopic (if PLT enabled), nano, and always in PLT-only mode
+  const doPLT = !isEnglish && (pltOnly || (!questionsOnly && (isChapter || (item.level === 'subtopic' && item.includePLT) || isNano)));
   await runStep('plt', 'PLT', '📖', doPLT, async () => {
     const loLines = (loResult || '').split('\n').filter(l => /LO\d+|^\s*\d+[\.\)]/i.test(l.trim()));
     const loCount = loLines.length || 10;
@@ -2240,15 +2240,20 @@ function buildObjectivePrompt(conceptName, item, masterPrompt, includeRA, loText
 }`;
 
   const raExample = !includeRA ? '' : `
-For RA questions use this schema (use the exact RA option wordings defined in the subject prompt above — they differ per subject/curriculum):
+For RA questions use EXACTLY this schema with EXACTLY these four option strings:
 {
   "cognitiveLevel": "Application",
   "difficultyLevel": "Medium",
   "questionType": "RA",
-  "question": "<b>Assertion (A)</b>: <assertion text>.<br><b>Reason (R)</b>: <reason text>.",
-  "options": [<exact RA options as specified in the subject prompt above>],
-  "answers": ["Correct option text exactly as it appears in options"],
-  "solution": "Correct option text exactly as it appears in options"
+  "question": "<b>Assertion (A):</b> <assertion text>.\\n<b>Reason (R):</b> <reason text>.",
+  "options": [
+    "Both Assertion (A) and Reason (R) are true and Reason (R) is the correct explanation of the Assertion (A).",
+    "Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of the Assertion (A).",
+    "Assertion (A) is true, but Reason (R) is false.",
+    "Assertion (A) is false, but Reason (R) is true."
+  ],
+  "answers": ["<one of the four option strings above — exact text>"],
+  "solution": "<same exact option string as answers>"
 }`;
 
   const formatSpec = `
@@ -2311,6 +2316,16 @@ function buildSubjectivePrompt(conceptName, item, masterPrompt, loText) {
   "marks": "1"
 }`;
 
+  const differentiateExample = `{
+  "questionType": "VSA",
+  "question_type_tag": "Differentiate",
+  "cognitiveLevel": "Application",
+  "difficultyLevel": "Hard",
+  "marks": "2",
+  "question": "Differentiate between X and Y on the basis of: (a) property1 and (b) property2.\\n<!-- CUSTOM_TABLE_START -->\\n<style>\\n.custom-tableABCDEF {background-color: #f7fafc;padding: 8px;border-collapse: collapse;width: auto;}\\n.custom-tableABCDEF th,.custom-tableABCDEF td {font-size: 12px;padding: 2px 8px;border: 1px solid #000;}\\n.custom-tableABCDEF th {font-weight: 600;}\\n</style>\\n<table class=\\"custom-tableABCDEF\\">\\n<thead>\\n<tr><th>Property</th><th>X</th><th>Y</th></tr>\\n</thead>\\n<tbody>\\n<tr><td>(a) property1</td><td></td><td></td></tr>\\n<tr><td>(b) property2</td><td></td><td></td></tr>\\n</tbody>\\n</table>\\n<!-- CUSTOM_TABLE_END -->",
+  "solution": "<!-- CUSTOM_TABLE_START -->\\n<style>\\n.custom-tableABCDEF {background-color: #f7fafc;padding: 8px;border-collapse: collapse;width: auto;}\\n.custom-tableABCDEF th,.custom-tableABCDEF td {font-size: 12px;padding: 2px 8px;border: 1px solid #000;}\\n.custom-tableABCDEF th {font-weight: 600;}\\n</style>\\n<table class=\\"custom-tableABCDEF\\">\\n<thead>\\n<tr><th>Property</th><th>X</th><th>Y</th></tr>\\n</thead>\\n<tbody>\\n<tr><td>(a) property1</td><td>Answer for X using \\\\(\\\\text{formula}\\\\) if needed</td><td>Answer for Y</td></tr>\\n<tr><td>(b) property2</td><td>Answer for X</td><td>Answer for Y</td></tr>\\n</tbody>\\n</table>\\n<!-- CUSTOM_TABLE_END -->"
+}`;
+
   const mtfExample = `{
   "questionType": "LA",
   "question_type_tag": "MTF",
@@ -2342,14 +2357,17 @@ ${plainExample}
 For special question types (FIB, MTF, T/F, Differentiate, etc.) — include question_type_tag:
 ${taggedExample}
 
+For Differentiate questions — MUST use this exact HTML table format (question has empty cells, solution has filled cells):
+${differentiateExample}
+
 For MTF (Match the Following) questions — MUST use this exact HTML table format with LaTeX using \\( \\) for inline math:
 ${mtfExample}
 
 MANDATORY RULES:
-- "marks" must be a string: VSA = "1" or "2" only · SA = "3" or "4" only · LA = "5" only
-- "questionType" must match marks: VSA→1or2, SA→3or4, LA→5
+- "marks" must be a string — STRICT: VSA = "1" or "2" ONLY · SA = "3" or "4" ONLY · LA = "5" ONLY
+- "questionType" MUST match marks exactly: VSA→"1"or"2", SA→"3"or"4", LA→"5" — NEVER assign "3" or "4" to VSA
 - "question_type_tag" is optional — include ONLY for special types (FIB, MTF, T/F, Differentiate, Name the following, Location, Choose odd one out, Arrange in correct order, etc.)
-- MTF questions MUST embed the table as HTML using <!-- CUSTOM_TABLE_START --> / <!-- CUSTOM_TABLE_END --> with a unique CSS class. Use \\( \\) for LaTeX inline math inside table cells.
+- Differentiate AND MTF questions MUST embed the table as HTML using <!-- CUSTOM_TABLE_START --> / <!-- CUSTOM_TABLE_END --> with a UNIQUE CSS class name per question (e.g. custom-table followed by 6 random chars). Use \\( \\) for LaTeX inline math inside table cells.
 - All LaTeX math MUST use \\( ... \\) for inline — never use $ or $$ delimiters
 - Allowed field names ONLY: cognitiveLevel, difficultyLevel, questionType, question_type_tag, question, solution, marks
 - FORBIDDEN fields (do not use): options, answers, stem, type_tag, answer, correct_answer, explanation, hint, topic`;
