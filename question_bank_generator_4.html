@@ -2152,6 +2152,7 @@ Generate pre-requisite questions as per the prompt above.`;
 
 function buildTermsPrompt(conceptName, item, masterPrompt) {
   const raw = extractSection(masterPrompt, 'TERMS') || extractSection(masterPrompt, 'TERMS_AND_DEFINITIONS') || extractSection(masterPrompt, 'TERMS_DEFINITIONS') || extractSection(masterPrompt, 'TERMS_DEFINITIONS_CREATION_PROMPT') || masterPrompt;
+  console.log('[buildTermsPrompt] promptKey:', getPromptKey(), '| section starts:', (raw||'').substring(0,80));
   const section = fillPlaceholders(raw, conceptName, item, '');
   const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
   return `${section}
@@ -2169,7 +2170,9 @@ Generate terms and definitions as per the prompt above.`;
 }
 
 function buildLOPrompt(conceptName, item, masterPrompt) {
-  const section = fillPlaceholders(extractSection(masterPrompt, 'LEARNING_OUTCOMES_CREATION_PROMPT') || extractSection(masterPrompt, 'LEARNING_OUTCOMES') || masterPrompt, conceptName, item, '');
+  const loRaw = extractSection(masterPrompt, 'LEARNING_OUTCOMES_CREATION_PROMPT') || extractSection(masterPrompt, 'LEARNING_OUTCOMES') || masterPrompt;
+  console.log('[buildLOPrompt] promptKey:', getPromptKey(), '| section starts:', (loRaw||'').substring(0,80));
+  const section = fillPlaceholders(loRaw, conceptName, item, '');
   return `${section}
 
 ---
