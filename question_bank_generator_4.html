@@ -1981,7 +1981,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
 
   // SUBJECTIVE
   const subjQ = await runStep('subjective', 'Subjective Questions', '✍️', !isNano && doSubjective, async () => {
-    const result = await callClaude(buildSubjectivePrompt(name, item, baseMasterPrompt, loResult), 20000);
+    const result = await callClaude(buildSubjectivePrompt(name, item, masterPrompt, loResult), 20000);
     const parsed = parseJSON(result);
     saveFile(fp('Subjective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
