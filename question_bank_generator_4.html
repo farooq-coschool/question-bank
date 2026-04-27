@@ -1499,6 +1499,7 @@ function renderCountsTable() {
 
   const objSection  = extractSection(masterPrompt, 'OBJECTIVE_CREATION_PROMPT');
   const subjSection = extractSection(masterPrompt, 'SUBJECTIVE_CREATION_PROMPT');
+  const raSection   = extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT');
 
   const extractCounts = (section) => {
     const results = [];
@@ -1542,9 +1543,10 @@ function renderCountsTable() {
 
   const objCounts  = extractCounts(objSection);
   const subjCounts = extractCounts(subjSection);
+  const raCounts   = extractCounts(raSection);
 
   // Seed promptCounts with prompt defaults (only for keys not yet edited)
-  [...objCounts, ...subjCounts].forEach(({key, value}) => {
+  [...objCounts, ...subjCounts, ...raCounts].forEach(({key, value}) => {
     if (!state.promptCounts.hasOwnProperty(key)) state.promptCounts[key] = value;
   });
 
@@ -1555,6 +1557,11 @@ function renderCountsTable() {
   if (subjCounts.length) {
     html += `<div style="font-size:13px;font-weight:700;color:var(--text);margin-top:24px;margin-bottom:8px">✍️ Subjective Questions (VSA / SA / LA)</div>`;
     html += makeTable(subjCounts);
+  }
+
+  if (raCounts.length) {
+    html += `<div style="font-size:13px;font-weight:700;color:var(--text);margin-top:24px;margin-bottom:8px">🔗 Reason-Assertion Descriptive</div>`;
+    html += makeTable(raCounts);
   }
 
   container.innerHTML = html;
