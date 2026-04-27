@@ -1915,10 +1915,9 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const doObjective  = !questionsOnly && !pltOnly || (questionsOnly && state.questionsType !== 'subjective');
   const doSubjective = !questionsOnly && !pltOnly || (questionsOnly && state.questionsType !== 'objective');
 
-  // For grade 6-7 Biology ICSE, prereq/terms/lo/plt/glossary use the standard BIOLOGY_ICSE prompt;
-  // objective uses BIOLOGY_ICSE_67 (which is what masterPrompt already is when grade=06/07)
+  // BIOLOGY_ICSE_67 now has all sections; use masterPrompt for everything
   const isBio67 = state.subject === 'Biology' && state.curriculum === 'ICSE' && (state.grade === '06' || state.grade === '07');
-  const baseMasterPrompt = isBio67 ? (PROMPTS['BIOLOGY_ICSE'] || masterPrompt) : masterPrompt;
+  const baseMasterPrompt = masterPrompt;
 
   // In questions-only or PLT-only mode, use provided LO instead of generating it
   if (questionsOnly || pltOnly) {
