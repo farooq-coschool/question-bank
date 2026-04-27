@@ -2456,17 +2456,21 @@ function fillPlaceholders(text, conceptName, item, loText) {
 
 function extractSection(prompt, sectionName) {
   if (!prompt) return null;
-  const esc = sectionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const patterns = [
-    new RegExp(`## ${esc}[\\s\\S]*?(?=\\n---\\n|## [A-Z]|$)`, 'i'),
-    new RegExp(`${esc}:[\\s\\S]*?(?=\\n---\\n|## [A-Z]|$)`, 'i'),
-    new RegExp(`\\[${esc}\\][\\s\\S]*?(?=\\n---\\n|\\[\\w|$)`, 'i'),
-  ];
-  for (const re of patterns) {
-    try {
-      const m = prompt.match(re);
-      if (m && m[0].length > 50) return m[0].trim();
-    } catch (_) {}
+  const nameUpper = sectionName.toUpperCase();
+  // Strategy 1: split by \n---\n and find exact ## SECTION_NAME match
+  const parts = prompt.split('\n---\n');
+  for (const part of parts) {
+    const firstLine = part.trimStart().split('\n')[0].trim().toUpperCase();
+    if (firstLine === '## ' + nameUpper || firstLine === nameUpper + ':') {
+      if (part.trim().length > 50) return part.trim();
+    }
+  }
+  // Strategy 2: split and find section whose header ENDS with the name (handles colon-style)
+  for (const part of parts) {
+    const firstLine = part.trimStart().split('\n')[0].trim().toUpperCase();
+    if (firstLine.endsWith(nameUpper + ':') || firstLine.endsWith('_' + nameUpper) || firstLine === '## ' + nameUpper) {
+      if (part.trim().length > 50) return part.trim();
+    }
   }
   return null;
 }
