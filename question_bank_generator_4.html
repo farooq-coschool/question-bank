@@ -1218,7 +1218,11 @@ async function callClaude(userText, maxTokens, model) {
       content.push({ type: 'image', source: { type: 'base64', media_type: img.mimeType, data: img.base64 } });
     }
   }
-  content.push({ type: 'text', text: userText });
+  const hasAttachment = (state.textbookPdfs && state.textbookPdfs.length) || state.textbookPdfBase64 || (state.textbookImages && state.textbookImages.length);
+  const attachmentInstruction = hasAttachment
+    ? 'IMPORTANT: You must generate ALL content based STRICTLY and EXCLUSIVELY on the attached textbook PDF/images above. Do NOT use any external knowledge, prior training data, or assumptions beyond what is present in the attached document.\n\n'
+    : '';
+  content.push({ type: 'text', text: attachmentInstruction + userText });
 
   const body = {
     model: model || MODELS.GENERATION,
