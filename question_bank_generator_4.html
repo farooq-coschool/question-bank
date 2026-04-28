@@ -2092,20 +2092,23 @@ function buildScopeItems() {
   const scope = state.generationScope;
   const items = [];
 
-  const chapterCb = document.querySelector('.concept-cb[data-idx="chapter"]');
-  if (!chapterCb || chapterCb.checked) {
+  const chapterCb = document.querySelector('.concept-cb[data-type="chapter"]');
+  const chapterSelected = chapterCb ? chapterCb.checked : false;
+
+  if (chapterSelected) {
     items.push({ level: 'chapter', name: state.chapterName });
+    return items; // chapter-only run — skip subtopics/nanos
   }
 
   (scope.subtopics || []).forEach((st, si) => {
     const stCb = document.querySelector(`.subtopic-cb[data-st-idx="${si}"]`);
-    const stSelected = stCb ? stCb.checked : true;
+    const stSelected = stCb ? stCb.checked : false;
 
     // Collect selected nano concepts for this subtopic
     const selectedNanos = [];
     (st.nanoConcepts || []).forEach((nc, ni) => {
       const nanoCb = document.querySelector(`.nano-cb[data-st-idx="${si}"][data-nano-idx="${ni}"]`);
-      if (nanoCb ? nanoCb.checked : stSelected) selectedNanos.push(nc);
+      if (nanoCb ? nanoCb.checked : false) selectedNanos.push(nc);
     });
 
     if (stSelected) {
