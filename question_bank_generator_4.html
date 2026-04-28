@@ -1236,7 +1236,7 @@ MANDATORY QUALITY RULES — apply to every item you generate:
   content.push({ type: 'text', text: attachmentInstruction + qualityRules + userText });
 
   // System-level enforcement of strict prompt compliance
-  const systemPrompt = 'You are a strict academic content generator. You MUST read and follow EVERY rule, guideline, format instruction, cognitive level definition, difficulty level definition, question type specification, solution guideline, and content rule stated in the user prompt — exactly as written, without skipping, relaxing, or reinterpreting any rule. Non-compliance with any stated rule is not acceptable. Check each generated item against all applicable rules before including it in your output.';
+  const systemPrompt = 'You are a strict academic content generator. You MUST read and follow EVERY rule, guideline, format instruction, cognitive level definition, difficulty level definition, question type specification, solution guideline, and content rule stated in the user prompt — exactly as written, without skipping, relaxing, or reinterpreting any rule. Non-compliance with any stated rule is not acceptable. Check each generated item against all applicable rules before including it in your output. For objective questions: generate ONLY the question types explicitly permitted in the prompt (e.g. SCQ, RA) — NEVER generate open-ended, descriptive, or wh-type questions (What/Why/How/Who/Which/Where/When) as objective questions. For counts: generate EXACTLY the number of questions specified in each [Number of ...] line — no more, no less.';
 
   const body = {
     model: model || MODELS.GENERATION,
@@ -1971,14 +1971,14 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     logStep(scopeLabel, 'Pre-requisites', '🔍', 'done', countLines(result) + ' lines');
   });
 
-  // TERMS — skipped for English
+  // TERMS — skipped for English; runs for nano too
   await runStep('terms', 'Terms and Definition', '📝', !questionsOnly && !pltOnly && !isEnglish, async () => {
     const result = await callClaude(buildTermsPrompt(name, item, baseMasterPrompt), 40000);
     saveFile(fp('Terms.txt'), result);
     logStep(scopeLabel, 'Terms and Definition', '📝', 'done');
   });
 
-  // LEARNING OUTCOMES — capture for PLT; skip chapter level for English
+  // LEARNING OUTCOMES — capture for PLT; skip chapter level for English; runs for nano too
   const loRes = await runStep('lo', 'Learning Outcomes', '🎯', !questionsOnly && !pltOnly && !(isEnglish && isChapter), async () => {
     const result = await callClaude(buildLOPrompt(name, item, baseMasterPrompt), 40000);
     saveFile(fp('LO.txt'), result);
@@ -2371,6 +2371,8 @@ For RA questions use EXACTLY this schema with EXACTLY these four option strings:
   "solution": "<same exact option string as answers>"
 }`;
 
+  const nanoList = item && item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
+
   const formatSpec = `
 
 ---
@@ -2381,7 +2383,12 @@ Grade: ${state.grade}
 Chapter Name: ${state.chapterName}
 Topic/Concept Name: ${conceptName}
 Textbook: ${state.textbook}
-${extraFields}
+${extraFields}${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}${countsText ? countsText + '\n' : ''}${chapterScopeNote(item)}
+
+⚠️ STRICT COUNT COMPLIANCE: You MUST generate EXACTLY the number of questions specified in each [Number of ...] line above — no more, no less. Missing any count line or generating extra questions is a violation.
+
+⚠️ QUESTION TYPE RESTRICTION: Generate ONLY SCQ (Single Correct Question) and RA (Reason-Assertion) question types as specified in the prompt. Do NOT generate open-ended, descriptive, short-answer, "wh-" type (What/Why/How/Who/Which/Where/When), fill-in-the-blank, or any other format that is not SCQ or RA.
+
 ⚠️ FINAL OUTPUT FORMAT — This section completely overrides and replaces any output format, JSON structure, field names, or schema mentioned anywhere in the prompt above. Ignore all prior format instructions entirely.
 
 Return ONLY a valid JSON array. No markdown code fences, no explanation, no text outside the array.
@@ -2478,6 +2485,10 @@ ${differentiateExample}
 
 For MTF (Match the Following) questions — MUST use this exact HTML table format with LaTeX using \\( \\) for inline math:
 ${mtfExample}
+
+⚠️ STRICT COUNT COMPLIANCE: You MUST generate EXACTLY the number of questions specified in each [Number of ...] line in the METADATA INPUT above — no more, no less, none skipped.
+
+⚠️ RULE COMPLIANCE: Read every rule in the prompt above before generating. Apply ALL rules — cognitive levels, difficulty levels, question type specifications, solution guidelines, formatting, and content rules — exactly as written. Non-compliance is not acceptable.
 
 MANDATORY RULES:
 - "marks" must be a string — STRICT: VSA = "1" or "2" ONLY · SA = "3" or "4" ONLY · LA = "5" ONLY
