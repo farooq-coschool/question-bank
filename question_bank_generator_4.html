@@ -2010,8 +2010,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   });
   if (loRes !== undefined) { loResult = loRes; cp.loResult = loResult; }
 
-  // PLT — skipped for English; runs for chapter, subtopic (if PLT enabled), nano, and always in PLT-only mode
-  const doPLT = !isEnglish && (pltOnly || (!questionsOnly && (isChapter || (item.level === 'subtopic' && item.includePLT) || isNano)));
+  // PLT — skipped for English; mandatory for nano; runs for chapter, subtopic (if PLT enabled), and in PLT-only mode
+  const doPLT = !isEnglish && (isNano || pltOnly || (!questionsOnly && (isChapter || (item.level === 'subtopic' && item.includePLT))));
   await runStep('plt', 'PLT', '📖', doPLT, async () => {
     const loLines = (loResult || '').split('\n').filter(l => /LO\d+|^\s*\d+[\.\)]/i.test(l.trim()));
     const loCount = loLines.length || 10;
@@ -2474,7 +2474,8 @@ Grade: ${state.grade}
 Chapter Name: ${state.chapterName}
 Topic/Concept Name: ${conceptName}
 Textbook: ${state.textbook}
-${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}
+${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}${countsText ? countsText + '\n' : ''}${chapterScopeNote(item)}
+
 ⚠️ FINAL OUTPUT FORMAT — This section completely overrides and replaces any output format, JSON structure, field names, or schema mentioned anywhere in the prompt above. Ignore all prior format instructions entirely.
 
 Return ONLY a valid JSON array. No markdown code fences, no explanation, no text outside the array.
