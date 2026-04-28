@@ -2001,8 +2001,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     logStep(scopeLabel, 'Terms and Definition', '📝', 'done');
   });
 
-  // LEARNING OUTCOMES — capture for PLT
-  const loRes = await runStep('lo', 'Learning Outcomes', '🎯', !questionsOnly && !pltOnly, async () => {
+  // LEARNING OUTCOMES — capture for PLT; skip chapter level for English
+  const loRes = await runStep('lo', 'Learning Outcomes', '🎯', !questionsOnly && !pltOnly && !(isEnglish && isChapter), async () => {
     const result = await callClaude(buildLOPrompt(name, item, baseMasterPrompt), 40000);
     saveFile(fp('LO.txt'), result);
     logStep(scopeLabel, 'Learning Outcomes', '🎯', 'done');
@@ -2027,8 +2027,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     logStep(scopeLabel, 'Glossary', '📚', 'done');
   });
 
-  // OBJECTIVE
-  const objQ = await runStep('objective', 'Objective Questions', '❓', doObjective, async () => {
+  // OBJECTIVE — skip chapter level for English
+  const objQ = await runStep('objective', 'Objective Questions', '❓', doObjective && !(isEnglish && isChapter), async () => {
     const includeRA = !isNano;
     const result = await callClaude(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 40000);
     const parsed = parseJSON(result);
@@ -2039,8 +2039,9 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   });
   if (objQ !== undefined) { addedQ += objQ; cp.totalQ += objQ; }
 
-  // SUBJECTIVE
-  const subjQ = await runStep('subjective', 'Subjective Questions', '✍️', !isNano && doSubjective, async () => {
+  // SUBJECTIVE — English: all subtopics+nanos (not chapter); others: not nano
+  const doSubjLevel = isEnglish ? (!isChapter) : (!isNano);
+  const subjQ = await runStep('subjective', 'Subjective Questions', '✍️', doSubjLevel && doSubjective, async () => {
     const result = await callClaude(buildSubjectivePrompt(name, item, masterPrompt, loResult), 50000);
     const parsed = parseJSON(result);
     saveFile(fp('Subjective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
