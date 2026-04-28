@@ -1805,10 +1805,7 @@ function onSubtopicCbChange(si) {
 }
 
 function onNanoCbChange(si, ni) {
-  const nanoCbs = document.querySelectorAll(`.nano-cb[data-st-idx="${si}"]`);
-  const anyChecked = Array.from(nanoCbs).some(cb => cb.checked);
-  const stCb = document.querySelector(`.subtopic-cb[data-st-idx="${si}"]`);
-  if (stCb) stCb.checked = anyChecked;
+  // Nanos can be selected independently — do NOT force-check the subtopic
   updateSelectAll();
 }
 
@@ -1857,35 +1854,7 @@ function logStep(scopeLabel, stepName, stepIcon, status, msg) {
   }
 }
 
-async function callClaude(userMsg, maxTokens = 4000, system = '') {
-  const content = [];
-  if (state.textbookPdfBase64) {
-    content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: state.textbookPdfBase64 } });
-  }
-  content.push({ type: 'text', text: typeof userMsg === 'string' ? userMsg : JSON.stringify(userMsg) });
-  const body = {
-    model: 'claude-opus-4-5',
-    max_tokens: maxTokens,
-    messages: [{ role: 'user', content }],
-  };
-  if (system) body.system = system;
-  // x-subject tells the server which API key to inject — the key never leaves the server
-  const resp = await fetch('/api/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-subject': state.subject || '',
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify(body),
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.error?.message || `API Error ${resp.status}`);
-  }
-  const data = await resp.json();
-  return data.content?.[0]?.text || '';
-}
+// (duplicate callClaude removed — see callClaude above)
 
 function makeLimiter(maxConcurrent) {
   let active = 0;
@@ -2047,8 +2016,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   });
   if (objQ !== undefined) { addedQ += objQ; cp.totalQ += objQ; }
 
-  // SUBJECTIVE — run for chapter and subtopic levels; skip nano (nano concepts generate under their subtopic)
-  const doSubjLevel = !isNano;
+  // SUBJECTIVE — run for all levels (chapter, subtopic, and nano when directly selected)
+  const doSubjLevel = true;
   const subjQ = await runStep('subjective', 'Subjective Questions', '✍️', doSubjLevel && doSubjective, async () => {
     const result = await callClaude(buildSubjectivePrompt(name, item, masterPrompt, loResult), 50000);
     const parsed = parseJSON(result);
@@ -2112,7 +2081,7 @@ function buildScopeItems() {
     const stCb = document.querySelector(`.subtopic-cb[data-st-idx="${si}"]`);
     const stSelected = stCb ? stCb.checked : false;
 
-    // Collect selected nano concepts for this subtopic
+    // Collect individually checked nano concepts
     const selectedNanos = [];
     (st.nanoConcepts || []).forEach((nc, ni) => {
       const nanoCb = document.querySelector(`.nano-cb[data-st-idx="${si}"][data-nano-idx="${ni}"]`);
@@ -2120,10 +2089,17 @@ function buildScopeItems() {
     });
 
     if (stSelected) {
+      // Subtopic selected: run all subtopic-level steps (LO, terms, objective, subjective)
+      // Pass only the checked nanos so the subtopic prompt scopes correctly
       items.push({ level: 'subtopic', name: st.name, includePLT: st.includePLT, nanoConcepts: selectedNanos });
     }
-    for (const nc of selectedNanos) {
-      items.push({ level: 'nano', name: nc, subtopicName: st.name });
+
+    // Add nano items — but only if subtopic is NOT selected (nano-only run)
+    // When subtopic IS selected its nanos are covered within the subtopic generation
+    if (!stSelected) {
+      for (const nc of selectedNanos) {
+        items.push({ level: 'nano', name: nc, subtopicName: st.name });
+      }
     }
   });
   return items;
