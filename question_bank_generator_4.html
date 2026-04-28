@@ -1482,17 +1482,19 @@ function setupPage3() {
   document.getElementById('grammarFieldWrap').style.display = state.curriculum === 'CBSE' ? 'block' : 'none';
 
   const textbookSelect = document.getElementById('textbookSelect');
+  const isCBSE = state.curriculum === 'CBSE';
   const tbOptions = {
-    Biology: ['Selina (Concise series)', 'Evergreen'],
-    Chemistry: ['Selina (Concise series)'],
-    Physics: ['Selina (Concise series)', 'Evergreen'],
-    Mathematics: ['Selina (Concise series)', 'APC'],
-    Civics: ['Morning Star', 'APC'],
-    Geography: ['Morning Star (Total Geography)', 'Frank EMU'],
-    History: ['Morning Star', 'APC'],
-    English: ['Standard Textbook'],
+    Biology: isCBSE ? ['NCERT'] : ['Selina (Concise series)', 'Evergreen'],
+    Chemistry: isCBSE ? ['NCERT'] : ['Selina (Concise series)'],
+    Physics: isCBSE ? ['NCERT'] : ['Selina (Concise series)', 'Evergreen'],
+    Mathematics: isCBSE ? ['NCERT'] : ['Selina (Concise series)', 'APC'],
+    Civics: isCBSE ? ['NCERT'] : ['Morning Star', 'APC'],
+    Geography: isCBSE ? ['NCERT'] : ['Morning Star (Total Geography)', 'Frank EMU'],
+    History: isCBSE ? ['NCERT'] : ['Morning Star', 'APC'],
+    English: isCBSE ? ['NCERT (Poorvi)'] : ['Standard Textbook'],
+    Science: isCBSE ? ['NCERT'] : ['Standard Textbook'],
   };
-  const opts = tbOptions[state.subject] || ['Standard Textbook'];
+  const opts = tbOptions[state.subject] || (isCBSE ? ['NCERT'] : ['Standard Textbook']);
   textbookSelect.innerHTML = opts.map(o => `<option value="${o}">${o}</option>`).join('');
 
   const pdfEl = document.getElementById('pdfSourceStatus');
@@ -2033,8 +2035,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     logStep(scopeLabel, 'Glossary', '📚', 'done');
   });
 
-  // OBJECTIVE — skip chapter level for English
-  const objQ = await runStep('objective', 'Objective Questions', '❓', doObjective && !(isEnglish && isChapter), async () => {
+  // OBJECTIVE — run for all levels including chapter
+  const objQ = await runStep('objective', 'Objective Questions', '❓', doObjective, async () => {
     const includeRA = !isNano;
     const result = await callClaude(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 40000);
     const parsed = parseJSON(result);
@@ -2045,8 +2047,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   });
   if (objQ !== undefined) { addedQ += objQ; cp.totalQ += objQ; }
 
-  // SUBJECTIVE — English: all subtopics+nanos (not chapter); others: not nano
-  const doSubjLevel = isEnglish ? (!isChapter) : (!isNano);
+  // SUBJECTIVE — run for chapter and subtopic levels; skip nano (nano concepts generate under their subtopic)
+  const doSubjLevel = !isNano;
   const subjQ = await runStep('subjective', 'Subjective Questions', '✍️', doSubjLevel && doSubjective, async () => {
     const result = await callClaude(buildSubjectivePrompt(name, item, masterPrompt, loResult), 50000);
     const parsed = parseJSON(result);
