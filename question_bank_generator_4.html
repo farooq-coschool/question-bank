@@ -2338,7 +2338,7 @@ function buildObjectivePrompt(conceptName, item, masterPrompt, includeRA, loText
   "solution": "Correct option text exactly as it appears in options"
 }`;
 
-    const isBio67RA = state.subject === 'Biology' && state.curriculum === 'ICSE' && (state.grade === '06' || state.grade === '07');
+    const isBio67RA = state.subject === 'Biology' && state.curriculum === 'ICSE';
   const raExample = !includeRA ? '' : isBio67RA ? `
 For RA questions use EXACTLY this schema with EXACTLY these four option strings:
 {
