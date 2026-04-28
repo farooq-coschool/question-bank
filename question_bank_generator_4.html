@@ -1222,7 +1222,16 @@ async function callClaude(userText, maxTokens, model) {
   const attachmentInstruction = hasAttachment
     ? 'IMPORTANT: You must generate ALL content based STRICTLY and EXCLUSIVELY on the attached textbook PDF/images above. Do NOT use any external knowledge, prior training data, or assumptions beyond what is present in the attached document.\n\n'
     : '';
-  content.push({ type: 'text', text: attachmentInstruction + userText });
+  const qualityRules = `MANDATORY QUALITY RULES — apply to every item you generate:
+1. No Overlap in Definitions: Avoid duplication or overlap of content under Terms and Definitions across different subtopics. Each definition must be unique, precise, and mapped clearly to its respective subtopic.
+2. Distinct Learning Outcomes: Ensure Learning Outcomes (LOs) are clearly differentiated across subtopics and nano concepts. Avoid repetition or conceptual overlap between LOs. Each LO must align uniquely with its intended concept.
+3. Eliminate Question Redundancy: Do not repeat or paraphrase similar questions across subtopics or nano concepts. Each question must test a distinct idea or application.
+4. Content Relevance: Remove any irrelevant, unnecessary, or loosely connected content — especially in factual and understanding-based questions. Ensure all content directly supports the defined Learning Outcomes.
+5. No Overlap Between Subtopics and Nano Concepts: Content covered under a subtopic must not be duplicated within its nano concepts. Maintain clear hierarchical separation and logical progression.
+6. Correct Option Rotation: For Single Correct Questions (SCQs) and Reason-Assertion (RAs), ensure answer keys follow a consistent rotation pattern: A → B → C → D → A… Avoid clustering of the same correct option.
+
+`;
+  content.push({ type: 'text', text: attachmentInstruction + qualityRules + userText });
 
   const body = {
     model: model || MODELS.GENERATION,
