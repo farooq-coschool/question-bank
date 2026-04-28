@@ -1740,10 +1740,10 @@ function renderConceptCheckboxes() {
     return;
   }
 
-  const chapterDone = state.generatedConceptKeys.has('chapter');
+  const chapterDone = state.generatedConceptKeys.has('chapter:' + state.chapterName);
   const chapterRow = `
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:9px 12px;border-radius:7px;background:var(--surface2);border:1px solid var(--accent);transition:border-color .15s;">
-      <input type="checkbox" class="concept-cb" data-idx="chapter" onchange="updateSelectAll()" ${chapterDone ? '' : 'checked'} style="accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;cursor:pointer;">
+      <input type="checkbox" class="concept-cb" data-type="chapter" onchange="updateSelectAll()" ${chapterDone ? '' : 'checked'} style="accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;cursor:pointer;">
       <span style="font-size:13px;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
         <strong style="color:var(--accent);">📘</strong>${state.chapterName}
         ${chapterDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">✓ Already generated</span>' : ''}
@@ -1751,20 +1751,57 @@ function renderConceptCheckboxes() {
       </span>
     </label>`;
 
-  const subtopicRows = scope.subtopics.map((st, i) => {
-    const done = state.generatedConceptKeys.has(String(i));
+  const subtopicRows = scope.subtopics.map((st, si) => {
+    const stDone = state.generatedConceptKeys.has('subtopic:' + st.name);
+    const nanos = st.nanoConcepts || [];
+
+    const nanoRows = nanos.map((nc, ni) => {
+      const nanoDone = state.generatedConceptKeys.has('nano:' + st.name + ':' + nc);
+      return `
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:7px 12px 7px 36px;border-radius:6px;background:var(--bg);border:1px solid var(--border);transition:border-color .15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <input type="checkbox" class="concept-cb nano-cb" data-type="nano" data-st-idx="${si}" data-nano-idx="${ni}"
+          onchange="onNanoCbChange(${si}, ${ni})" ${nanoDone ? '' : 'checked'}
+          style="accent-color:var(--accent);width:13px;height:13px;flex-shrink:0;cursor:pointer;">
+        <span style="font-size:12px;color:var(--text2);display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
+          🔬 ${nc}
+          ${nanoDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">✓ Done</span>' : ''}
+        </span>
+      </label>`;
+    }).join('');
+
     return `
-    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:9px 12px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);transition:border-color .15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
-      <input type="checkbox" class="concept-cb" data-idx="${i}" onchange="updateSelectAll()" ${done ? '' : 'checked'} style="accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;cursor:pointer;">
-      <span style="font-size:13px;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
-        <strong style="color:var(--muted);">${i + 1}.</strong>${st.name}
-        ${done ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">✓ Already generated</span>' : ''}
-        ${st.nanoConcepts && st.nanoConcepts.length ? `<span style="color:var(--muted);font-size:11px;">(${st.nanoConcepts.length} nano concept${st.nanoConcepts.length > 1 ? 's' : ''})</span>` : ''}
-      </span>
-    </label>`;
+    <div style="margin-bottom:4px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:9px 12px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);transition:border-color .15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <input type="checkbox" class="concept-cb subtopic-cb" data-type="subtopic" data-st-idx="${si}"
+          onchange="onSubtopicCbChange(${si})" ${stDone ? '' : 'checked'}
+          style="accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;cursor:pointer;">
+        <span style="font-size:13px;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
+          <strong style="color:var(--muted);">${si + 1}.</strong>${st.name}
+          ${stDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">✓ Done</span>' : ''}
+          ${nanos.length ? `<span style="color:var(--muted);font-size:11px;">(${nanos.length} nano${nanos.length > 1 ? 's' : ''})</span>` : ''}
+        </span>
+      </label>
+      ${nanos.length ? `<div style="display:flex;flex-direction:column;gap:3px;margin-top:3px;">${nanoRows}</div>` : ''}
+    </div>`;
   }).join('');
 
   list.innerHTML = chapterRow + subtopicRows;
+}
+
+function onSubtopicCbChange(si) {
+  const stCb = document.querySelector(`.subtopic-cb[data-st-idx="${si}"]`);
+  document.querySelectorAll(`.nano-cb[data-st-idx="${si}"]`).forEach(cb => {
+    cb.checked = stCb.checked;
+  });
+  updateSelectAll();
+}
+
+function onNanoCbChange(si, ni) {
+  const nanoCbs = document.querySelectorAll(`.nano-cb[data-st-idx="${si}"]`);
+  const anyChecked = Array.from(nanoCbs).some(cb => cb.checked);
+  const stCb = document.querySelector(`.subtopic-cb[data-st-idx="${si}"]`);
+  if (stCb) stCb.checked = anyChecked;
+  updateSelectAll();
 }
 
 function toggleAllConcepts(checked) {
@@ -2059,18 +2096,22 @@ function buildScopeItems() {
     items.push({ level: 'chapter', name: state.chapterName });
   }
 
-  const selectedIndices = new Set();
-  document.querySelectorAll('.concept-cb:checked').forEach(cb => {
-    const idx = parseInt(cb.dataset.idx, 10);
-    if (!isNaN(idx)) selectedIndices.add(idx);
-  });
+  (scope.subtopics || []).forEach((st, si) => {
+    const stCb = document.querySelector(`.subtopic-cb[data-st-idx="${si}"]`);
+    const stSelected = stCb ? stCb.checked : true;
 
-  (scope.subtopics || []).forEach((st, i) => {
-    if (selectedIndices.has(i)) {
-      items.push({ level: 'subtopic', name: st.name, includePLT: st.includePLT, nanoConcepts: st.nanoConcepts || [] });
-      for (const nc of st.nanoConcepts || []) {
-        items.push({ level: 'nano', name: nc, subtopicName: st.name });
-      }
+    // Collect selected nano concepts for this subtopic
+    const selectedNanos = [];
+    (st.nanoConcepts || []).forEach((nc, ni) => {
+      const nanoCb = document.querySelector(`.nano-cb[data-st-idx="${si}"][data-nano-idx="${ni}"]`);
+      if (nanoCb ? nanoCb.checked : stSelected) selectedNanos.push(nc);
+    });
+
+    if (stSelected) {
+      items.push({ level: 'subtopic', name: st.name, includePLT: st.includePLT, nanoConcepts: selectedNanos });
+    }
+    for (const nc of selectedNanos) {
+      items.push({ level: 'nano', name: nc, subtopicName: st.name });
     }
   });
   return items;
@@ -2101,12 +2142,7 @@ async function startGeneration() {
 
   // Record which concept keys are being generated now
   scopeItems.forEach(item => {
-    if (item.level === 'chapter') {
-      state.generatedConceptKeys.add('chapter');
-    } else if (item.level === 'subtopic') {
-      const idx = (state.generationScope.subtopics || []).findIndex(st => st.name === item.name);
-      if (idx >= 0) state.generatedConceptKeys.add(String(idx));
-    }
+    state.generatedConceptKeys.add(makeConceptKey(item));
   });
   const totalConcepts = scopeItems.length;
   const numWorkers = Math.min(concurrency, totalConcepts);
@@ -2648,10 +2684,10 @@ async function downloadAll() {
 
     // Show post-download prompt
     const allDone = state.generatedConceptKeys.size > 0 &&
-      (state.generationScope.subtopics || []).every((_, i) => state.generatedConceptKeys.has(String(i))) &&
-      state.generatedConceptKeys.has('chapter');
-    const remaining = (state.generationScope.subtopics || []).filter((_, i) => !state.generatedConceptKeys.has(String(i))).length +
-      (state.generatedConceptKeys.has('chapter') ? 0 : 1);
+      (state.generationScope.subtopics || []).every(st => state.generatedConceptKeys.has('subtopic:' + st.name)) &&
+      state.generatedConceptKeys.has('chapter:' + state.chapterName);
+    const remaining = (state.generationScope.subtopics || []).filter(st => !state.generatedConceptKeys.has('subtopic:' + st.name)).length +
+      (state.generatedConceptKeys.has('chapter:' + state.chapterName) ? 0 : 1);
 
     const existing = document.getElementById('postDownloadPrompt');
     if (existing) existing.remove();
