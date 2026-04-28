@@ -2208,6 +2208,15 @@ async function startGeneration() {
 // ============================================================
 // PROMPT BUILDERS
 // ============================================================
+
+function chapterScopeNote(item) {
+  if (!item || item.level === 'chapter') {
+    return 'Scope: ENTIRE CHAPTER — your response MUST comprehensively cover ALL subtopics, concepts, and content within this chapter. Do not limit to any single section.';
+  }
+  if (item.level === 'subtopic') return `Scope: Subtopic — focus on: ${item.name}`;
+  return `Scope: Nano Concept — focus on: ${item.name} (within subtopic: ${item.subtopicName})`;
+}
+
 function buildPrereqPrompt(conceptName, masterPrompt) {
   const section = fillPlaceholders(extractSection(masterPrompt, 'PRE_REQUISITE_CREATION_PROMPT') || masterPrompt, conceptName, null, '');
   return `${section}
@@ -2218,6 +2227,7 @@ Grade: ${state.grade}
 Subject: ${state.subject}
 Curriculum: ${state.curriculum}
 Chapter Name: ${state.chapterName}
+${chapterScopeNote(null)}
 Prerequisite Chapters: (Identify from typical ${state.curriculum} ${state.subject} curriculum)
 
 Generate pre-requisite questions as per the prompt above.`;
@@ -2237,6 +2247,7 @@ Subject: ${state.subject}
 Grade: ${state.grade}
 Chapter Name: ${state.chapterName}
 Topic/Concept Name: ${conceptName}
+${chapterScopeNote(item)}
 ${nanoList ? 'Nano Concepts: ' + nanoList : ''}
 
 Generate terms and definitions as per the prompt above.`;
@@ -2255,6 +2266,7 @@ Subject: ${state.subject}
 Grade: ${state.grade}
 Chapter Name: ${state.chapterName}
 Topic Name: ${conceptName}
+${chapterScopeNote(item)}
 
 Generate learning outcomes as per the prompt above.`;
 }
@@ -2270,6 +2282,7 @@ Subject: ${state.subject}
 Grade: ${state.grade}
 Chapter Name: ${state.chapterName}
 Topic Name: ${conceptName}
+${chapterScopeNote(item)}
 Learning Outcomes for this Topic:
 ${loText || '(refer to textbook content)'}
 
@@ -2285,6 +2298,7 @@ INPUT:
 Subject: ${state.subject}
 Grade: ${state.grade}
 Chapter Name: ${state.chapterName}
+${chapterScopeNote(null)}
 
 Generate glossary as per the prompt above.`;
 }
