@@ -2340,10 +2340,10 @@ function buildObjectivePrompt(conceptName, item, masterPrompt, includeRA, loText
 
     const isBio67RA = state.subject === 'Biology' && state.curriculum === 'ICSE';
   const raExample = !includeRA ? '' : isBio67RA ? `
-For RA questions use EXACTLY this schema with EXACTLY these four option strings:
+For RA questions use EXACTLY this schema. The four option strings are FIXED and MUST appear VERBATIM — do NOT rephrase, shorten, or alter them in any way:
 {
-  "cognitiveLevel": "Application",
-  "difficultyLevel": "Medium",
+  "cognitiveLevel": "<Factual|Understanding|Application — match the required cognitive level>",
+  "difficultyLevel": "<Easy|Medium|Hard — match the required difficulty level>",
   "questionType": "RA",
   "question": "<b>Assertion (A)</b>: <assertion text>.<br><b>Reason (R)</b>: <reason text>.",
   "options": [
@@ -2352,13 +2352,14 @@ For RA questions use EXACTLY this schema with EXACTLY these four option strings:
     "Both (A) and (R) are true and (R) is the correct explanation of (A)",
     "Both (A) and (R) are true but (R) is not the correct explanation of (A)"
   ],
-  "answers": ["<one of the four option strings above — exact text>"],
-  "solution": "<same exact option string as answers>"
-}` : `
-For RA questions use EXACTLY this schema with EXACTLY these four option strings:
+  "answers": ["<copy one of the four option strings above EXACTLY, character for character>"],
+  "solution": "<same exact string as answers — copy character for character>"
+}
+⚠️ RA OPTIONS ARE FIXED STRINGS: The options array must always contain EXACTLY these four strings in this order. Never change the wording, never swap order, never paraphrase. The answers and solution fields must be copied verbatim from the options array.` : `
+For RA questions use EXACTLY this schema. The four option strings are FIXED and MUST appear VERBATIM — do NOT rephrase, shorten, or alter them in any way:
 {
-  "cognitiveLevel": "Application",
-  "difficultyLevel": "Medium",
+  "cognitiveLevel": "<Factual|Understanding|Application — match the required cognitive level>",
+  "difficultyLevel": "<Easy|Medium|Hard — match the required difficulty level>",
   "questionType": "RA",
   "question": "<b>Assertion (A):</b> <assertion text>.\n<b>Reason (R):</b> <reason text>.",
   "options": [
@@ -2367,9 +2368,10 @@ For RA questions use EXACTLY this schema with EXACTLY these four option strings:
     "Assertion (A) is true, but Reason (R) is false.",
     "Assertion (A) is false, but Reason (R) is true."
   ],
-  "answers": ["<one of the four option strings above — exact text>"],
-  "solution": "<same exact option string as answers>"
-}`;
+  "answers": ["<copy one of the four option strings above EXACTLY, character for character>"],
+  "solution": "<same exact string as answers — copy character for character>"
+}
+⚠️ RA OPTIONS ARE FIXED STRINGS: The options array must always contain EXACTLY these four strings in this order. Never change the wording, never swap order, never paraphrase. The answers and solution fields must be copied verbatim from the options array.`;
 
   const nanoList = item && item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
 
@@ -2405,7 +2407,7 @@ MANDATORY RULES:
 - Allowed field names ONLY: cognitiveLevel, difficultyLevel, questionType, question, options, answers, solution
 - FORBIDDEN fields (do not use): question_type, cognitive_level, difficulty, difficultyTag, stem, type_tag, answer_key, correct_answer, explanation, hint, topic
 - For match-the-following questions: embed the table as HTML inside the "question" string value
-- For RA questions: use the exact assertion/reason option wording defined in this subject's prompt above — do not invent new wording`;
+- For RA questions: the "options" array must contain the EXACT four strings shown in the RA schema above — copy them character for character, do not rephrase or invent new wording`;
 
   return `${section}${formatSpec}`;
 }
