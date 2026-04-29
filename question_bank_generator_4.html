@@ -1513,10 +1513,47 @@ function setupPage3() {
 function renderCountsTable() {
   const container = document.getElementById('countsTableContainer');
   const masterPrompt = PROMPTS[getPromptKey()] || '';
+  const isEnglishCBSE = state.subject === 'English' && state.curriculum === 'CBSE';
 
-  const objSection  = extractSection(masterPrompt, 'OBJECTIVE_CREATION_PROMPT');
-  const subjSection = extractSection(masterPrompt, 'SUBJECTIVE_CREATION_PROMPT');
-  const raSection   = extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT');
+  // For English CBSE: objective counts come from SCQ sections, subjective from SA/LA sections
+  // The INTAKE TEMPLATE section holds the real default values; SCQ/SA/LA sections use {{count}}
+  let objSection, subjSection, raSection;
+  if (isEnglishCBSE) {
+    // Collect all SCQ sections (prose + poetry + subtopic) as the objective section
+    const proseSCQ  = extractSection(masterPrompt, 'PROSE_SCQ_CREATION_PROMPT') || '';
+    const poetrySCQ = extractSection(masterPrompt, 'POETRY_SCQ_CREATION_PROMPT') || '';
+    const subSCQ    = extractSection(masterPrompt, 'SUBTOPIC_SCQ_CREATION_PROMPT') || '';
+    // Replace {{count}} placeholders with real defaults from INTAKE TEMPLATE
+    const intakeSection = (() => {
+      const parts = masterPrompt.split('\n---\n');
+      for (const p of parts) {
+        const fl = p.trim().split('\n')[0].toUpperCase();
+        if (fl.includes('INTAKE TEMPLATE')) return p;
+      }
+      return '';
+    })();
+    // Build a map of label -> default value from INTAKE TEMPLATE
+    const intakeDefaults = {};
+    const re0 = /\[Number of ([^\]]+)\]:\s*([^\n\r]+)/g;
+    let m0;
+    while ((m0 = re0.exec(intakeSection)) !== null) {
+      intakeDefaults[m0[1].trim()] = m0[2].trim().replace(/,\s*$/, '');
+    }
+    // Replace {{count}} in SCQ/SA/LA sections using intake defaults
+    const fillCount = (sec) => sec.replace(/\[Number of ([^\]]+)\]:\s*\{\{count\}\}/g, (_, lbl) => {
+      const label = lbl.trim();
+      return `[Number of ${label}]: ${intakeDefaults[label] || 'SCQ: 3'}`;
+    });
+    objSection  = fillCount(proseSCQ || poetrySCQ || subSCQ);
+    const saSec  = fillCount(extractSection(masterPrompt, 'SA_CREATION_PROMPT') || '');
+    const laSec  = fillCount(extractSection(masterPrompt, 'LA_CREATION_PROMPT') || '');
+    subjSection = saSec + '\n' + laSec;
+    raSection   = '';
+  } else {
+    objSection  = extractSection(masterPrompt, 'OBJECTIVE_CREATION_PROMPT');
+    subjSection = extractSection(masterPrompt, 'SUBJECTIVE_CREATION_PROMPT');
+    raSection   = extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT');
+  }
 
   const extractCounts = (section) => {
     const results = [];
@@ -2319,7 +2356,16 @@ function applyPromptCountEdits(text) {
 
 function buildObjectivePrompt(conceptName, item, masterPrompt, includeRA, loText) {
   if (includeRA === undefined) includeRA = true;
-  const section = applyPromptCountEdits(fillPlaceholders(extractSection(masterPrompt, 'OBJECTIVE_CREATION_PROMPT') || masterPrompt, conceptName, item, loText));
+  const isEnglishCBSEObj = state.subject === 'English' && state.curriculum === 'CBSE';
+  const chapterType = (state.chapterType || 'Prose').toLowerCase();
+  const rawSection = isEnglishCBSEObj
+    ? (chapterType === 'poetry'
+        ? extractSection(masterPrompt, 'POETRY_SCQ_CREATION_PROMPT')
+        : extractSection(masterPrompt, 'PROSE_SCQ_CREATION_PROMPT'))
+      || extractSection(masterPrompt, 'SUBTOPIC_SCQ_CREATION_PROMPT')
+      || masterPrompt
+    : extractSection(masterPrompt, 'OBJECTIVE_CREATION_PROMPT') || masterPrompt;
+  const section = applyPromptCountEdits(fillPlaceholders(rawSection, conceptName, item, loText));
   const countsText = objectiveCountsToText(state.counts, includeRA);
   const isEnglish = state.subject === 'English';
 
