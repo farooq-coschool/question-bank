@@ -2025,7 +2025,14 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // In questions-only or PLT-only mode, use provided LO instead of generating it
   if (questionsOnly || pltOnly) {
     const provided = getLOForConcept(name);
-    if (provided) { loResult = provided; cp.loResult = loResult; }
+    if (pltOnly) {
+      // PLT Only: ALWAYS use exactly what the user typed — never fall back to checkpoint/generated LO files
+      loResult = provided || '';
+      cp.loResult = loResult;
+    } else if (provided) {
+      loResult = provided;
+      cp.loResult = loResult;
+    }
   }
 
   // PREREQ — runs in full mode (chapter only) OR in prereqOnly mode (chapter only)
