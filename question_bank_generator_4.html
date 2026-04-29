@@ -2017,21 +2017,21 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // PREREQ — only run if prompt has a dedicated section (skip if no PRE_REQUISITE_CREATION_PROMPT)
   const hasPrereqSection = !!extractSection(baseMasterPrompt, 'PRE_REQUISITE_CREATION_PROMPT');
   await runStep('prereq', 'Pre-requisites', '🔍', !questionsOnly && !pltOnly && isChapter && !isEnglish && hasPrereqSection, async () => {
-    const result = await callClaude(buildPrereqPrompt(name, baseMasterPrompt), 40000);
+    const result = stripMarkdownFormatting(await callClaude(buildPrereqPrompt(name, baseMasterPrompt), 40000));
     saveFile(ch + '/' + ch + '/' + ch + '_Prerequisites.txt', result);
     logStep(scopeLabel, 'Pre-requisites', '🔍', 'done', countLines(result) + ' lines');
   });
 
   // TERMS — skipped for English; skipped for GeoHistCivICSE subtopic Case B
   await runStep('terms', 'Terms and Definition', '📝', !questionsOnly && !pltOnly && !isEnglish && !isGeoSubtopicCaseB, async () => {
-    const result = await callClaude(buildTermsPrompt(name, item, baseMasterPrompt), 40000);
+    const result = stripMarkdownFormatting(await callClaude(buildTermsPrompt(name, item, baseMasterPrompt), 40000));
     saveFile(fp('Terms.txt'), result);
     logStep(scopeLabel, 'Terms and Definition', '📝', 'done');
   });
 
   // LEARNING OUTCOMES — capture for PLT; skip chapter level for English; skipped for GeoHistCivICSE subtopic Case B
   const loRes = await runStep('lo', 'Learning Outcomes', '🎯', !questionsOnly && !pltOnly && !(isEnglish && isChapter) && !isGeoSubtopicCaseB, async () => {
-    const result = await callClaude(buildLOPrompt(name, item, baseMasterPrompt), 40000);
+    const result = stripMarkdownFormatting(await callClaude(buildLOPrompt(name, item, baseMasterPrompt), 40000));
     saveFile(fp('LO.txt'), result);
     logStep(scopeLabel, 'Learning Outcomes', '🎯', 'done');
     return result;
@@ -2043,7 +2043,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   await runStep('plt', 'PLT', '📖', doPLT, async () => {
     const loLines = (loResult || '').split('\n').filter(l => /LO\d+|^\s*\d+[\.\)]/i.test(l.trim()));
     const loCount = loLines.length || 10;
-    const result = await callClaude(buildPLTPrompt(name, item, baseMasterPrompt, loResult), 40000);
+    const result = stripMarkdownFormatting(await callClaude(buildPLTPrompt(name, item, baseMasterPrompt, loResult), 40000));
     saveFile(fp('PLT.txt'), result);
     logStep(scopeLabel, 'PLT', '📖', 'done', loCount + ' LOs covered');
   });
@@ -2051,7 +2051,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // GLOSSARY — only run if prompt has a dedicated section (skip if no GLOSSARY_CREATION_PROMPT)
   const hasGlossarySection = !!extractSection(baseMasterPrompt, 'GLOSSARY_CREATION_PROMPT');
   await runStep('glossary', 'Glossary', '📚', !questionsOnly && !pltOnly && isChapter && !isEnglish && hasGlossarySection, async () => {
-    const result = await callClaude(buildGlossaryPrompt(name, baseMasterPrompt), 40000);
+    const result = stripMarkdownFormatting(await callClaude(buildGlossaryPrompt(name, baseMasterPrompt), 40000));
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
     logStep(scopeLabel, 'Glossary', '📚', 'done');
   });
@@ -2268,6 +2268,18 @@ async function startGeneration() {
 // PROMPT BUILDERS
 // ============================================================
 
+// Strip markdown bold/italic asterisks from plain-text outputs (Terms, LO, PLT, Glossary, Prereq)
+function stripMarkdownFormatting(text) {
+  if (!text) return text;
+  return text
+    .replace(/\*\*\*(.+?)\*\*\*/g, '$1')  // ***bold italic*** → plain
+    .replace(/\*\*(.+?)\*\*/g, '$1')       // **bold** → plain
+    .replace(/\*(.+?)\*/g, '$1')           // *italic* → plain
+    .replace(/^(\s*)#{1,6}\s+/gm, '$1');   // ## headings → remove #
+}
+
+const NO_ASTERISK_RULE = '\n\n⚠️ FORMATTING RULE: Do NOT use markdown asterisks (*) or hashes (#) for bold, italic, or headings anywhere in your response. Use plain text only. For emphasis, use CAPITALS or underscores if needed, but never * or **.';
+
 function chapterScopeNote(item) {
   if (!item || item.level === 'chapter') {
     return 'Scope: ENTIRE CHAPTER — your response MUST comprehensively cover ALL subtopics, concepts, and content within this chapter. Do not limit to any single section.';
@@ -2309,7 +2321,7 @@ Topic/Concept Name: ${conceptName}
 ${chapterScopeNote(item)}
 ${nanoList ? 'Nano Concepts: ' + nanoList : ''}
 
-Generate terms and definitions as per the prompt above.`;
+Generate terms and definitions as per the prompt above.${NO_ASTERISK_RULE}`;
 }
 
 function buildLOPrompt(conceptName, item, masterPrompt) {
@@ -2327,7 +2339,7 @@ Chapter Name: ${state.chapterName}
 Topic Name: ${conceptName}
 ${chapterScopeNote(item)}
 
-Generate learning outcomes as per the prompt above.`;
+Generate learning outcomes as per the prompt above.${NO_ASTERISK_RULE}`;
 }
 
 function buildPLTPrompt(conceptName, item, masterPrompt, loText) {
@@ -2345,7 +2357,7 @@ ${chapterScopeNote(item)}
 Learning Outcomes for this Topic:
 ${loText || '(refer to textbook content)'}
 
-Generate PLT (Proficiency Level Transcript) as per the prompt above.`;
+Generate PLT (Proficiency Level Transcript) as per the prompt above.${NO_ASTERISK_RULE}`;
 }
 
 function buildGlossaryPrompt(conceptName, masterPrompt) {
