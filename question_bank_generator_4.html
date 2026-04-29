@@ -2528,23 +2528,23 @@ function buildSubjectivePrompt(conceptName, item, masterPrompt, loText) {
 }`;
 
   const differentiateExample = `{
+  "cognitiveLevel": "Understanding",
+  "difficultyLevel": "Medium",
   "questionType": "VSA",
   "question_type_tag": "Differentiate",
-  "cognitiveLevel": "Application",
-  "difficultyLevel": "Hard",
-  "marks": "2",
-  "question": "Differentiate between X and Y on the basis of: (a) property1 and (b) property2.\\n<!-- CUSTOM_TABLE_START -->\\n<style>\\n.custom-tableABCDEF {background-color: #f7fafc;padding: 8px;border-collapse: collapse;width: auto;}\\n.custom-tableABCDEF th,.custom-tableABCDEF td {font-size: 12px;padding: 2px 8px;border: 1px solid #000;}\\n.custom-tableABCDEF th {font-weight: 600;}\\n</style>\\n<table class=\\"custom-tableABCDEF\\">\\n<thead>\\n<tr><th>Property</th><th>X</th><th>Y</th></tr>\\n</thead>\\n<tbody>\\n<tr><td>(a) property1</td><td></td><td></td></tr>\\n<tr><td>(b) property2</td><td></td><td></td></tr>\\n</tbody>\\n</table>\\n<!-- CUSTOM_TABLE_END -->",
-  "solution": "<!-- CUSTOM_TABLE_START -->\\n<style>\\n.custom-tableABCDEF {background-color: #f7fafc;padding: 8px;border-collapse: collapse;width: auto;}\\n.custom-tableABCDEF th,.custom-tableABCDEF td {font-size: 12px;padding: 2px 8px;border: 1px solid #000;}\\n.custom-tableABCDEF th {font-weight: 600;}\\n</style>\\n<table class=\\"custom-tableABCDEF\\">\\n<thead>\\n<tr><th>Property</th><th>X</th><th>Y</th></tr>\\n</thead>\\n<tbody>\\n<tr><td>(a) property1</td><td>Answer for X using \\\\(\\\\text{formula}\\\\) if needed</td><td>Answer for Y</td></tr>\\n<tr><td>(b) property2</td><td>Answer for X</td><td>Answer for Y</td></tr>\\n</tbody>\\n</table>\\n<!-- CUSTOM_TABLE_END -->"
+  "question": "Differentiate between Personal Hygiene and Social Hygiene based on what they involve.",
+  "solution": "| Personal Hygiene | Social Hygiene |\\n|---|---|\\n| Involves caring for one\\'s own body. | Involves taking proper care of surroundings. |",
+  "marks": "2"
 }`;
 
   const mtfExample = `{
+  "cognitiveLevel": "Understanding",
+  "difficultyLevel": "Medium",
   "questionType": "LA",
   "question_type_tag": "MTF",
-  "cognitiveLevel": "Understanding",
-  "difficultyLevel": "Easy",
-  "marks": "5",
-  "question": "Match the following:\\n<!-- CUSTOM_TABLE_START -->\\n<style>\\n.custom-tablevz4xat {background-color: #f7fafc;padding: 8px;border-collapse: collapse;width: auto;}\\n.custom-tablevz4xat th,.custom-tablevz4xat td {font-size: 12px;padding: 2px 8px;border: 1px solid #000;}\\n.custom-tablevz4xat th {font-weight: 600;}\\n</style>\\n<table class=\\"custom-tablevz4xat\\">\\n<thead>\\n<tr><th>Column A</th><th>Column B</th></tr>\\n</thead>\\n<tbody>\\n<tr><td>(1) Term 1</td><td>(P) Definition 1</td></tr>\\n<tr><td>(2) Term 2</td><td>(Q) Definition 2</td></tr>\\n<tr><td>(3) Alkene + \\\\(\\\\text{H}_2\\\\) [Ni]</td><td>(R) Alkane</td></tr>\\n</tbody>\\n</table>\\n<!-- CUSTOM_TABLE_END -->",
-  "solution": "(1)\\\\(\\\\rightarrow\\\\)(P), (2)\\\\(\\\\rightarrow\\\\)(Q), (3)\\\\(\\\\rightarrow\\\\)(R)"
+  "question": "Match the items in Column I with those in Column II.\\n\\n| Column I | Column II |\\n|---|---|\\n| (a) Trachoma | (1) Breathing practice |\\n| (b) Head lice | (2) Eye disease |\\n| (c) Caries | (3) Hair parasite |\\n| (d) Perspiration | (4) Tooth problem |\\n| (e) Nose | (5) Ear cleaning |\\n|  | (6) Body odour |\\n|  | (7) Skin rash |",
+  "solution": "(a) Trachoma — (2) Eye disease\\n(b) Head lice — (3) Hair parasite\\n(c) Caries — (4) Tooth problem\\n(d) Perspiration — (6) Body odour\\n(e) Nose — (1) Breathing practice",
+  "marks": "5"
 }`;
 
   const formatSpec = `
@@ -2571,10 +2571,10 @@ ${plainExample}
 For special question types (FIB, MTF, T/F, Differentiate, etc.) — include question_type_tag:
 ${taggedExample}
 
-For Differentiate questions — MUST use this exact HTML table format (question has empty cells, solution has filled cells):
+For Differentiate questions — MUST use plain markdown table in "solution" only (no table in question):
 ${differentiateExample}
 
-For MTF (Match the Following) questions — MUST use this exact HTML table format with LaTeX using \\( \\) for inline math:
+For MTF (Match the Following) questions — MUST use plain markdown table in "question"; solution is plain text lines (one match per line using —):
 ${mtfExample}
 
 ⚠️ STRICT COUNT COMPLIANCE: You MUST generate EXACTLY the number of questions specified in each [Number of ...] line in the METADATA INPUT above — no more, no less, none skipped.
@@ -2586,7 +2586,8 @@ MANDATORY RULES:
 - "questionType" MUST match marks exactly: VSA→"1"or"2", SA→"3"or"4", LA→"5" — NEVER assign "3" or "4" to VSA
 - "question_type_tag" → include for special types ONLY (FIB, MTF, T/F, Differentiate, Name the following, Location, Choose odd one out, Arrange in correct order). For Basic VSA/SA/LA leave it as empty string ""
 - ALLOWED question_type_tag values: "Name the following" | "Location" | "FIB" | "MTF" | "Arrange in correct order" | "Choose odd one out" | "Differentiate" | "T/F" | "" (empty for basic)
-- Differentiate AND MTF questions MUST embed the table as HTML using <!-- CUSTOM_TABLE_START --> / <!-- CUSTOM_TABLE_END --> with a UNIQUE CSS class name per question (e.g. custom-table followed by 6 random chars). Use \\( \\) for LaTeX inline math inside table cells.
+- MTF questions MUST use a plain markdown table (| Column I | Column II | format) in the "question" field. The "solution" MUST be plain text with one match per line using the format: "(a) Term — (N) Answer". Do NOT use HTML or CUSTOM_TABLE for MTF.
+- Differentiate questions MUST use a plain markdown table (| Aspect | Term1 | Term2 | or | Term1 | Term2 | format) in the "solution" field only. The "question" is plain text. Do NOT use HTML or CUSTOM_TABLE for Differentiate.
 - Allowed field names ONLY: cognitiveLevel, difficultyLevel, questionType, question_type_tag, question, solution, marks
 - FORBIDDEN fields (do not use): options, answers, stem, type_tag, answer, correct_answer, explanation, hint, topic
 
