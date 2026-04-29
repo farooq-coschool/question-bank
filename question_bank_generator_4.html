@@ -2406,8 +2406,19 @@ MANDATORY RULES:
 - "answers" and "solution" → the exact option string as it appears in the options array — NEVER a letter like "A" or "B"
 - Allowed field names ONLY: cognitiveLevel, difficultyLevel, questionType, question, options, answers, solution
 - FORBIDDEN fields (do not use): question_type, cognitive_level, difficulty, difficultyTag, stem, type_tag, answer_key, correct_answer, explanation, hint, topic
-- For match-the-following questions: embed the table as HTML inside the "question" string value
-- For RA questions: the "options" array must contain the EXACT four strings shown in the RA schema above — copy them character for character, do not rephrase or invent new wording`;
+- For RA questions: the "options" array must contain the EXACT four strings shown in the RA schema above — copy them character for character, do not rephrase or invent new wording
+
+LATEX RULES (MANDATORY — apply inside every "question" and every "options" string):
+- ALL mathematical expressions, chemical formulae, symbols, equations, subscripts, superscripts → wrap in inline LaTeX using \\(...\\). Example: \\(\\text{CO}_2\\), \\(\\text{H}_2\\text{O}\\), \\(\\sqrt{2}\\)
+- Use \\text{} for ALL alphabetic content inside LaTeX to keep it upright. Example: \\(\\text{NAD}^+\\), \\(\\text{ATP}\\)
+- NEVER use \\ce{} for chemical equations — use \\text{} with manual subscripts/superscripts instead
+- NEVER use display math \\[...\\] or $$...$$  — only inline \\(...\\)
+- Plain prose text must remain outside LaTeX — do NOT wrap normal words in \\text{}
+- Arrows in sequences/pathways: use \\(\\rightarrow\\) inside LaTeX. Example: \\(\\text{Glucose} \\rightarrow \\text{Pyruvate}\\)
+- For Type 6 (match-the-following) tables: MUST use the CUSTOM_TABLE_START...CUSTOM_TABLE_END HTML template with inline CSS as shown in the prompt. Do NOT use plain markdown tables or \\(\\begin{array}...\\end{array}\\) for MTF questions
+- Scientific names → italics using <i>Genus species</i> — NOT LaTeX italics
+- Bold → <b>text</b> — NOT LaTeX \\textbf{}
+- Avoid asterisks (*), hash (#), or em dash (—) anywhere in output`;
 
   return `${section}${formatSpec}`;
 }
