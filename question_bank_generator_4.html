@@ -2667,8 +2667,8 @@ ${mtfExample}
 ⚠️ RULE COMPLIANCE: Read every rule in the prompt above before generating. Apply ALL rules — cognitive levels, difficulty levels, question type specifications, solution guidelines, formatting, and content rules — exactly as written. Non-compliance is not acceptable.
 
 MANDATORY RULES:
-- "marks" must be a string — STRICT: ${state.subject === 'English' && state.curriculum === 'CBSE' ? 'VSA = "1" ONLY · SA = "3" ONLY · LA = "6" ONLY' : 'VSA = "1" or "2" ONLY · SA = "3" or "4" ONLY · LA = "5" ONLY'}
-- "questionType" MUST match marks exactly: ${state.subject === 'English' && state.curriculum === 'CBSE' ? 'VSA→"1", SA→"3", LA→"6"' : 'VSA→"1"or"2", SA→"3"or"4", LA→"5"'} — NEVER assign SA or LA marks to VSA
+- "marks" must be a string — STRICT: ${state.subject === 'English' && state.curriculum === 'CBSE' ? 'VSA = "1" ONLY · SA = "3" ONLY · LA = "6" ONLY' : (state.subject === 'Mathematics' && state.curriculum === 'CBSE' ? 'VSA = "2" ONLY · SA = "3" or "4" ONLY · LA = "5" ONLY' : 'VSA = "1" or "2" ONLY · SA = "3" or "4" ONLY · LA = "5" ONLY')}
+- "questionType" MUST match marks exactly: ${state.subject === 'English' && state.curriculum === 'CBSE' ? 'VSA→"1", SA→"3", LA→"6"' : (state.subject === 'Mathematics' && state.curriculum === 'CBSE' ? 'VSA→"2", SA→"3"or"4", LA→"5"' : 'VSA→"1"or"2", SA→"3"or"4", LA→"5"')} — NEVER assign SA or LA marks to VSA
 - "question_type_tag" → include for special types ONLY (FIB, MTF, T/F, Differentiate, Name the following, Location, Choose odd one out, Arrange in correct order). For Basic VSA/SA/LA leave it as empty string ""
 - ALLOWED question_type_tag values: "Name the following" | "Location" | "FIB" | "MTF" | "Arrange in correct order" | "Choose odd one out" | "Differentiate" | "T/F" | "" (empty for basic)
 - FIB questions MUST follow the bracket-option format: each sub-part ends with __________ followed by [option1 / option2 / option3] on the same line. Start the question with "Fill in the blanks by choosing the correct option from the brackets." The solution gives ONLY the correct word per sub-part, one per line as (a) answer.
@@ -2686,7 +2686,7 @@ SOLUTION FORMATTING RULES (MANDATORY):
 - Each sub-part label (a), (b), (c) MUST appear on its own separate line
 - For standalone questions with multiple points: use bullet points
 - End every solution point with a full stop (.)
-- ${state.subject === 'English' ? '⚠️ STRICT WORD COUNT (NON-NEGOTIABLE): SA solution MUST be exactly 40–50 words. LA solution MUST be exactly 100–120 words. Count every word before finalising. Do NOT go below or above these ranges under any circumstance.' : 'Mark-to-point ratio: total solution points MUST equal total marks — VSA 1 mark = 1 point, SA 3 marks = 3 points, SA 4 marks = 4 points, LA 5 marks = 5 points'}
+- ${state.subject === 'English' ? '⚠️ STRICT WORD COUNT (NON-NEGOTIABLE): SA solution MUST be exactly 40–50 words. LA solution MUST be exactly 100–120 words. Count every word before finalising. Do NOT go below or above these ranges under any circumstance.' : 'Mark-to-point ratio: total solution points MUST equal total marks — VSA 2 marks = 2 points, SA 3 marks = 3 points, SA 4 marks = 4 points, LA 5 marks = 5 points'}
 - Never include extra information beyond what the question asks
 
 LATEX AND FORMATTING RULES (MANDATORY — apply inside every "question" and "solution" string):
