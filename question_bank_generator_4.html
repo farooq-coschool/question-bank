@@ -2411,6 +2411,17 @@ function buildObjectivePrompt(conceptName, item, masterPrompt, includeRA, loText
   "options": ["Option text 1", "Option text 2", "Option text 3", "Option text 4"],
   "answers": ["Correct option text exactly as it appears in options"],
   "solution": "Correct option text exactly as it appears in options"
+}
+
+For SCQ Match-the-Following questions — MUST use \\\\(\\\\begin{array}\\\\) LaTeX table in the "question" field:
+{
+  "cognitiveLevel": "Understanding",
+  "difficultyLevel": "Medium",
+  "questionType": "SCQ",
+  "question": "\\\\( \\\\begin{array}{|l|l|}\\\\hline \\\\text{Column I} & \\\\text{Column II} \\\\\\\\\\\\hline \\\\text{(1) Term 1} & \\\\text{(P) Desc 1} \\\\\\\\\\\\hline \\\\text{(2) Term 2} & \\\\text{(Q) Desc 2} \\\\\\\\\\\\hline \\\\text{(3) Term 3} & \\\\text{(R) Desc 3} \\\\\\\\\\\\hline \\\\end{array} \\\\)\\n\\nSelect the correct matching:",
+  "options": ["1-P, 2-Q, 3-R", "1-Q, 2-R, 3-P", "1-R, 2-P, 3-Q", "1-P, 2-R, 3-Q"],
+  "answers": ["1-Q, 2-R, 3-P"],
+  "solution": "1-Q, 2-R, 3-P"
 }`;
 
     const isBio67RA = state.subject === 'Biology' && state.curriculum === 'ICSE';
@@ -2490,7 +2501,7 @@ LATEX RULES (MANDATORY — apply inside every "question" and every "options" str
 - NEVER use display math \\[...\\] or $$...$$  — only inline \\(...\\)
 - Plain prose text must remain outside LaTeX — do NOT wrap normal words in \\text{}
 - Arrows in sequences/pathways: use \\(\\rightarrow\\) inside LaTeX. Example: \\(\\text{Glucose} \\rightarrow \\text{Pyruvate}\\)
-- For Type 6 (match-the-following) tables: MUST use the CUSTOM_TABLE_START...CUSTOM_TABLE_END HTML template with inline CSS as shown in the prompt. Do NOT use plain markdown tables or \\(\\begin{array}...\\end{array}\\) for MTF questions
+- For SCQ Match-the-Following questions: MUST use \\(\\begin{array}{|l|l|}...\\end{array}\\) LaTeX table as shown in the SCQ MTF example above. Do NOT use HTML tables, CUSTOM_TABLE, or plain markdown tables for SCQ MTF questions
 - Scientific names → italics using <i>Genus species</i> — NOT LaTeX italics
 - Bold → <b>text</b> — NOT LaTeX \\textbf{}
 - Avoid asterisks (*), hash (#), or em dash (—) anywhere in output`;
@@ -2518,13 +2529,24 @@ function buildSubjectivePrompt(conceptName, item, masterPrompt, loText) {
 }`;
 
   const taggedExample = `{
-  "cognitiveLevel": "Factual",
+  "cognitiveLevel": "Understanding",
   "difficultyLevel": "Easy",
   "questionType": "VSA",
   "question_type_tag": "FIB",
-  "question": "Fill in the blank with a suitable answer. The endoplasmic reticulum is connected to the __________ membrane at its inner end.",
-  "solution": "nuclear",
-  "marks": "1"
+  "question": "Fill in the blanks by choosing the correct option from the brackets.\\n(a) A closed circuit is also called a __________ circuit. [open / complete / incomplete]\\n(b) An open circuit is also called an __________ circuit. [complete / incomplete / closed]",
+  "solution": "(a) complete\\n(b) incomplete",
+  "marks": "2"
+}
+
+For FIB with more sub-parts (LA):
+{
+  "cognitiveLevel": "Application",
+  "difficultyLevel": "Medium",
+  "questionType": "LA",
+  "question_type_tag": "FIB",
+  "question": "Fill in the blanks by choosing the correct option from the brackets.\\n(a) <statement> __________. [option1 / option2 / option3]\\n(b) <statement> __________. [option1 / option2 / option3]\\n(c) <statement> __________. [option1 / option2 / option3]\\n(d) <statement> __________. [option1 / option2 / option3]\\n(e) <statement> __________. [option1 / option2 / option3]",
+  "solution": "(a) answer1\\n(b) answer2\\n(c) answer3\\n(d) answer4\\n(e) answer5",
+  "marks": "5"
 }`;
 
   const differentiateExample = `{
@@ -2586,6 +2608,7 @@ MANDATORY RULES:
 - "questionType" MUST match marks exactly: VSA→"1"or"2", SA→"3"or"4", LA→"5" — NEVER assign "3" or "4" to VSA
 - "question_type_tag" → include for special types ONLY (FIB, MTF, T/F, Differentiate, Name the following, Location, Choose odd one out, Arrange in correct order). For Basic VSA/SA/LA leave it as empty string ""
 - ALLOWED question_type_tag values: "Name the following" | "Location" | "FIB" | "MTF" | "Arrange in correct order" | "Choose odd one out" | "Differentiate" | "T/F" | "" (empty for basic)
+- FIB questions MUST follow the bracket-option format: each sub-part ends with __________ followed by [option1 / option2 / option3] on the same line. Start the question with "Fill in the blanks by choosing the correct option from the brackets." The solution gives ONLY the correct word per sub-part, one per line as (a) answer.
 - MTF questions MUST use a plain markdown table (| Column I | Column II | format) in the "question" field. The "solution" MUST be plain text with one match per line using the format: "(a) Term — (N) Answer". Do NOT use HTML or CUSTOM_TABLE for MTF.
 - Differentiate questions MUST use a plain markdown table (| Aspect | Term1 | Term2 | or | Term1 | Term2 | format) in the "solution" field only. The "question" is plain text. Do NOT use HTML or CUSTOM_TABLE for Differentiate.
 - Allowed field names ONLY: cognitiveLevel, difficultyLevel, questionType, question_type_tag, question, solution, marks
