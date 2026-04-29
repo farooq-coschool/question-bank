@@ -2330,6 +2330,18 @@ Generate glossary as per the prompt above.`;
 
 function objectiveCountsToText(counts, includeRA) {
   if (includeRA === undefined) includeRA = true;
+  // Use state.promptCounts (page 3 edited values) — filter rows whose value contains SCQ or RA
+  const pc = state.promptCounts;
+  if (Object.keys(pc).length) {
+    return Object.entries(pc)
+      .filter(([k, v]) => {
+        const u = v.toUpperCase();
+        return u.includes('SCQ') || (includeRA && u.includes('RA:'));
+      })
+      .map(([k, v]) => `[Number of ${k.split('||')[0]}]: ${v}`)
+      .join('\n');
+  }
+  // Fallback to legacy state.counts
   return Object.entries(counts)
     .filter(([k]) => k.endsWith('SCQ') || (includeRA && k.endsWith('RA')))
     .map(([k,v]) => `[Number of ${k} Questions]: ${v}`)
@@ -2337,6 +2349,18 @@ function objectiveCountsToText(counts, includeRA) {
 }
 
 function subjectiveCountsToText(counts) {
+  // Use state.promptCounts (page 3 edited values) — filter rows whose value contains VSA/SA/LA
+  const pc = state.promptCounts;
+  if (Object.keys(pc).length) {
+    return Object.entries(pc)
+      .filter(([k, v]) => {
+        const u = v.toUpperCase();
+        return u.includes('VSA') || u.includes('SA:') || /\bSA\b/.test(u) || u.includes('LA:') || /\bLA\b/.test(u) || u.includes('FIB');
+      })
+      .map(([k, v]) => `[Number of ${k.split('||')[0]}]: ${v}`)
+      .join('\n');
+  }
+  // Fallback to legacy state.counts
   return Object.entries(counts)
     .filter(([k]) => k.endsWith('VSA') || k.endsWith('SA') || k.endsWith('LA') || k.endsWith('FIB'))
     .map(([k,v]) => `[Number of ${k} Questions]: ${v}`)
@@ -2433,7 +2457,7 @@ Topic/Concept Name: ${conceptName}
 Textbook: ${state.textbook}
 ${extraFields}${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}${countsText ? countsText + '\n' : ''}${chapterScopeNote(item)}
 
-⚠️ STRICT COUNT COMPLIANCE: You MUST generate EXACTLY the number of questions specified in each [Number of ...] line above — no more, no less. Missing any count line or generating extra questions is a violation.
+⚠️ STRICT COUNT COMPLIANCE (NON-NEGOTIABLE): The [Number of ...] lines above are the ONLY source of truth for how many questions to generate. You MUST generate EXACTLY that number for EACH line — no more, no less, none skipped. If a line says "SCQ: 4; RA: 5" you must output exactly 4 SCQs and exactly 5 RAs for that cognitive/difficulty level. Generating fewer or more questions than specified is a violation. Do not use any count values from earlier in the prompt — the counts above override everything.
 
 ⚠️ QUESTION TYPE RESTRICTION: Generate ONLY SCQ (Single Correct Question) and RA (Reason-Assertion) question types as specified in the prompt. Do NOT generate open-ended, descriptive, short-answer, "wh-" type (What/Why/How/Who/Which/Where/When), fill-in-the-blank, or any other format that is not SCQ or RA.
 
@@ -2529,6 +2553,8 @@ Chapter Name: ${state.chapterName}
 Topic/Concept Name: ${conceptName}
 Textbook: ${state.textbook}
 ${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}${countsText ? countsText + '\n' : ''}${chapterScopeNote(item)}
+
+⚠️ STRICT COUNT COMPLIANCE (NON-NEGOTIABLE): The [Number of ...] lines above are the ONLY source of truth for how many questions to generate. You MUST generate EXACTLY that number for EACH line — no more, no less, none skipped. If a line says "VSA: 2; SA: 2; LA: 1" you must output exactly 2 VSAs, 2 SAs and 1 LA for that cognitive/difficulty level. Do not use any count values from earlier in the prompt — the counts above override everything.
 
 ⚠️ FINAL OUTPUT FORMAT — This section completely overrides and replaces any output format, JSON structure, field names, or schema mentioned anywhere in the prompt above. Ignore all prior format instructions entirely.
 
@@ -2672,6 +2698,8 @@ Chapter Name: ${state.chapterName}
 Topic/Concept Name: ${conceptName}
 Textbook: ${state.textbook}
 ${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}${countsText ? countsText + '\n' : ''}${chapterScopeNote(item)}
+
+⚠️ STRICT COUNT COMPLIANCE (NON-NEGOTIABLE): The [Number of ...] lines above are the ONLY source of truth for how many questions to generate. You MUST generate EXACTLY that number — no more, no less, none skipped. Do not use any count values from earlier in the prompt — the counts above override everything.
 
 ⚠️ FINAL OUTPUT FORMAT — This section completely overrides and replaces any output format mentioned anywhere above. Ignore all prior format instructions entirely.
 
