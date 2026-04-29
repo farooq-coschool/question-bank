@@ -2433,21 +2433,22 @@ function buildSubjectivePrompt(conceptName, item, masterPrompt, loText) {
   const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
 
   const plainExample = `{
-  "cognitiveLevel": "Application",
-  "difficultyLevel": "Medium",
-  "questionType": "SA",
-  "question": "<question text>",
-  "solution": "<answer text>",
-  "marks": "3"
+  "cognitiveLevel": "Factual",
+  "difficultyLevel": "Easy",
+  "questionType": "VSA",
+  "question_type_tag": "",
+  "question": "<question text — each sub-part on its own line, no marks beside question>",
+  "solution": "<answer text — each sub-part label (a),(b),(c) on its own separate line, bullet points for multi-point standalone answers, full stop at end of each point>",
+  "marks": "1"
 }`;
 
   const taggedExample = `{
   "cognitiveLevel": "Factual",
   "difficultyLevel": "Easy",
   "questionType": "VSA",
-  "question_type_tag": "<FIB | MTF | T/F | Differentiate | Name the following | Location | Choose odd one out | Arrange in correct order | ...>",
-  "question": "<question text>",
-  "solution": "<answer text>",
+  "question_type_tag": "FIB",
+  "question": "Fill in the blank with a suitable answer. The endoplasmic reticulum is connected to the __________ membrane at its inner end.",
+  "solution": "nuclear",
   "marks": "1"
 }`;
 
@@ -2506,11 +2507,34 @@ ${mtfExample}
 MANDATORY RULES:
 - "marks" must be a string — STRICT: VSA = "1" or "2" ONLY · SA = "3" or "4" ONLY · LA = "5" ONLY
 - "questionType" MUST match marks exactly: VSA→"1"or"2", SA→"3"or"4", LA→"5" — NEVER assign "3" or "4" to VSA
-- "question_type_tag" is optional — include ONLY for special types (FIB, MTF, T/F, Differentiate, Name the following, Location, Choose odd one out, Arrange in correct order, etc.)
+- "question_type_tag" → include for special types ONLY (FIB, MTF, T/F, Differentiate, Name the following, Location, Choose odd one out, Arrange in correct order). For Basic VSA/SA/LA leave it as empty string ""
+- ALLOWED question_type_tag values: "Name the following" | "Location" | "FIB" | "MTF" | "Arrange in correct order" | "Choose odd one out" | "Differentiate" | "T/F" | "" (empty for basic)
 - Differentiate AND MTF questions MUST embed the table as HTML using <!-- CUSTOM_TABLE_START --> / <!-- CUSTOM_TABLE_END --> with a UNIQUE CSS class name per question (e.g. custom-table followed by 6 random chars). Use \\( \\) for LaTeX inline math inside table cells.
-- All LaTeX math MUST use \\( ... \\) for inline — never use $ or $$ delimiters
 - Allowed field names ONLY: cognitiveLevel, difficultyLevel, questionType, question_type_tag, question, solution, marks
-- FORBIDDEN fields (do not use): options, answers, stem, type_tag, answer, correct_answer, explanation, hint, topic`;
+- FORBIDDEN fields (do not use): options, answers, stem, type_tag, answer, correct_answer, explanation, hint, topic
+
+QUESTION FORMATTING RULES (MANDATORY):
+- Each sub-part label (a), (b), (c), (d), (e) MUST appear on its own separate line — NEVER combine multiple sub-parts on a single line
+- Do NOT include marks beside the question text (e.g. do not write "[2 marks]")
+- Do NOT use the word "Describe" to frame any question
+
+SOLUTION FORMATTING RULES (MANDATORY):
+- Each sub-part label (a), (b), (c) MUST appear on its own separate line
+- For standalone questions with multiple points: use bullet points
+- End every solution point with a full stop (.)
+- Mark-to-point ratio: total solution points MUST equal total marks — VSA 1 mark = 1 point, SA 3 marks = 3 points, SA 4 marks = 4 points, LA 5 marks = 5 points
+- Never include extra information beyond what the question asks
+
+LATEX AND FORMATTING RULES (MANDATORY — apply inside every "question" and "solution" string):
+- ALL mathematical expressions, chemical formulae, equations, subscripts, superscripts → wrap in inline LaTeX \\(...\\). Example: \\(\\text{CO}_2\\), \\(\\text{H}_2\\text{O}\\)
+- Use \\text{} for ALL alphabetic content inside LaTeX to keep it upright. Example: \\(\\text{NAD}^+\\), \\(\\text{ATP}\\)
+- NEVER use \\ce{} — use \\text{} with manual subscripts instead
+- NEVER use display math \\[...\\] or $$...$$ — only inline \\(...\\)
+- Arrows in sequences/pathways: \\(\\rightarrow\\) inside LaTeX
+- Scientific names → <i>Genus species</i> HTML italics — NOT LaTeX italics
+- Bold text → <b>text</b> HTML — NOT LaTeX \\textbf{}
+- British English spellings throughout
+- Avoid asterisks (*), hash (#), or em dash (—) anywhere in output`;
 
   return `${section}${formatSpec}`;
 }
