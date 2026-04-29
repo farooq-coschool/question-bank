@@ -2602,7 +2602,68 @@ function extractSection(prompt, sectionName) {
 function buildRADescPrompt(conceptName, item, masterPrompt, loText) {
   const raw = extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || masterPrompt;
   const section = applyPromptCountEdits(fillPlaceholders(raw, conceptName, item, loText));
-  return section;
+  const countsText = subjectiveCountsToText(state.counts);
+  const nanoList = item && item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
+
+  const radExample = `{
+  "cognitiveLevel": "<Factual|Understanding|Application>",
+  "difficultyLevel": "<Easy|Medium|Hard>",
+  "questionType": "VSA",
+  "question_type_tag": "Reason-Assertion Description",
+  "question": "Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\\n\\n<b>Assertion (A):</b> <assertion statement>.\\n<b>Reason (R):</b> <reason statement>.\\n\\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\\n\\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\\n(C) Assertion (A) is true, but Reason (R) is false.\\n(D) Assertion (A) is false, but Reason (R) is true.",
+  "solution": "Option (<correct letter>) is correct.\\n<one-line justification explaining why the chosen option is correct>",
+  "marks": "1"
+}`;
+
+  const formatSpec = `
+
+---
+METADATA INPUT:
+Subject: ${state.subject}
+Curriculum: ${state.curriculum}
+Grade: ${state.grade}
+Chapter Name: ${state.chapterName}
+Topic/Concept Name: ${conceptName}
+Textbook: ${state.textbook}
+${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}${countsText ? countsText + '\n' : ''}${chapterScopeNote(item)}
+
+⚠️ FINAL OUTPUT FORMAT — This section completely overrides and replaces any output format mentioned anywhere above. Ignore all prior format instructions entirely.
+
+Return ONLY a valid JSON array. No markdown code fences, no explanation, no text outside the array.
+
+Every element MUST use EXACTLY this schema:
+${radExample}
+
+MANDATORY RULES:
+- "questionType" is always "VSA" and "marks" is always "1" for RAD questions
+- "question_type_tag" is always exactly "Reason-Assertion Description"
+- The question field MUST follow this EXACT structure verbatim:
+  Line 1: "Two statements are given, one labelled as Assertion (A) and the other as Reason (R)."
+  Blank line
+  "<b>Assertion (A):</b> <assertion text>."
+  "<b>Reason (R):</b> <reason text>."
+  Blank line
+  "Answer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation."
+  Blank line
+  "(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A)."
+  "(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A)."
+  "(C) Assertion (A) is true, but Reason (R) is false."
+  "(D) Assertion (A) is false, but Reason (R) is true."
+- The solution MUST start with "Option (<letter>) is correct." followed by a justification
+- The four (A)(B)(C)(D) option lines are FIXED strings — do NOT rephrase or alter them
+- Allowed field names ONLY: cognitiveLevel, difficultyLevel, questionType, question_type_tag, question, solution, marks
+- FORBIDDEN fields: options, answers, stem, answer, correct_answer, explanation, hint, topic
+
+LATEX RULES (MANDATORY — apply inside every "question" and "solution" string):
+- ALL mathematical expressions, equations, numbers with units, symbols, subscripts, superscripts → wrap in inline LaTeX \\(...\\). Example: \\(3^2 \\times 5\\), \\(\\sqrt{2}\\), \\(x^2 + y^2\\)
+- Use \\text{} for ALL alphabetic LaTeX content to keep it upright. Example: \\(\\text{CO}_2\\)
+- NEVER use \\ce{} — use \\text{} with manual subscripts instead
+- NEVER use display math \\[...\\] or $$...$$ — only inline \\(...\\)
+- Arrows: \\(\\rightarrow\\) inside LaTeX
+- Bold → <b>text</b> HTML — NOT LaTeX \\textbf{}
+- Avoid asterisks (*), hash (#), or em dash (—) anywhere in output`;
+
+  return `${section}${formatSpec}`;
 }
 
 function parseJSON(text) {
