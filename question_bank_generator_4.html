@@ -748,6 +748,9 @@
               <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
                 <input type="radio" name="qType" value="subjective" onchange="state.questionsType='subjective'" style="accent-color:var(--accent)"> Subjective Only
               </label>
+              <label id="radOnlyOption" style="display:none;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                <input type="radio" name="qType" value="rad" onchange="state.questionsType='rad'" style="accent-color:var(--accent)"> RAD Only
+              </label>
             </div>
           </div>
 
@@ -1729,6 +1732,7 @@ function page3Next() {
   enableNav(4);
   goToPage(4);
   setupGenerationSteps();
+  updateRADOptionVisibility();
 }
 
 
@@ -1988,8 +1992,9 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
 
   const questionsOnly = state.genMode === 'questions';
   const pltOnly      = state.genMode === 'plt';
-  const doObjective  = !questionsOnly && !pltOnly || (questionsOnly && state.questionsType !== 'subjective');
-  const doSubjective = !questionsOnly && !pltOnly || (questionsOnly && state.questionsType !== 'objective');
+  const isRADOnly    = questionsOnly && state.questionsType === 'rad';
+  const doObjective  = !questionsOnly && !pltOnly || (questionsOnly && state.questionsType !== 'subjective' && !isRADOnly);
+  const doSubjective = !questionsOnly && !pltOnly || (questionsOnly && state.questionsType !== 'objective' && !isRADOnly);
 
   // BIOLOGY_ICSE_67 now has all sections; use masterPrompt for everything
   const isBio67 = state.subject === 'Biology' && state.curriculum === 'ICSE' && (state.grade === '06' || state.grade === '07');
@@ -2068,7 +2073,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // REASON-ASSERTION DESCRIPTIVE — Mathematics CBSE only
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
   const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '🔗',
-    isMathCBSE && !isChapter && doObjective, async () => {
+    isMathCBSE && !isChapter && (doObjective || isRADOnly), async () => {
     const result = await callClaude(buildRADescPrompt(name, item, masterPrompt, loResult), 40000);
     const parsed = parseJSON(result);
     saveFile(fp('ReasonAssertion.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
@@ -2900,6 +2905,19 @@ function onGenModeChange(mode) {
   state.genMode = mode;
   document.getElementById('questionsModePanel').style.display = mode === 'questions' ? '' : 'none';
   document.getElementById('loInputPanel').style.display = (mode === 'questions' || mode === 'plt') ? '' : 'none';
+  updateRADOptionVisibility();
+}
+
+function updateRADOptionVisibility() {
+  const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
+  const opt = document.getElementById('radOnlyOption');
+  if (opt) opt.style.display = isMathCBSE ? 'flex' : 'none';
+  // If RAD Only was selected but subject changed away from Math CBSE, reset to 'both'
+  if (!isMathCBSE && state.questionsType === 'rad') {
+    state.questionsType = 'both';
+    const bothRadio = document.querySelector('input[name="qType"][value="both"]');
+    if (bothRadio) bothRadio.checked = true;
+  }
 }
 
 function loadLOsFromFolder(files) {
