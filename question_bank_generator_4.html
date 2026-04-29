@@ -2108,7 +2108,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // REASON-ASSERTION DESCRIPTIVE — Mathematics CBSE only
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
   const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '🔗',
-    isMathCBSE && !isChapter && (doObjective || isRADOnly), async () => {
+    isMathCBSE && (doObjective || isRADOnly), async () => {
     const result = await callClaude(buildRADescPrompt(name, item, masterPrompt, loResult), 40000);
     const parsed = parseJSON(result);
     saveFile(fp('ReasonAssertion.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
