@@ -2006,8 +2006,9 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     if (provided) { loResult = provided; cp.loResult = loResult; }
   }
 
-  // PREREQ
-  await runStep('prereq', 'Pre-requisites', '🔍', !questionsOnly && !pltOnly && isChapter && !isEnglish, async () => {
+  // PREREQ — only run if prompt has a dedicated section (skip if no PRE_REQUISITE_CREATION_PROMPT)
+  const hasPrereqSection = !!extractSection(baseMasterPrompt, 'PRE_REQUISITE_CREATION_PROMPT');
+  await runStep('prereq', 'Pre-requisites', '🔍', !questionsOnly && !pltOnly && isChapter && !isEnglish && hasPrereqSection, async () => {
     const result = await callClaude(buildPrereqPrompt(name, baseMasterPrompt), 40000);
     saveFile(ch + '/' + ch + '/' + ch + '_Prerequisites.txt', result);
     logStep(scopeLabel, 'Pre-requisites', '🔍', 'done', countLines(result) + ' lines');
@@ -2039,8 +2040,9 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     logStep(scopeLabel, 'PLT', '📖', 'done', loCount + ' LOs covered');
   });
 
-  // GLOSSARY
-  await runStep('glossary', 'Glossary', '📚', !questionsOnly && !pltOnly && isChapter && !isEnglish, async () => {
+  // GLOSSARY — only run if prompt has a dedicated section (skip if no GLOSSARY_CREATION_PROMPT)
+  const hasGlossarySection = !!extractSection(baseMasterPrompt, 'GLOSSARY_CREATION_PROMPT');
+  await runStep('glossary', 'Glossary', '📚', !questionsOnly && !pltOnly && isChapter && !isEnglish && hasGlossarySection, async () => {
     const result = await callClaude(buildGlossaryPrompt(name, baseMasterPrompt), 40000);
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
     logStep(scopeLabel, 'Glossary', '📚', 'done');
