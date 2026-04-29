@@ -2392,6 +2392,19 @@ Grade: ${state.grade}
 Chapter Name: ${state.chapterName}
 ${chapterScopeNote(null)}
 
+⚠️ STRICT OUTPUT FORMAT (MANDATORY — NO EXCEPTIONS):
+Output ONLY a plain list of glossary entries. Each entry MUST be on its own line in EXACTLY this format:
+Term | Definition
+Rules:
+- Use a single pipe character ( | ) to separate the term from its definition.
+- Do NOT use bold, italics, headers, bullet points, numbered lists, blank lines between entries, or any markdown/HTML formatting.
+- Do NOT include any introduction, conclusion, section headings, or commentary.
+- Word origins, pronunciation guides, and usage notes (if applicable) must be incorporated into the definition text on the same line — do NOT put them on separate lines.
+- Terms must be in strict alphabetical order.
+Example:
+Alternate arrangement | A type of phyllotaxy where only one leaf arises from each node on the stem, with successive leaves emerging from opposite sides.
+Autotrophs | Organisms that prepare their own food through photosynthesis. Word origin: From Greek 'auto' meaning self and 'trophe' meaning nourishment.
+
 Generate glossary as per the prompt above.`;
 }
 
