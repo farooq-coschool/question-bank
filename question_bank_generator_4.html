@@ -733,6 +733,17 @@
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
               <input type="radio" name="genMode" value="plt" onchange="onGenModeChange('plt')" style="accent-color:var(--accent)"> PLT Only
             </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+              <input type="radio" name="genMode" value="prereq" onchange="onGenModeChange('prereq')" style="accent-color:var(--accent)"> Pre-requisites Only
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+              <input type="radio" name="genMode" value="glossary" onchange="onGenModeChange('glossary')" style="accent-color:var(--accent)"> Glossary Only
+            </label>
+          </div>
+
+          <!-- Prereq / Glossary note panel -->
+          <div id="prereqGlossaryPanel" style="display:none;margin-top:12px;padding:10px 14px;border-top:1px solid var(--border);background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted);">
+            📎 This mode uses the PDF / images you attached on page 2 as the source. Make sure your textbook file is uploaded before generating.
           </div>
 
           <!-- Questions-only sub-options (hidden by default) -->
@@ -1991,10 +2002,13 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   }
 
   const questionsOnly = state.genMode === 'questions';
-  const pltOnly      = state.genMode === 'plt';
+  const pltOnly       = state.genMode === 'plt';
+  const prereqOnly    = state.genMode === 'prereq';
+  const glossaryOnly  = state.genMode === 'glossary';
+  const singleStepMode = questionsOnly || pltOnly || prereqOnly || glossaryOnly;
   const isRADOnly    = questionsOnly && state.questionsType === 'rad';
-  const doObjective  = !questionsOnly && !pltOnly || (questionsOnly && state.questionsType !== 'subjective' && !isRADOnly);
-  const doSubjective = !questionsOnly && !pltOnly || (questionsOnly && state.questionsType !== 'objective' && !isRADOnly);
+  const doObjective  = !singleStepMode || (questionsOnly && state.questionsType !== 'subjective' && !isRADOnly);
+  const doSubjective = !singleStepMode || (questionsOnly && state.questionsType !== 'objective' && !isRADOnly);
 
   // Geo / History / Civics ICSE special logic
   const isGeoHistCivICSE = ['Geography', 'History', 'Civics'].includes(state.subject) && state.curriculum === 'ICSE';
@@ -2014,23 +2028,23 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     if (provided) { loResult = provided; cp.loResult = loResult; }
   }
 
-  // PREREQ — only run if prompt has a dedicated section (skip if no PRE_REQUISITE_CREATION_PROMPT)
+  // PREREQ — runs in full mode (chapter only) OR in prereqOnly mode (chapter only)
   const hasPrereqSection = !!extractSection(baseMasterPrompt, 'PRE_REQUISITE_CREATION_PROMPT');
-  await runStep('prereq', 'Pre-requisites', '🔍', !questionsOnly && !pltOnly && isChapter && !isEnglish && hasPrereqSection, async () => {
+  await runStep('prereq', 'Pre-requisites', '🔍', isChapter && !isEnglish && hasPrereqSection && (!singleStepMode || prereqOnly), async () => {
     const result = stripMarkdownFormatting(await callClaude(buildPrereqPrompt(name, baseMasterPrompt), 40000));
     saveFile(ch + '/' + ch + '/' + ch + '_Prerequisites.txt', result);
     logStep(scopeLabel, 'Pre-requisites', '🔍', 'done', countLines(result) + ' lines');
   });
 
-  // TERMS — skipped for English; skipped for GeoHistCivICSE subtopic Case B
-  await runStep('terms', 'Terms and Definition', '📝', !questionsOnly && !pltOnly && !isEnglish && !isGeoSubtopicCaseB, async () => {
+  // TERMS — skipped for English, single-step modes, and GeoHistCivICSE subtopic Case B
+  await runStep('terms', 'Terms and Definition', '📝', !singleStepMode && !isEnglish && !isGeoSubtopicCaseB, async () => {
     const result = stripMarkdownFormatting(await callClaude(buildTermsPrompt(name, item, baseMasterPrompt), 40000));
     saveFile(fp('Terms.txt'), result);
     logStep(scopeLabel, 'Terms and Definition', '📝', 'done');
   });
 
-  // LEARNING OUTCOMES — capture for PLT; skip chapter level for English; skipped for GeoHistCivICSE subtopic Case B
-  const loRes = await runStep('lo', 'Learning Outcomes', '🎯', !questionsOnly && !pltOnly && !(isEnglish && isChapter) && !isGeoSubtopicCaseB, async () => {
+  // LEARNING OUTCOMES — capture for PLT; skip chapter level for English; skipped in single-step modes and GeoHistCivICSE subtopic Case B
+  const loRes = await runStep('lo', 'Learning Outcomes', '🎯', !singleStepMode && !(isEnglish && isChapter) && !isGeoSubtopicCaseB, async () => {
     const result = stripMarkdownFormatting(await callClaude(buildLOPrompt(name, item, baseMasterPrompt), 40000));
     saveFile(fp('LO.txt'), result);
     logStep(scopeLabel, 'Learning Outcomes', '🎯', 'done');
@@ -2039,7 +2053,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   if (loRes !== undefined) { loResult = loRes; cp.loResult = loResult; }
 
   // PLT — skipped for English and GeoHistCivICSE subtopic Case B; mandatory for nano; runs for chapter, subtopic (if PLT enabled), PLT-only mode
-  const doPLT = !isEnglish && !isGeoSubtopicCaseB && (isNano || pltOnly || (!questionsOnly && (isChapter || (item.level === 'subtopic' && item.includePLT))));
+  const doPLT = !isEnglish && !isGeoSubtopicCaseB && (isNano || pltOnly || (!singleStepMode && (isChapter || (item.level === 'subtopic' && item.includePLT))));
   await runStep('plt', 'PLT', '📖', doPLT, async () => {
     const loLines = (loResult || '').split('\n').filter(l => /LO\d+|^\s*\d+[\.\)]/i.test(l.trim()));
     const loCount = loLines.length || 10;
@@ -2048,9 +2062,9 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     logStep(scopeLabel, 'PLT', '📖', 'done', loCount + ' LOs covered');
   });
 
-  // GLOSSARY — only run if prompt has a dedicated section (skip if no GLOSSARY_CREATION_PROMPT)
+  // GLOSSARY — runs in full mode (chapter only) OR in glossaryOnly mode (chapter only)
   const hasGlossarySection = !!extractSection(baseMasterPrompt, 'GLOSSARY_CREATION_PROMPT');
-  await runStep('glossary', 'Glossary', '📚', !questionsOnly && !pltOnly && isChapter && !isEnglish && hasGlossarySection, async () => {
+  await runStep('glossary', 'Glossary', '📚', isChapter && !isEnglish && hasGlossarySection && (!singleStepMode || glossaryOnly), async () => {
     const result = stripMarkdownFormatting(await callClaude(buildGlossaryPrompt(name, baseMasterPrompt), 40000));
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
     logStep(scopeLabel, 'Glossary', '📚', 'done');
@@ -2971,6 +2985,7 @@ function onGenModeChange(mode) {
   state.genMode = mode;
   document.getElementById('questionsModePanel').style.display = mode === 'questions' ? '' : 'none';
   document.getElementById('loInputPanel').style.display = (mode === 'questions' || mode === 'plt') ? '' : 'none';
+  document.getElementById('prereqGlossaryPanel').style.display = (mode === 'prereq' || mode === 'glossary') ? '' : 'none';
   updateRADOptionVisibility();
 }
 
