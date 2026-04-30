@@ -1957,7 +1957,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // On a fresh run (not a retry), skip steps whose output file already exists
   if (!existingCp) {
     const stepFiles = [
-      ['prereq',     ch + '/' + ch + '/' + ch + '_Prerequisites.txt'],
+      ['prereq',     ch + '/' + ch + '/' + ch + '_Prerequisites.json'],
       ['terms',      fp('Terms.txt')],
       ['lo',         fp('LO.txt')],
       ['plt',        fp('PLT.txt')],
@@ -2284,8 +2284,165 @@ async function startGeneration() {
 
   if (doneCount > 0) {
     enableNav(5);
-    setTimeout(() => { goToPage(5); renderDownloadPage(); }, 1200);
+    setTimeout(async () => {
+      goToPage(5);
+      renderDownloadPage();
+      await checkMissingFiles(scopeItems, masterPrompt, isEnglish, ch);
+    }, 1200);
   }
+}
+
+// ============================================================
+// MISSING FILES CHECK
+// ============================================================
+
+function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
+  const questionsOnly = state.genMode === 'questions';
+  const pltOnly       = state.genMode === 'plt';
+  const prereqOnly    = state.genMode === 'prereq';
+  const glossaryOnly  = state.genMode === 'glossary';
+  const singleStepMode = questionsOnly || pltOnly || prereqOnly || glossaryOnly;
+  const isRADOnly     = state.questionsType === 'rad';
+  const doObjective   = state.questionsType === 'both' || state.questionsType === 'objective' || isRADOnly;
+  const doSubjective  = state.questionsType === 'both' || state.questionsType === 'subjective';
+  const isMathCBSE    = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
+  const isGeoHistCivICSE = ['Geography', 'History', 'Civics'].includes(state.subject) && state.curriculum === 'ICSE';
+  const hasPrereqSection = !!extractSection(masterPrompt, 'PRE_REQUISITE_CREATION_PROMPT');
+  const hasGlossarySection = !!extractSection(masterPrompt, 'GLOSSARY_CREATION_PROMPT');
+
+  const expected = []; // { path, label, item }
+
+  for (const item of scopeItems) {
+    const name = item.name;
+    const isChapter = item.level === 'chapter';
+    const isNano    = item.level === 'nano';
+
+    const fp = (suffix) => {
+      if (isChapter) return ch + '/' + ch + '/' + ch + '_' + suffix;
+      if (isNano) return ch + '/' + item.subtopicName + '/' + name + '/' + name + '_' + suffix;
+      return ch + '/' + name + '/' + name + '_' + suffix;
+    };
+
+    const isGeoSubtopicCaseB = isGeoHistCivICSE && !isChapter && !isNano && !state.textbookPdfBase64 && !(state.textbookPdfs && state.textbookPdfs.length) && !(state.textbookImages && state.textbookImages.length);
+    const isGeoNano = isGeoHistCivICSE && isNano;
+
+    const scopeLabel = isChapter ? name : (isNano ? name + ' (nano)' : name + ' (subtopic)');
+
+    // Prereq
+    if (isChapter && !isEnglish && hasPrereqSection && (!singleStepMode || prereqOnly))
+      expected.push({ path: ch + '/' + ch + '/' + ch + '_Prerequisites.json', label: scopeLabel + ' → Prerequisites', item });
+
+    // Terms
+    if (!singleStepMode && !isEnglish && !isGeoSubtopicCaseB)
+      expected.push({ path: fp('Terms.txt'), label: scopeLabel + ' → Terms & Definitions', item });
+
+    // LO
+    if (!singleStepMode && !(isEnglish && isChapter) && !isGeoSubtopicCaseB)
+      expected.push({ path: fp('LO.txt'), label: scopeLabel + ' → Learning Outcomes', item });
+
+    // PLT
+    const doPLT = !isEnglish && !isGeoSubtopicCaseB && (isNano || pltOnly || (!singleStepMode && (isChapter || (item.level === 'subtopic' && item.includePLT))));
+    if (doPLT)
+      expected.push({ path: fp('PLT.txt'), label: scopeLabel + ' → PLT', item });
+
+    // Glossary
+    if (isChapter && !isEnglish && hasGlossarySection && (!singleStepMode || glossaryOnly))
+      expected.push({ path: ch + '/' + ch + '/' + ch + '_Glossary.txt', label: scopeLabel + ' → Glossary', item });
+
+    // Objective
+    const doObjectiveHere = doObjective && !isGeoSubtopicCaseB && !isGeoNano;
+    if (doObjectiveHere)
+      expected.push({ path: fp('Objective.json'), label: scopeLabel + ' → Objective Questions', item });
+
+    // Subjective
+    const shouldRunSubj = isGeoSubtopicCaseB ? doSubjective : (doSubjective && !isGeoNano);
+    if (shouldRunSubj)
+      expected.push({ path: fp('Subjective.json'), label: scopeLabel + ' → Subjective Questions', item });
+
+    // RAD
+    if (isMathCBSE && (doObjective || isRADOnly))
+      expected.push({ path: fp('ReasonAssertion.json'), label: scopeLabel + ' → Reason-Assertion', item });
+  }
+
+  // Deduplicate by path
+  const seen = new Set();
+  return expected.filter(e => { if (seen.has(e.path)) return false; seen.add(e.path); return true; });
+}
+
+async function checkMissingFiles(scopeItems, masterPrompt, isEnglish, ch) {
+  const expected = computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch);
+  const missing = expected.filter(e => state.generatedFiles[e.path] === undefined);
+  if (missing.length === 0) return;
+
+  // Show popup
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.id = 'missingFilesOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;';
+
+    const box = document.createElement('div');
+    box.style.cssText = 'background:var(--surface);border-radius:14px;padding:28px 32px;max-width:560px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.4);';
+
+    const listHtml = missing.map(e => `<li style="margin:4px 0;font-size:13px;color:var(--text2);">${e.label}</li>`).join('');
+
+    box.innerHTML = `
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">⚠️ ${missing.length} file${missing.length !== 1 ? 's' : ''} not generated</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px;">The following files were expected but could not be generated. Would you like to retry generating only these missing files?</div>
+      <ul style="margin:0 0 20px 18px;padding:0;">${listHtml}</ul>
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button id="missingSkipBtn" class="btn btn-secondary" style="font-size:13px;padding:8px 18px;">Skip</button>
+        <button id="missingRetryBtn" class="btn btn-primary" style="font-size:13px;padding:8px 18px;">OK — Retry Missing Files</button>
+      </div>`;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    document.getElementById('missingSkipBtn').onclick = () => {
+      overlay.remove();
+      resolve();
+    };
+
+    document.getElementById('missingRetryBtn').onclick = async () => {
+      overlay.remove();
+
+      // Build a minimal scope covering only the items that have missing files
+      const missingItems = [];
+      const seenKeys = new Set();
+      for (const e of missing) {
+        const key = makeConceptKey(e.item);
+        if (!seenKeys.has(key)) { seenKeys.add(key); missingItems.push(e.item); }
+      }
+
+      // Run agents for missing items only
+      for (const item of missingItems) {
+        try {
+          const cp = agentCheckpoints[makeConceptKey(item)];
+          await runConceptAgent(item, masterPrompt, isEnglish, ch, cp ? cp.cp : null);
+        } catch (_) {}
+      }
+
+      // Update file count
+      document.getElementById('statFiles').textContent = Object.keys(state.generatedFiles).length;
+      renderDownloadPage();
+
+      // Re-check if still missing
+      const stillMissing = expected.filter(e => state.generatedFiles[e.path] === undefined);
+      if (stillMissing.length > 0) {
+        await checkMissingFiles(missingItems, masterPrompt, isEnglish, ch);
+      } else {
+        showToast('✅ All missing files have been generated! You can now download everything.');
+      }
+      resolve();
+    };
+  });
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:var(--success);color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;z-index:10000;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
 }
 
 // ============================================================
