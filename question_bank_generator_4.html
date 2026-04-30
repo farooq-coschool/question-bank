@@ -2038,8 +2038,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // PREREQ — runs in full mode (chapter only) OR in prereqOnly mode (chapter only)
   const hasPrereqSection = !!extractSection(baseMasterPrompt, 'PRE_REQUISITE_CREATION_PROMPT');
   await runStep('prereq', 'Pre-requisites', '🔍', isChapter && !isEnglish && hasPrereqSection && (!singleStepMode || prereqOnly), async () => {
-    const result = stripMarkdownFormatting(await callClaude(buildPrereqPrompt(name, baseMasterPrompt), 40000));
-    saveFile(ch + '/' + ch + '/' + ch + '_Prerequisites.txt', result);
+    const result = await callClaude(buildPrereqPrompt(name, baseMasterPrompt), 40000);
+    saveFile(ch + '/' + ch + '/' + ch + '_Prerequisites.json', result);
     logStep(scopeLabel, 'Pre-requisites', '🔍', 'done', countLines(result) + ' lines');
   });
 
@@ -2321,6 +2321,52 @@ Curriculum: ${state.curriculum}
 Chapter Name: ${state.chapterName}
 ${chapterScopeNote(null)}
 Prerequisite Chapters: (Identify from typical ${state.curriculum} ${state.subject} curriculum)
+
+⚠️ STRICT OUTPUT FORMAT (MANDATORY — NO EXCEPTIONS):
+Output ONLY a valid JSON array. Do NOT include any text, explanation, markdown, or code fences before or after the array.
+
+Each question object MUST have exactly these fields:
+- "preRequest": true  (boolean, always true)
+- "preRequestId": string — use "M1", "M2", ... for main questions; "S1.1", "S1.2" for similar questions of Set 1; "S2.1", "S2.2" for Set 2; and so on.
+- "cognitiveLevel": string (e.g. "Understanding")
+- "difficultyLevel": string (e.g. "Easy")
+- "questionType": "SCQ"
+- "question": string
+- "options": array of exactly 4 strings ["A. ...", "B. ...", "C. ...", "D. ..."]
+- "answers": array with exactly one string (the correct option letter and text, e.g. "A. ...")
+- "solution": string (brief explanation)
+
+ID pattern — for each set of 3 questions (1 main + 2 similar):
+  Set 1: M1, S1.1, S1.2
+  Set 2: M2, S2.1, S2.2
+  Set 3: M3, S3.1, S3.2
+  ... and so on up to Set 10.
+
+Example output structure:
+[
+  {
+    "preRequest": true,
+    "preRequestId": "M1",
+    "cognitiveLevel": "Understanding",
+    "difficultyLevel": "Easy",
+    "questionType": "SCQ",
+    "question": "...",
+    "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+    "answers": ["A. ..."],
+    "solution": "..."
+  },
+  {
+    "preRequest": true,
+    "preRequestId": "S1.1",
+    "cognitiveLevel": "Understanding",
+    "difficultyLevel": "Easy",
+    "questionType": "SCQ",
+    "question": "...",
+    "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+    "answers": ["B. ..."],
+    "solution": "..."
+  }
+]
 
 Generate pre-requisite questions as per the prompt above.`;
 }
