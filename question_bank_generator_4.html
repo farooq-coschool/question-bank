@@ -1233,8 +1233,11 @@ async function callClaude(userText, maxTokens, model) {
     }
   }
   const hasAttachment = (state.textbookPdfs && state.textbookPdfs.length) || state.textbookPdfBase64 || (state.textbookImages && state.textbookImages.length);
+  const hasImages = state.textbookImages && state.textbookImages.length > 0;
   const attachmentInstruction = hasAttachment
-    ? 'IMPORTANT: You must generate ALL content based STRICTLY and EXCLUSIVELY on the attached textbook PDF/images above. Do NOT use any external knowledge, prior training data, or assumptions beyond what is present in the attached document.\n\n'
+    ? (hasImages
+        ? '🚫 STRICT IMAGE-ONLY RULE (NON-NEGOTIABLE): The uploaded images above are your ONLY permitted knowledge source. You MUST generate ALL content — every term, definition, question, answer, explanation, learning outcome, and glossary entry — based EXCLUSIVELY on what is visible in these images. Do NOT use any external knowledge, prior training data, textbook memory, curriculum assumptions, or any information not explicitly present in the provided images. If a concept is not shown in the images, do NOT include it. Treat the images as the complete and only source of truth.\n\n'
+        : 'IMPORTANT: You must generate ALL content based STRICTLY and EXCLUSIVELY on the attached textbook PDF/images above. Do NOT use any external knowledge, prior training data, or assumptions beyond what is present in the attached document.\n\n')
     : '';
   const qualityRules = `STRICT RULE COMPLIANCE — Before generating any content, read the entire prompt below carefully. You MUST follow EVERY rule, guideline, format instruction, and constraint stated in the prompt — without exception, relaxation, or omission. If a rule conflicts with a general tendency, the prompt rule takes priority.
 
