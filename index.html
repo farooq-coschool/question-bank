@@ -4456,10 +4456,13 @@ function startOver() {
       const prevSub = sub ? sub.textContent : '';
       if (sub) sub.textContent = 'Extracting text from image…';
       try {
-        const text = await extractTextFromFile(f);
+        const text = await extractTextFromFile(f, p => { if (sub) sub.textContent = 'OCR ' + p + '%…'; });
         const ta = document.getElementById('chapterStructure');
         if (ta && text) { ta.value = text; ta.dispatchEvent(new Event('input', { bubbles: true })); }
-        if (sub) sub.textContent = '✓ Text extracted — you can edit it below before analysing';
+        // Clear the binary so page2Analyze uses the text-fallback path
+        // (text-only models like Gemma reject image inputs with 405).
+        if (typeof removeImage === 'function') removeImage();
+        if (sub) sub.textContent = '✓ Text extracted into the box below — click Analyse Structure';
       } catch (err) {
         if (sub) sub.textContent = '⚠ ' + err.message;
       } finally {
