@@ -2746,8 +2746,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       ? await callClaude(buildCommerceObjectivePrompt(name, item, masterPrompt, loResult), 40000)
       : await callClaude(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 40000);
     let parsed = parseJSON(result);
-    // English CBSE: rotate correct answer position round-robin (pos 0,1,2,3,0,1,…)
-    if (isEnglishCBSE && Array.isArray(parsed)) {
+    // Rotate correct answer position round-robin across all SCQ questions (pos 0,1,2,3,0,1,…)
+    if (Array.isArray(parsed)) {
       let rotIdx = 0;
       parsed = parsed.map(q => {
         if (q.questionType !== 'SCQ' || !Array.isArray(q.options) || q.options.length !== 4 || !Array.isArray(q.answers) || !q.answers.length) return q;
