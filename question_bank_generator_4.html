@@ -3452,15 +3452,25 @@ function buildObjectivePrompt(conceptName, item, masterPrompt, includeRA, loText
     extraFields = 'Chapter Type: ' + (state.chapterType || 'Prose') + '\n';
   }
 
-  const scqExample = `{
+  const isBioICSE_MTF = state.subject === 'Biology' && state.curriculum === 'ICSE';
+  const mtfScqInObjectiveExample = isBioICSE_MTF ? `
+
+For SCQ Match-the-Following questions — MUST use CUSTOM_TABLE format with EXACTLY 4 rows in Column A (labelled P, Q, R, S) and EXACTLY 4 rows in Column B (labelled 1, 2, 3, 4). Options MUST be pair combinations (NEVER "P only" / "Q only" / single-letter answers). Example:
+{
   "cognitiveLevel": "Understanding",
   "difficultyLevel": "Medium",
   "questionType": "SCQ",
-  "question": "<question stem>",
-  "options": ["Option text 1", "Option text 2", "Option text 3", "Option text 4"],
-  "answers": ["Correct option text exactly as it appears in options"],
-  "solution": "Correct option text exactly as it appears in options"
+  "question": "Match the items in Column A with their correct descriptions in Column B:\\n<!-- CUSTOM_TABLE_START --> <style> .custom-table {background-color: transparent;padding: 8px;border-collapse: collapse;width: auto;} .custom-table th,.custom-table td {font-size: inherit;padding: 2px 8px;border: 1px solid #000;} .custom-table th {font-weight: 600;} </style> <div class=\\"custom-table\\">\\n\\n| Column A | Column B |\\n|---|---|\\n| (P) Item 1 | (1) Description 1 |\\n| (Q) Item 2 | (2) Description 2 |\\n| (R) Item 3 | (3) Description 3 |\\n| (S) Item 4 | (4) Description 4 |\\n\\n</div> <!-- CUSTOM_TABLE_END -->\\nIdentify the correct matching:",
+  "options": ["P-1, Q-2, R-3, S-4", "P-2, Q-1, R-4, S-3", "P-3, Q-4, R-1, S-2", "P-4, Q-3, R-2, S-1"],
+  "answers": ["P-2, Q-1, R-4, S-3"],
+  "solution": "P-2, Q-1, R-4, S-3"
 }
+
+⚠️ MTF SCQ RULES FOR BIOLOGY ICSE (NON-NEGOTIABLE):
+- Use the CUSTOM_TABLE markdown format above — do NOT use LaTeX \\\\begin{array}, HTML <table>, or any other format
+- EXACTLY 4 rows in Column A (P, Q, R, S) and EXACTLY 4 rows in Column B (1, 2, 3, 4)
+- The four "options" MUST be full 4-pair mappings like "P-1, Q-2, R-3, S-4" — NEVER "P only", "Q only", "R only", "S only"
+- The "answers" and "solution" MUST be one of the four full-mapping option strings, copied verbatim` : `
 
 For SCQ Match-the-Following questions — MUST use \\\\(\\\\begin{array}\\\\) LaTeX table in the "question" field:
 {
@@ -3472,6 +3482,16 @@ For SCQ Match-the-Following questions — MUST use \\\\(\\\\begin{array}\\\\) La
   "answers": ["1-Q, 2-R, 3-P"],
   "solution": "1-Q, 2-R, 3-P"
 }`;
+
+  const scqExample = `{
+  "cognitiveLevel": "Understanding",
+  "difficultyLevel": "Medium",
+  "questionType": "SCQ",
+  "question": "<question stem>",
+  "options": ["Option text 1", "Option text 2", "Option text 3", "Option text 4"],
+  "answers": ["Correct option text exactly as it appears in options"],
+  "solution": "Correct option text exactly as it appears in options"
+}` + mtfScqInObjectiveExample;
 
     const isBio67RA = state.subject === 'Biology' && state.curriculum === 'ICSE';
   const raExample = !includeRA ? '' : isBio67RA ? `
@@ -3551,7 +3571,7 @@ LATEX RULES (MANDATORY — apply inside every "question" and every "options" str
 - NEVER use display math \\[...\\] or $$...$$  — only inline \\(...\\)
 - Plain prose text must remain outside LaTeX — do NOT wrap normal words in \\text{}
 - Arrows in sequences/pathways: use \\(\\rightarrow\\) inside LaTeX. Example: \\(\\text{Glucose} \\rightarrow \\text{Pyruvate}\\)
-- For SCQ Match-the-Following questions: MUST use \\(\\begin{array}{|l|l|}...\\end{array}\\) LaTeX table as shown in the SCQ MTF example above. Do NOT use HTML tables, CUSTOM_TABLE, or plain markdown tables for SCQ MTF questions
+- For SCQ Match-the-Following questions: ${isBioICSE_MTF ? 'MUST use the CUSTOM_TABLE markdown format shown in the SCQ MTF example above (4 rows Column A × 4 rows Column B, pair-mapping options like "P-1, Q-2, R-3, S-4"). Do NOT use LaTeX \\\\(\\\\begin{array}\\\\), HTML tables, or "P only" / single-letter options' : 'MUST use \\\\(\\\\begin{array}{|l|l|}...\\\\end{array}\\\\) LaTeX table as shown in the SCQ MTF example above. Do NOT use HTML tables, CUSTOM_TABLE, or plain markdown tables for SCQ MTF questions'}
 - Scientific names → italics using <i>Genus species</i> — NOT LaTeX italics
 - Bold → <b>text</b> — NOT LaTeX \\textbf{}
 - Avoid asterisks (*), hash (#), or em dash (—) anywhere in output`;
