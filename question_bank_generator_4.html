@@ -2801,16 +2801,36 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     // English CBSE: split output into separate VSA/SA/LA files. All others: single Subjective.json
     const isEnglishCBSESubj = state.subject === 'English' && state.curriculum === 'CBSE';
     if (isEnglishCBSESubj) {
+      // English CBSE uses marks-as-questionType: "1"→VSA, "3"→SA, "6"→LA
       const buckets = { VSA: [], SA: [], LA: [] };
+      const bucketOf = (q) => {
+        const qt = (q && q.questionType != null ? String(q.questionType) : '').trim().toUpperCase();
+        const mk = (q && q.marks != null ? String(q.marks) : '').trim();
+        if (qt === 'VSA' || qt === '1' || mk === '1') return 'VSA';
+        if (qt === 'SA'  || qt === '3' || mk === '3') return 'SA';
+        if (qt === 'LA'  || qt === '6' || mk === '6') return 'LA';
+        // fallback: 1 mark → VSA, ≤4 marks → SA, else LA
+        const n = parseInt(mk || qt, 10);
+        if (!isNaN(n)) {
+          if (n <= 1) return 'VSA';
+          if (n <= 4) return 'SA';
+          return 'LA';
+        }
+        return null;
+      };
       for (const q of parsed) {
-        const t = (q && q.questionType ? String(q.questionType).toUpperCase() : '').trim();
-        if (t === 'VSA' || t === 'SA' || t === 'LA') buckets[t].push(q);
+        const b = bucketOf(q);
+        if (b) buckets[b].push(q);
       }
+      let savedAny = false;
       for (const k of ['VSA', 'SA', 'LA']) {
         if (buckets[k].length > 0) {
           saveFile(fp(k + '.json'), JSON.stringify(buckets[k], null, 2));
+          savedAny = true;
         }
       }
+      // Safety net: if bucketing somehow produced nothing, save the full file so data isn't lost
+      if (!savedAny) saveFile(fp('Subjective.json'), JSON.stringify(parsed, null, 2));
     } else {
       saveFile(fp('Subjective.json'), JSON.stringify(parsed, null, 2));
     }
