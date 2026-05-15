@@ -2480,6 +2480,14 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     for (const [stepId, filePath] of stepFiles) {
       if (state.generatedFiles[filePath] !== undefined) cp.completedSteps.add(stepId);
     }
+    // English CBSE: subjective output is split into VSA/SA/LA files; treat as done if any exist
+    if (state.subject === 'English' && state.curriculum === 'CBSE') {
+      if (state.generatedFiles[fp('VSA.json')] !== undefined ||
+          state.generatedFiles[fp('SA.json')]  !== undefined ||
+          state.generatedFiles[fp('LA.json')]  !== undefined) {
+        cp.completedSteps.add('subjective');
+      }
+    }
     if (state.generatedFiles[fp('LO.txt')]) cp.loResult = state.generatedFiles[fp('LO.txt')];
   }
 
@@ -2790,7 +2798,22 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       const preview = (rawResult || '').substring(0, 500);
       throw new Error('Subjective returned 0 questions — raw response preview: ' + preview + ' — click Retry');
     }
-    saveFile(fp('Subjective.json'), JSON.stringify(parsed, null, 2));
+    // English CBSE: split output into separate VSA/SA/LA files. All others: single Subjective.json
+    const isEnglishCBSESubj = state.subject === 'English' && state.curriculum === 'CBSE';
+    if (isEnglishCBSESubj) {
+      const buckets = { VSA: [], SA: [], LA: [] };
+      for (const q of parsed) {
+        const t = (q && q.questionType ? String(q.questionType).toUpperCase() : '').trim();
+        if (t === 'VSA' || t === 'SA' || t === 'LA') buckets[t].push(q);
+      }
+      for (const k of ['VSA', 'SA', 'LA']) {
+        if (buckets[k].length > 0) {
+          saveFile(fp(k + '.json'), JSON.stringify(buckets[k], null, 2));
+        }
+      }
+    } else {
+      saveFile(fp('Subjective.json'), JSON.stringify(parsed, null, 2));
+    }
     const qCount = parsed.length;
     logStep(scopeLabel, 'Subjective Questions', '✍️', 'done', qCount + ' questions');
     return qCount;
