@@ -2467,6 +2467,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
 
   // On a fresh run (not a retry), skip steps whose output file already exists
   if (!existingCp) {
+    const isEnglishCBSEResume = state.subject === 'English' && state.curriculum === 'CBSE';
     const stepFiles = [
       ['prereq',     ch + '/' + ch + '/' + ch + '_Prerequisites.json'],
       ['terms',      fp('Terms.txt')],
@@ -2474,19 +2475,25 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       ['plt',        fp('PLT.txt')],
       ['glossary',   ch + '/' + ch + '/' + ch + '_Glossary.txt'],
       ['objective',  fp('Objective.json')],
-      ['subjective', fp('Subjective.json')],
       ['reason_assertion', fp('ReasonAssertion.json')],
-    ]; // RTC steps use dynamic IDs (rtc_1, rtc_2...) handled via computeExpectedFiles
+    ];
+    // For English CBSE, subjective is considered done only when ANY of the split files exists.
+    // For all other subjects, presence of legacy Subjective.json marks subjective complete.
+    if (!isEnglishCBSEResume) {
+      stepFiles.push(['subjective', fp('Subjective.json')]);
+    }
     for (const [stepId, filePath] of stepFiles) {
       if (state.generatedFiles[filePath] !== undefined) cp.completedSteps.add(stepId);
     }
-    // English CBSE: subjective output is split into VSA/SA/LA files; treat as done if any exist
-    if (state.subject === 'English' && state.curriculum === 'CBSE') {
+    if (isEnglishCBSEResume) {
       if (state.generatedFiles[fp('VSA.json')] !== undefined ||
           state.generatedFiles[fp('SA.json')]  !== undefined ||
           state.generatedFiles[fp('LA.json')]  !== undefined) {
         cp.completedSteps.add('subjective');
       }
+      // Drop stale combined Subjective.json so the split files become the source of truth on next run
+      const legacy = fp('Subjective.json');
+      if (state.generatedFiles[legacy] !== undefined) delete state.generatedFiles[legacy];
     }
     if (state.generatedFiles[fp('LO.txt')]) cp.loResult = state.generatedFiles[fp('LO.txt')];
   }
@@ -3144,8 +3151,24 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
 
     // Subjective
     const doSubjFinal = isGeoSubtopicCaseB ? doSubjective : (doSubjective && !isGeoNano);
-    if (doSubjFinal)
-      expected.push({ path: fp('Subjective.json'), label: scopeLabel + ' → Subjective Questions', item });
+    if (doSubjFinal) {
+      const isEngCBSE_ce = state.subject === 'English' && state.curriculum === 'CBSE';
+      if (isEngCBSE_ce) {
+        // English CBSE splits subjective into VSA/SA/LA — expect at least one to exist
+        const vsaPath = fp('VSA.json');
+        const saPath  = fp('SA.json');
+        const laPath  = fp('LA.json');
+        const anyExists = state.generatedFiles[vsaPath] !== undefined ||
+                          state.generatedFiles[saPath]  !== undefined ||
+                          state.generatedFiles[laPath]  !== undefined;
+        if (!anyExists) {
+          // Use VSA as the representative expected path so the missing-check has a single anchor to retry against
+          expected.push({ path: vsaPath, label: scopeLabel + ' → Subjective Questions (VSA/SA/LA)', item });
+        }
+      } else {
+        expected.push({ path: fp('Subjective.json'), label: scopeLabel + ' → Subjective Questions', item });
+      }
+    }
 
     // RAD
     if (isMathCBSE && (!isMetaSkip(state.radMetadata) || isRADOnly))
