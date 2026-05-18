@@ -1,57 +1,34 @@
-# Question Bank Generator (browser-only)
+# Question Bank Generator
 
-Single HTML file. No backend. Hosted free on GitHub Pages.
+Web app for generating ICSE/CBSE question banks (Objective, Subjective, RTC, RAD, MTF, Glossary, LO, PLT) for Biology, Physics, Chemistry, Mathematics, English, Civics, Geography, History, and Commerce.
 
-- **PDF text** → PDF.js (CDN)
-- **Image OCR** → Tesseract.js (CDN)
-- **Generation** → OpenRouter, called directly from the browser
+- **Frontend:** single-file `question_bank_generator_4.html`
+- **Backend:** `server.py` — proxy that injects Anthropic API keys server-side based on subject
+- **Hosting:** Render (auto-deploys on push to `main`)
 
-## Setup (one-time)
-
-1. Open `index.html` in a text editor.
-2. Find `const API_KEYS = { ... }` near the top of the JS block.
-3. Replace the three placeholder keys with your OpenRouter keys for Biology, Chemistry, Physics.
-
-```js
-const API_KEYS = {
-  Biology:   'sk-or-v1-...',
-  Chemistry: 'sk-or-v1-...',
-  Physics:   'sk-or-v1-...',
-};
-```
-
-4. Commit and push:
+## Local development
 
 ```bash
-git add index.html
-git commit -m "Browser-only build with OpenRouter keys"
-git push origin main
+python server.py
+# open http://localhost:8000/question_bank_generator_4.html
 ```
 
-## Publish on GitHub Pages
+## Environment variables
 
-1. https://github.com/farooq-coschool/question-bank → **Settings** → **Pages**.
-2. **Build and deployment** → **Source**: **Deploy from a branch**.
-3. **Branch**: `main`, folder: `/ (root)` → **Save**.
-4. Wait ~30 s. Your site is live at:
-   ```
-   https://farooq-coschool.github.io/question-bank/
-   ```
-5. Share that URL with users.
+Set one Anthropic key per subject in your hosting platform's environment:
 
-Every `git push` to `main` redeploys automatically.
-
-## Caveats
-
-- **Keys are visible in the page source.** Anyone using the site can read them and spend your OpenRouter credit. Mitigations:
-  - Use throwaway keys with low monthly limits per subject on OpenRouter.
-  - Rotate the keys whenever you see abuse.
-- **OCR runs in the browser** (Tesseract.js) — large/scanned PDFs may take a minute. First image-OCR call downloads ~2 MB of model data (cached after).
-- **Free OpenRouter models** still have low rate limits (~10–20 req/min, low daily caps). Bulk generation may hit 429s.
-
-## Updating
-
-```bash
-git add . && git commit -m "..." && git push origin main
 ```
-GitHub Pages rebuilds in ~30 s.
+BIOLOGY_KEY=sk-ant-...
+PHYSICS_KEY=sk-ant-...
+CHEMISTRY_KEY=sk-ant-...
+MATHEMATICS_KEY=sk-ant-...
+ENGLISH_KEY=sk-ant-...
+COMMERCE_KEY=sk-ant-...
+SOCIAL_KEY=sk-ant-...     # used as fallback for Civics / Geography / History
+```
+
+Keys never reach the browser — the proxy reads `x-subject` from each request and attaches the matching `x-api-key` server-side.
+
+## Deploy
+
+`git push origin main` → Render auto-deploys at https://question-bank-9bwr.onrender.com.
