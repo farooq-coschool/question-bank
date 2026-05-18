@@ -28,6 +28,15 @@ if _tess_cmd:
 app = Flask(__name__, static_folder=HERE, static_url_path='')
 
 
+@app.after_request
+def _no_cache_html(resp):
+    if resp.mimetype == 'text/html':
+        resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        resp.headers['Pragma'] = 'no-cache'
+        resp.headers['Expires'] = '0'
+    return resp
+
+
 @app.route('/')
 def root():
     return send_from_directory(HERE, INDEX_HTML)
