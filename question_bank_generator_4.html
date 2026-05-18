@@ -2808,7 +2808,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     // English CBSE: split output into separate VSA/SA/LA files. All others: single Subjective.json
     const isEnglishCBSESubj = state.subject === 'English' && state.curriculum === 'CBSE';
     if (isEnglishCBSESubj) {
-      // English CBSE uses marks-as-questionType: "1"→VSA, "3"→SA, "6"→LA
+      // English CBSE: ALWAYS split into VSA / SA / LA — never a combined Subjective.json
+      // questionType / marks values seen: VSA/SA/LA labels, "1"/"3"/"6" strings, or numbers
       const buckets = { VSA: [], SA: [], LA: [] };
       const bucketOf = (q) => {
         const qt = (q && q.questionType != null ? String(q.questionType) : '').trim().toUpperCase();
@@ -2816,28 +2817,27 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
         if (qt === 'VSA' || qt === '1' || mk === '1') return 'VSA';
         if (qt === 'SA'  || qt === '3' || mk === '3') return 'SA';
         if (qt === 'LA'  || qt === '6' || mk === '6') return 'LA';
-        // fallback: 1 mark → VSA, ≤4 marks → SA, else LA
+        // numeric fallback
         const n = parseInt(mk || qt, 10);
         if (!isNaN(n)) {
           if (n <= 1) return 'VSA';
           if (n <= 4) return 'SA';
           return 'LA';
         }
-        return null;
+        // word-length fallback: short → VSA, medium → SA, long → LA
+        const len = ((q && q.solution ? String(q.solution) : '') + ' ' + (q && q.question ? String(q.question) : '')).split(/\s+/).filter(Boolean).length;
+        if (len < 60) return 'VSA';
+        if (len < 200) return 'SA';
+        return 'LA';
       };
-      for (const q of parsed) {
-        const b = bucketOf(q);
-        if (b) buckets[b].push(q);
-      }
-      let savedAny = false;
+      for (const q of parsed) buckets[bucketOf(q)].push(q);
+      // Always write all three files (empty array if no items) so user sees consistent file naming
       for (const k of ['VSA', 'SA', 'LA']) {
-        if (buckets[k].length > 0) {
-          saveFile(fp(k + '.json'), JSON.stringify(buckets[k], null, 2));
-          savedAny = true;
-        }
+        saveFile(fp(k + '.json'), JSON.stringify(buckets[k], null, 2));
       }
-      // Safety net: if bucketing somehow produced nothing, save the full file so data isn't lost
-      if (!savedAny) saveFile(fp('Subjective.json'), JSON.stringify(parsed, null, 2));
+      // Drop any stale combined Subjective.json from earlier runs
+      const legacyPath = fp('Subjective.json');
+      if (state.generatedFiles[legacyPath] !== undefined) delete state.generatedFiles[legacyPath];
     } else {
       saveFile(fp('Subjective.json'), JSON.stringify(parsed, null, 2));
     }
