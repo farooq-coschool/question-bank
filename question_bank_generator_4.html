@@ -2817,17 +2817,14 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
         if (qt === 'VSA' || qt === '1' || mk === '1') return 'VSA';
         if (qt === 'SA'  || qt === '3' || mk === '3') return 'SA';
         if (qt === 'LA'  || qt === '6' || mk === '6') return 'LA';
-        // numeric fallback
+        // numeric fallback on whichever field is numeric
         const n = parseInt(mk || qt, 10);
         if (!isNaN(n)) {
-          if (n <= 1) return 'VSA';
-          if (n <= 4) return 'SA';
+          if (n === 1) return 'VSA';
+          if (n === 3) return 'SA';
           return 'LA';
         }
-        // word-length fallback: short → VSA, medium → SA, long → LA
-        const len = ((q && q.solution ? String(q.solution) : '') + ' ' + (q && q.question ? String(q.question) : '')).split(/\s+/).filter(Boolean).length;
-        if (len < 60) return 'VSA';
-        if (len < 200) return 'SA';
+        // Unknown shape — put in LA so the file naming convention still holds
         return 'LA';
       };
       for (const q of parsed) buckets[bucketOf(q)].push(q);
