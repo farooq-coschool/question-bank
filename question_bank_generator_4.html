@@ -987,6 +987,9 @@
               <label id="mtfSubOnlyOption" style="display:none;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
                 <input type="radio" name="qType" value="mtfSub" onchange="state.questionsType='mtfSub';updateMTFPanelVisibility()" style="accent-color:var(--accent)"> MTF Subjective Only
               </label>
+              <label id="mtfMultiOnlyOption" style="display:none;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                <input type="radio" name="qType" value="mtfMulti" onchange="state.questionsType='mtfMulti';updateMTFPanelVisibility()" style="accent-color:var(--accent)"> Multistatement SCQ Only
+              </label>
             </div>
 
             <!-- MTF panel — shown only when MTF SCQ Only or MTF Subjective Only is selected -->
@@ -2602,6 +2605,9 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       ['glossary',   ch + '/' + ch + '/' + ch + '_Glossary.txt'],
       ['objective',  fp('Objective.json')],
       ['reason_assertion', fp('ReasonAssertion.json')],
+      ['mtf_scq',    fp('MTF_SCQ.json')],
+      ['mtf_multi',  fp('MTF_MultiStatement.json')],
+      ['mtf_sub',    fp('MTF_Subjective.json')],
     ];
     // For English CBSE, subjective is considered done only when ANY of the split files exists.
     // For all other subjects, presence of legacy Subjective.json marks subjective complete.
@@ -2667,7 +2673,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const isRADOnly    = questionsOnly && state.questionsType === 'rad';
   const isMTFScqOnly = questionsOnly && state.questionsType === 'mtfScq';
   const isMTFSubOnly = questionsOnly && state.questionsType === 'mtfSub';
-  const isMTFMode    = isMTFScqOnly || isMTFSubOnly;
+  const isMTFMultiOnly = questionsOnly && state.questionsType === 'mtfMulti';
+  const isMTFMode    = isMTFScqOnly || isMTFSubOnly || isMTFMultiOnly;
   const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
   const objMetaEmpty  = isMetaSkip(state.objMetadata);
   const subjMetaEmpty = isMetaSkip(state.subjMetadata);
@@ -3011,6 +3018,17 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   });
   if (mtfSubQ !== undefined) { addedQ += mtfSubQ; cp.totalQ += mtfSubQ; }
 
+  const mtfMultiQ = await runStep('mtf_multi', 'MTF Multistatement SCQ', '🔀',
+    isBioICSE && isMTFMultiOnly, async () => {
+    const rawResult = await callClaude(buildMTFMultiStatementPrompt(name, item, mtfLO), 40000, undefined, '[');
+    const parsed = parseJSON('[' + (rawResult || ''));
+    saveFile(fp('MTF_MultiStatement.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
+    const qCount = Array.isArray(parsed) ? parsed.length : 0;
+    logStep(scopeLabel, 'MTF Multistatement SCQ', '🔀', 'done', qCount + ' questions');
+    return qCount;
+  });
+  if (mtfMultiQ !== undefined) { addedQ += mtfMultiQ; cp.totalQ += mtfMultiQ; }
+
   return addedQ;
 }
 
@@ -3273,6 +3291,15 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
     const doObjFinal = doObjective && !isGeoSubtopicCaseB;
     if (doObjFinal)
       expected.push({ path: fp('Objective.json'), label: scopeLabel + ' → Objective Questions', item });
+
+    if (state.subject === 'Biology' && state.curriculum === 'ICSE' && state.genMode === 'questions') {
+      if (state.questionsType === 'mtfScq')
+        expected.push({ path: fp('MTF_SCQ.json'), label: scopeLabel + ' → MTF SCQ', item });
+      if (state.questionsType === 'mtfSub')
+        expected.push({ path: fp('MTF_Subjective.json'), label: scopeLabel + ' → MTF Subjective', item });
+      if (state.questionsType === 'mtfMulti')
+        expected.push({ path: fp('MTF_MultiStatement.json'), label: scopeLabel + ' → Multistatement SCQ', item });
+    }
 
     // Subjective
     const doSubjFinal = isGeoSubtopicCaseB ? doSubjective : (doSubjective && !isGeoNano);
@@ -4313,6 +4340,68 @@ ${mtfSubExample}
 Allowed field names ONLY: cognitiveLevel, difficultyLevel, questionType, question_type_tag, question, solution, marks`;
 }
 
+function buildMTFMultiStatementPrompt(conceptName, item, loText) {
+  const nanoList = item && item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
+  const mtfSpecs = parseMTFMetadata();
+  const mtfCount = mtfSpecs.length;
+
+  const mtfMultiExample = `{
+  "cognitiveLevel": "Understanding",
+  "difficultyLevel": "Medium",
+  "questionType": "SCQ",
+  "question": "Four students P, Q, R and S were discussing how bacteria obtain their food. Their statements were:\\n\\nP: All bacteria make their own food like plants\\nQ: Many bacteria absorb externally digested food and are called heterotrophs\\nR: Bacteria living on other living organisms are called parasites\\nS: All bacteria are saprophytic in nature\\n\\nIdentify who gave correct statements:",
+  "options": [
+    "P and S",
+    "Q and R",
+    "P and R",
+    "Q and S"
+  ],
+  "answers": [
+    "Q and R"
+  ],
+  "solution": "Q and R"
+}`;
+
+  const specsText = mtfSpecs.map((s, i) => `MTF ${i+1}: cognitiveLevel="${s.cognitiveLevel}" difficultyLevel="${s.difficultyLevel}"`).join('\n');
+
+  return `You are an expert Biology ICSE question setter. Generate EXACTLY ${mtfCount} multistatement SCQ questions for the following concept.
+
+METADATA INPUT:
+Subject: ${state.subject}
+Curriculum: ${state.curriculum}
+Grade: ${state.grade}
+Chapter Name: ${state.chapterName}
+Topic/Concept Name: ${conceptName}
+Textbook: ${state.textbook}
+${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}${loText ? 'Learning Outcomes:\n' + loText + '\n' : ''}${chapterScopeNote(item)}
+
+QUESTION SPECIFICATIONS (one question per line):
+${specsText}
+
+RULES FOR MULTISTATEMENT SCQ (BIOLOGY ICSE â€” MANDATORY):
+- Each question must present 4 statements labelled P, Q, R and S.
+- Exactly one option string must be correct and it must be one of the 4 pair options.
+- The question must ask the learner to identify the correct statements or correct combination from the statements given.
+- Use options as plain strings only, with exactly 4 options.
+- "answers" must contain exactly one string copied exactly from the options array.
+- "solution" must be exactly the same string as the correct option.
+- "questionType" is always "SCQ".
+- "marks" field: always "1".
+- Base the statements strictly on the attached textbook content and the user-provided Learning Outcomes.
+- Keep the question within the chapter/concept scope and use biologically accurate statements only.
+- Do not use question_type_tag.
+- Do not use tables. Use plain text statements only.
+
+⚠️ FINAL OUTPUT FORMAT: Return ONLY a valid JSON array of EXACTLY ${mtfCount} objects. No markdown fences, no explanation, no text before or after the array.
+
+⚠️ COUNT IS NON-NEGOTIABLE: You MUST generate EXACTLY ${mtfCount} question objects — one for each specification line above. Count your array before returning. If the array does not have exactly ${mtfCount} elements, fix it before responding.
+
+Each element MUST follow this schema exactly:
+${mtfMultiExample}
+
+Allowed field names ONLY: cognitiveLevel, difficultyLevel, questionType, question, options, answers, solution, marks`;
+}
+
 // Returns true when metadata text should be treated as "skip" — blank, whitespace-only,
 // or contains only zero values (e.g. "0", "SCQ: 0", "VSA: 0\nSA: 0\nLA: 0").
 function isMetaSkip(text) {
@@ -4510,15 +4599,17 @@ function updateRADOptionVisibility() {
   if (opt) opt.style.display = isMathCBSE ? 'flex' : 'none';
   const mtfScqOpt = document.getElementById('mtfScqOnlyOption');
   const mtfSubOpt = document.getElementById('mtfSubOnlyOption');
+  const mtfMultiOpt = document.getElementById('mtfMultiOnlyOption');
   if (mtfScqOpt) mtfScqOpt.style.display = isBioICSE ? 'flex' : 'none';
   if (mtfSubOpt) mtfSubOpt.style.display = isBioICSE ? 'flex' : 'none';
+  if (mtfMultiOpt) mtfMultiOpt.style.display = isBioICSE ? 'flex' : 'none';
   // Reset questionsType if the selected option is no longer valid
   if (!isMathCBSE && state.questionsType === 'rad') {
     state.questionsType = 'both';
     const bothRadio = document.querySelector('input[name="qType"][value="both"]');
     if (bothRadio) bothRadio.checked = true;
   }
-  if (!isBioICSE && (state.questionsType === 'mtfScq' || state.questionsType === 'mtfSub')) {
+  if (!isBioICSE && (state.questionsType === 'mtfScq' || state.questionsType === 'mtfSub' || state.questionsType === 'mtfMulti')) {
     state.questionsType = 'both';
     const bothRadio = document.querySelector('input[name="qType"][value="both"]');
     if (bothRadio) bothRadio.checked = true;
@@ -4529,7 +4620,7 @@ function updateRADOptionVisibility() {
 function updateMTFPanelVisibility() {
   const panel = document.getElementById('mtfPanel');
   if (!panel) return;
-  const isMTF = state.questionsType === 'mtfScq' || state.questionsType === 'mtfSub';
+  const isMTF = state.questionsType === 'mtfScq' || state.questionsType === 'mtfSub' || state.questionsType === 'mtfMulti';
   panel.style.display = isMTF ? '' : 'none';
 }
 
