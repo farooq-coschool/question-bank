@@ -797,6 +797,7 @@
               <div class="pill-group">
                 <div class="pill" onclick="selectChapterType('Prose',this)">Prose</div>
                 <div class="pill" onclick="selectChapterType('Poetry',this)">Poetry</div>
+                <div class="pill" onclick="selectChapterType('Grammar',this)">Grammar</div>
                 <div class="pill" onclick="selectChapterType('RTC',this)">RTC</div>
               </div>
             </div>
@@ -1257,6 +1258,129 @@ MANDATORY RULES:
 `,
 
 };
+
+PROMPTS.ENGLISH_CBSE_GRAMMAR = `## SUBJECTIVE_CREATION_PROMPT
+ENGLISH_Grammar_CBSE: "Act as an experienced English teacher who has expertise in creating descriptive grammar questions.
+
+You are tasked with generating academic descriptive grammar questions suitable for CBSE curriculum students following NCERT textbook standards. Your goal is to create well-structured grammar questions that test students' understanding of the specified topic at the given difficulty level and cognitive level.
+
+METADATA INPUT SPECIFICATIONS:
+
+[Subject]: English
+[Curriculum]: CBSE
+[Textbook]: NCERT
+[Grade]: {{grade}}
+[Chapter Name]: {{chaptername}}
+[Subtopic Name]: {{subtopicname}}
+[Subconcepts]: {{subconcepts}}
+[Learning Outcomes]: {{learningoutcomes}}}
+[Script]: [Attached]
+[Number of Understanding Easy Questions]: VSA-FIB: 1; VSA: 1
+[Number of Understanding Medium Questions]: VSA-FIB: 1; VSA: 1
+[Number of Understanding Hard Questions]: VSA-FIB: 1; VSA: 1
+[Number of Application Medium Questions]: VSA-FIB: 1; VSA: 1
+[Number of Application Hard Questions]: VSA-FIB: 1; VSA: 1
+
+QUESTION TYPES and FRAMING RULES:
+1. VSA-FIB (Very Short Answer with fill-in-the-blank format)- 1 mark each
+
+Question format types:
+A. The "Error and Correction" Pair:
+Ex: Identify the error in the following sentence and write the correction: "A bird in the hand are worth two in the bush."
+Error
+Correction
+
+B. Sentence Transformation: "Do as Directed" :
+Ex: Add a question tag: "Nobody trusts a liar, ______?"
+
+C. Contextual Gap Filling:
+Ex: Fill in the blank with the correct form of the verb in the brackets:
+The auto driver did not sustain injuries, though the passenger who was ______ (sit) in the auto was injured.
+Fill in the blank with the correct article:
+______ Ganga is ______ sacred river.
+
+D. Dialogue Reporting:
+Ex: Read the dialogue:
+Salesman: I have a wide range of sportswear.
+Customer: Please show me something in cotton.
+Report the Salesman's statement: The salesman stated that ______.
+
+2. Very Short Answer- 1 mark each
+A. Error Identification and Correction:
+Ex: Question: Identify the error in the following sentence and write the correction:
+A bird in the hand are worth two in the bush.
+Answer: Error: are; Correction: is
+
+B. Sentence Transformation: "Do as Directed"
+Ex: Question: Change the following sentence into the Passive Voice:
+Someone stole my watch last year.
+Answer: My watch was stolen last year.
+
+C. Word Reordering:
+EX: Rearrange these words to form a meaningful sentence:
+"always / my / grandparents / visit / in the evening / I"
+Answer: I always visit my grandparents in the evening.
+
+Content Rules:
+- Questions must be directly related to [Chapter Name] content with contextual connection
+- Use events/scenarios from the text for inferential questions - never go beyond the text
+- Avoid culturally biased or Eurocentric content; ensure relatability to students
+- Make questions within chapter context
+- Ensure clear instruction statements for grammar questions.
+- Use [Grade] appropriate vocabulary and avoid complex phrasing.
+
+Language and Grammar Rules:
+- Use British English throughout (spelling, punctuation, grammar)
+- Use double inverted commas only for direct speech
+- Never use comma after 'and'
+- Use 'a/an' before blanks instead of 'a' or 'an' to avoid grammatical hints
+- Ensure grammatical consistency between question stem and all options
+- Maintain consistent tense throughout question and options
+- Avoid contractions (shouldn't, didn't, aren't)
+
+INTRA-GRADE DIFFICULTY LAYERING:
+
+For any given [Grade], difficulty levels must show CLEAR PROGRESSION:
+
+EASY (for the grade):
+- Uses familiar context and vocabulary for that grade
+- Sentence structure at the simpler end of grade expectation
+- Error/blank placement is more apparent
+- Tests core understanding of the grammar rule
+
+MEDIUM (for the grade):
+- Uses slightly unfamiliar or varied context
+- Sentence structure at the middle-to-upper end of grade expectation
+- One additional complexity layer (extra clause, less common vocabulary, inversion)
+- Requires careful reading and application
+
+HARD (for the grade):
+- Uses challenging or sophisticated context for that grade
+- Sentence structure at the upper limit or slightly above grade expectation
+- Multiple complexity layers (embedded clauses, exceptions, formal register)
+- Requires grammatical reasoning, not just pattern recognition
+- May include edge cases or less common applications of the rule
+
+Generate the output in following JSON format:
+
+[
+  {
+    "cognitiveLevel": "Understanding",
+    "difficultyLevel": "Easy",
+    "questionType": "VSA",
+    "question": "Change the following sentence into the Passive Voice:\\nSomeone stole my watch last year.",
+    "solution": "My watch was stolen last year.",
+    "marks": "1"
+  },
+  {
+    "cognitiveLevel": "Application",
+    "difficultyLevel": "Medium",
+    "questionType": "VSA",
+    "question": "Fill in the blank with the correct form of the verb in the brackets:\\nThe auto driver did not sustain injuries, though the passenger who was ______ (sit) in the auto was injured.",
+    "solution": "sitting",
+    "marks": "1"
+  }
+] "`;
 
 // ============================================================
 // STATE
@@ -1949,7 +2073,7 @@ function setupPage3() {
   // Restore RTC pill selection + count input visibility
   if (isEnglish && state.chapterType) {
     document.querySelectorAll('#englishFields .pill').forEach(p => {
-      if (['Prose','Poetry','RTC'].includes(p.textContent)) {
+      if (['Prose','Poetry','Grammar','RTC'].includes(p.textContent)) {
         p.classList.toggle('selected', p.textContent === state.chapterType);
       }
     });
@@ -2146,8 +2270,9 @@ function selectChapterType(t, el) {
   state.rtcSubType = null;
   state.objMetadata = '';
   state.subjMetadata = '';
+  state.promptCounts = {};
   document.querySelectorAll('#englishFields .pill').forEach(p => {
-    if(['Prose','Poetry','RTC'].includes(p.textContent)) p.classList.remove('selected');
+    if(['Prose','Poetry','Grammar','RTC'].includes(p.textContent)) p.classList.remove('selected');
   });
   el.classList.add('selected');
   const rtcOptionsRow = document.getElementById('rtcOptionsRow');
@@ -2210,7 +2335,7 @@ function page3Next() {
     return;
   }
   if (state.subject === 'English' && !state.chapterType) {
-    errEl.textContent = 'Please select Prose, Poetry, or RTC for English.';
+    errEl.textContent = 'Please select Prose, Poetry, Grammar, or RTC for English.';
     errEl.style.display = 'block';
     return;
   }
@@ -2268,6 +2393,7 @@ function getSubtopicName() {
 
 function getPromptKey() {
   if (state.subject === 'Commerce' && state.curriculum === 'ICSE') return 'COMMERCE_ICSE';
+  if (state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar') return 'ENGLISH_CBSE_GRAMMAR';
   if (state.subject === 'English' && state.curriculum === 'CBSE') return 'ENGLISH_CBSE';
   if (state.subject === 'English' && state.chapterType === 'RTC') return 'ENGLISH_ICSE_RTC';
   if (state.subject === 'English') return 'ENGLISH_ICSE';
@@ -2542,9 +2668,10 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const isMTFScqOnly = questionsOnly && state.questionsType === 'mtfScq';
   const isMTFSubOnly = questionsOnly && state.questionsType === 'mtfSub';
   const isMTFMode    = isMTFScqOnly || isMTFSubOnly;
+  const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
   const objMetaEmpty  = isMetaSkip(state.objMetadata);
   const subjMetaEmpty = isMetaSkip(state.subjMetadata);
-  const doObjective  = (!singleStepMode || (questionsOnly && state.questionsType !== 'subjective' && !isRADOnly && !isMTFMode)) && !objMetaEmpty;
+  const doObjective  = !isEnglishCBSEGrammar && (!singleStepMode || (questionsOnly && state.questionsType !== 'subjective' && !isRADOnly && !isMTFMode)) && !objMetaEmpty;
   const doSubjective = (!singleStepMode || (questionsOnly && state.questionsType !== 'objective' && !isRADOnly && !isMTFMode)) && !subjMetaEmpty;
 
   // Geo / History / Civics ICSE special logic
@@ -3093,7 +3220,8 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
   const glossaryOnly  = state.genMode === 'glossary';
   const singleStepMode = questionsOnly || pltOnly || prereqOnly || glossaryOnly;
   const isRADOnly     = state.questionsType === 'rad';
-  const doObjective   = (state.questionsType === 'both' || state.questionsType === 'objective' || isRADOnly) && !isMetaSkip(state.objMetadata);
+  const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
+  const doObjective   = !isEnglishCBSEGrammar && (state.questionsType === 'both' || state.questionsType === 'objective' || isRADOnly) && !isMetaSkip(state.objMetadata);
   const doSubjective  = (state.questionsType === 'both' || state.questionsType === 'subjective') && !isMetaSkip(state.subjMetadata);
   const isMathCBSE    = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
   const isRTCMode     = state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType === 'RTC';
@@ -3673,9 +3801,46 @@ Each element must have: cognitiveLevel, difficultyLevel, questionType, question,
 
 function buildSubjectivePrompt(conceptName, item, masterPrompt, loText) {
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
+  const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
   const rawSection = extractSection(masterPrompt, 'SUBJECTIVE_CREATION_PROMPT') || masterPrompt;
   let section = applyPromptCountEdits(fillPlaceholders(rawSection, conceptName, item, loText));
   let countsText = (state.subjMetadata || '').trim();
+
+  if (isEnglishCBSEGrammar) {
+    if (countsText) {
+      section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
+      countsText = countsText.split('\n').map(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return '';
+        if (/^\[Number of /i.test(trimmed)) return trimmed;
+        const m = trimmed.match(/^(.+?):\s*(.+)$/);
+        return m ? `[Number of ${m[1].trim()}]: ${m[2].trim()}` : trimmed;
+      }).filter(Boolean).join('\n');
+    }
+    const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
+    const grammarMeta = `
+
+---
+METADATA INPUT:
+Subject: English
+Curriculum: CBSE
+Textbook: ${state.textbook || 'NCERT'}
+Grade: ${state.grade}
+Chapter Name: ${state.chapterName}
+Subtopic Name: ${conceptName}
+${nanoList ? 'Subconcepts: ' + nanoList + '\n' : ''}Learning Outcomes: ${loText || '(Auto-generated in previous step)'}
+${countsText ? countsText + '\n' : ''}${chapterScopeNote(item)}
+
+STRICT COUNT COMPLIANCE: The [Number of ...] lines in this metadata are the only source of truth. Generate exactly those VSA-FIB and VSA questions.
+
+Return ONLY a valid JSON array. No markdown code fences, no explanation, no text outside the array.
+Allowed field names ONLY: cognitiveLevel, difficultyLevel, questionType, question, solution, marks
+Allowed questionType values ONLY: "VSA-FIB" or "VSA"
+All questions are 1 mark. The "marks" field must always be "1".
+Begin the response with [ and end with ]. Nothing else.`;
+
+    return `${section}${grammarMeta}`;
+  }
 
   // Helper: extract VSA/SA/LA totals from any text. Uses \b so "SA" does not match inside "VSA".
   const extractVSASALA = (src) => {
@@ -3887,6 +4052,8 @@ function fillPlaceholders(text, conceptName, item, loText) {
     .replace(/\{\{Topic_Name\}\}/gi, conceptName || '')
     .replace(/\{\{Topic\}\}/gi, conceptName || '')
     .replace(/\{\{Textbook\}\}/gi, state.textbook)
+    .replace(/\{\{LearningOutcomes\}\}\}/gi, lo)
+    .replace(/\{\{learningoutcomes\}\}\}/gi, lo)
     .replace(/\{\{LearningOutcomes\}\}/gi, lo)
     .replace(/\{\{Learning_Outcomes\}\}/gi, lo)
     .replace(/\{\{Script_or_PDF\}\}/gi, scriptNote)
