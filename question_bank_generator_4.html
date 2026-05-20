@@ -1371,16 +1371,18 @@ Generate the output in following JSON format:
     "cognitiveLevel": "Understanding",
     "difficultyLevel": "Easy",
     "questionType": "VSA",
-    "question": "Change the following sentence into the Passive Voice:\\nSomeone stole my watch last year.",
-    "solution": "My watch was stolen last year.",
+    "question_type_tag": "FIB",
+    "question": "Fill in the blank with the correct article:\\nBangkok is ______ capital of Thailand.",
+    "solution": "the",
     "marks": "1"
   },
   {
-    "cognitiveLevel": "Application",
-    "difficultyLevel": "Medium",
+    "cognitiveLevel": "Understanding",
+    "difficultyLevel": "Easy",
     "questionType": "VSA",
-    "question": "Fill in the blank with the correct form of the verb in the brackets:\\nThe auto driver did not sustain injuries, though the passenger who was ______ (sit) in the auto was injured.",
-    "solution": "sitting",
+    "question_type_tag": "",
+    "question": "Change the following sentence into the Passive Voice:\\nSomeone stole my watch last year.",
+    "solution": "My watch was stolen last year.",
     "marks": "1"
   }
 ] "`;
@@ -3858,12 +3860,42 @@ Subtopic Name: ${conceptName}
 ${nanoList ? 'Subconcepts: ' + nanoList + '\n' : ''}Learning Outcomes: ${loText || '(Auto-generated in previous step)'}
 ${countsText ? countsText + '\n' : ''}${chapterScopeNote(item)}
 
-STRICT COUNT COMPLIANCE: The [Number of ...] lines in this metadata are the only source of truth. Generate exactly those VSA-FIB and VSA questions.
+STRICT COUNT COMPLIANCE: The [Number of ...] lines in this metadata are the only source of truth. Generate exactly those grammar questions.
+
+OUTPUT SCHEMA RULES:
+- Every object must use the exact fields: cognitiveLevel, difficultyLevel, questionType, question_type_tag, question, solution, marks
+- questionType must always be "VSA"
+- If the item is a fill-in-the-blank grammar question, set question_type_tag to "FIB"
+- If the item is a normal transformation / correction / rewriting question, set question_type_tag to an empty string ""
+- marks must always be the string "1"
+
+Example 1:
+[
+  {
+    "cognitiveLevel": "Understanding",
+    "difficultyLevel": "Easy",
+    "questionType": "VSA",
+    "question_type_tag": "FIB",
+    "question": "Fill in the blank with the correct article:\\nBangkok is ______ capital of Thailand.",
+    "solution": "the",
+    "marks": "1"
+  }
+]
+
+Example 2:
+[
+  {
+    "cognitiveLevel": "Understanding",
+    "difficultyLevel": "Easy",
+    "questionType": "VSA",
+    "question_type_tag": "",
+    "question": "Change the following sentence into the Passive Voice:\\nSomeone stole my watch last year.",
+    "solution": "My watch was stolen last year.",
+    "marks": "1"
+  }
+]
 
 Return ONLY a valid JSON array. No markdown code fences, no explanation, no text outside the array.
-Allowed field names ONLY: cognitiveLevel, difficultyLevel, questionType, question, solution, marks
-Allowed questionType values ONLY: "VSA-FIB" or "VSA"
-All questions are 1 mark. The "marks" field must always be "1".
 Begin the response with [ and end with ]. Nothing else.`;
 
     return `${section}${grammarMeta}`;
