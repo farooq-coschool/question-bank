@@ -2942,6 +2942,21 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       throw new Error('Subjective returned 0 questions — raw response preview: ' + preview + ' — click Retry');
     }
     // English CBSE: split output into separate VSA/SA/LA files. All others: single Subjective.json
+    const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
+    const normalized = isEnglishCBSEGrammar ? parsed.map(q => {
+      const questionText = q && q.question != null ? String(q.question) : '';
+      const tagText = q && q.question_type_tag != null ? String(q.question_type_tag) : '';
+      const isFib = /fill in the blank/i.test(questionText) || /\bFIB\b/i.test(tagText);
+      return {
+        cognitiveLevel: q && q.cognitiveLevel != null ? String(q.cognitiveLevel) : 'Understanding',
+        difficultyLevel: q && q.difficultyLevel != null ? String(q.difficultyLevel) : 'Easy',
+        questionType: 'VSA',
+        question_type_tag: isFib ? 'FIB' : '',
+        question: questionText,
+        solution: q && q.solution != null ? String(q.solution) : '',
+        marks: '1',
+      };
+    }) : parsed;
     const isEnglishCBSESubj = state.subject === 'English' && state.curriculum === 'CBSE';
     if (isEnglishCBSESubj) {
       // English CBSE: ALWAYS split into VSA / SA / LA — never a combined Subjective.json
@@ -2963,7 +2978,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
         // Unknown shape — put in LA so the file naming convention still holds
         return 'LA';
       };
-      for (const q of parsed) buckets[bucketOf(q)].push(q);
+      for (const q of normalized) buckets[bucketOf(q)].push(q);
       // Always write all three files (empty array if no items) so user sees consistent file naming
       for (const k of ['VSA', 'SA', 'LA']) {
         saveFile(fp(k + '.json'), JSON.stringify(buckets[k], null, 2));
@@ -2972,9 +2987,9 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       const legacyPath = fp('Subjective.json');
       if (state.generatedFiles[legacyPath] !== undefined) delete state.generatedFiles[legacyPath];
     } else {
-      saveFile(fp('Subjective.json'), JSON.stringify(parsed, null, 2));
+      saveFile(fp('Subjective.json'), JSON.stringify(normalized, null, 2));
     }
-    const qCount = parsed.length;
+    const qCount = normalized.length;
     logStep(scopeLabel, 'Subjective Questions', '✍️', 'done', qCount + ' questions');
     return qCount;
   }, 600000); // 10-minute timeout — subjective is the heaviest step under parallel load
@@ -3836,20 +3851,13 @@ function buildSubjectivePrompt(conceptName, item, masterPrompt, loText) {
   let countsText = (state.subjMetadata || '').trim();
 
   if (isEnglishCBSEGrammar) {
-    if (countsText) {
-      section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
-      countsText = countsText.split('\n').map(line => {
-        const trimmed = line.trim();
-        if (!trimmed) return '';
-        if (/^\[Number of /i.test(trimmed)) return trimmed;
-        const m = trimmed.match(/^(.+?):\s*(.+)$/);
-        return m ? `[Number of ${m[1].trim()}]: ${m[2].trim()}` : trimmed;
-      }).filter(Boolean).join('\n');
-    }
     const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
-    const grammarMeta = `
+    const grammarCounts = (countsText || '').trim() || 'VSA-FIB: 1; VSA: 1';
+    return `You are an experienced English teacher who creates CBSE grammar questions for NCERT students.
 
----
+TASK:
+Generate grammar questions for English CBSE using only the attached textbook content and the Learning Outcomes provided below.
+
 METADATA INPUT:
 Subject: English
 Curriculum: CBSE
@@ -3858,16 +3866,16 @@ Grade: ${state.grade}
 Chapter Name: ${state.chapterName}
 Subtopic Name: ${conceptName}
 ${nanoList ? 'Subconcepts: ' + nanoList + '\n' : ''}Learning Outcomes: ${loText || '(Auto-generated in previous step)'}
-${countsText ? countsText + '\n' : ''}${chapterScopeNote(item)}
+${grammarCounts}
+${chapterScopeNote(item)}
 
-STRICT COUNT COMPLIANCE: The [Number of ...] lines in this metadata are the only source of truth. Generate exactly those grammar questions.
-
-OUTPUT SCHEMA RULES:
-- Every object must use the exact fields: cognitiveLevel, difficultyLevel, questionType, question_type_tag, question, solution, marks
-- questionType must always be "VSA"
-- If the item is a fill-in-the-blank grammar question, set question_type_tag to "FIB"
-- If the item is a normal transformation / correction / rewriting question, set question_type_tag to an empty string ""
-- marks must always be the string "1"
+STRICT RULES:
+- Generate ONLY the two JSON shapes shown in the examples below.
+- questionType must always be "VSA".
+- If the question is a fill-in-the-blank, set question_type_tag to "FIB".
+- If the question is a transformation, correction or rewriting question, set question_type_tag to "".
+- marks must always be "1".
+- Return ONLY a JSON array. No markdown fences. No explanation. No extra text.
 
 Example 1:
 [
@@ -3895,10 +3903,7 @@ Example 2:
   }
 ]
 
-Return ONLY a valid JSON array. No markdown code fences, no explanation, no text outside the array.
-Begin the response with [ and end with ]. Nothing else.`;
-
-    return `${section}${grammarMeta}`;
+Begin the response with [ and end with ].`;
   }
 
   // Helper: extract VSA/SA/LA totals from any text. Uses \b so "SA" does not match inside "VSA".
