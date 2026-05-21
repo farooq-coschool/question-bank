@@ -2913,6 +2913,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
         return { ...q, options: opts };
       });
     }
+    if (isCommerce) validateCommerceObjectiveBatch(parsed);
     saveFile(fp('Objective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
     logStep(scopeLabel, 'Objective Questions', '❓', 'done', qCount + ' questions');
@@ -3663,6 +3664,75 @@ function applyPromptCountEdits(text) {
   });
 }
 
+function validateCommerceObjectiveBatch(items) {
+  if (!Array.isArray(items)) return;
+
+  const stopwords = new Set([
+    'a', 'an', 'the', 'and', 'or', 'of', 'to', 'in', 'for', 'with', 'on', 'at', 'by', 'from',
+    'is', 'are', 'was', 'were', 'be', 'been', 'being', 'as', 'that', 'this', 'these', 'those',
+    'it', 'its', 'their', 'they', 'them', 'who', 'which', 'what', 'when', 'where', 'why', 'how'
+  ]);
+  const words = (text) => String(text || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
+  const contentWords = (text) => words(text).filter(w => !stopwords.has(w));
+
+  const countWords = (text) => words(text).length;
+  const hasOverlap = (a, b) => {
+    const setA = new Set(contentWords(a));
+    return contentWords(b).some(w => setA.has(w));
+  };
+
+  const validQuestionTypes = new Set(['SCQ']);
+  const positionCounts = [0, 0, 0, 0];
+  let scqCount = 0;
+  items.forEach((q, idx) => {
+    if (!q || !validQuestionTypes.has(String(q.questionType || '').trim().toUpperCase())) return;
+    scqCount++;
+    if (!Array.isArray(q.options) || q.options.length !== 4) {
+      throw new Error(`Commerce validation failed at item ${idx + 1}: SCQ must have exactly 4 options.`);
+    }
+    const optionWords = q.options.map(countWords);
+    const maxWords = Math.max(...optionWords);
+    const minWords = Math.min(...optionWords);
+    if (maxWords > 10) {
+      throw new Error(`Commerce validation failed at item ${idx + 1}: an option exceeds 10 words.`);
+    }
+    if (maxWords - minWords > 2) {
+      throw new Error(`Commerce validation failed at item ${idx + 1}: option lengths differ by more than 2 words.`);
+    }
+    if (!Array.isArray(q.answers) || !q.answers.length) {
+      throw new Error(`Commerce validation failed at item ${idx + 1}: SCQ must include exactly one answer.`);
+    }
+    const correct = String(q.answers[0]);
+    const correctPos = q.options.indexOf(correct);
+    if (correctPos >= 0) positionCounts[correctPos]++;
+    const correctOverlap = hasOverlap(q.question || '', correct) || contentWords(correct).length === 0;
+    if (!correctOverlap) {
+      throw new Error(`Commerce validation failed at item ${idx + 1}: correct answer lacks topical overlap with the question.`);
+    }
+    const distractors = q.options.filter(opt => opt !== correct);
+    for (const distractor of distractors) {
+      const overlap = hasOverlap(correct, distractor) || hasOverlap(q.question || '', distractor);
+      if (!overlap) {
+        throw new Error(`Commerce validation failed at item ${idx + 1}: a distractor appears off-topic.`);
+      }
+    }
+  });
+
+  if (scqCount >= 4) {
+    const expected = scqCount / 4;
+    const tolerance = Math.max(1, Math.ceil(scqCount * 0.1));
+    for (let i = 0; i < 4; i++) {
+      if (Math.abs(positionCounts[i] - expected) > tolerance) {
+        throw new Error(`Commerce validation failed: correct-answer positions are not balanced enough across the batch.`);
+      }
+    }
+  }
+}
+
 function buildObjectivePrompt(conceptName, item, masterPrompt, includeRA, loText) {
   if (includeRA === undefined) includeRA = true;
   const isEnglishCBSE = state.subject === 'English' && state.curriculum === 'CBSE';
@@ -3819,6 +3889,24 @@ function buildCommerceObjectivePrompt(conceptName, item, masterPrompt, loText) {
   const section = applyPromptCountEdits(fillPlaceholders(rawSection, conceptName, item, loText));
   const countsText = (state.objMetadata || '').trim();
   const nanoList = item && item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
+  const commerceRules = `
+
+COMMERCE-SPECIFIC RULES:
+- Maximum number of words per option: 10.
+- Aim for option lengths to be similar across the four options, with a difference of at most 2 words.
+- Do not make the correct answer consistently the longest option.
+- Each distractor must be plausible: use common misconceptions, numerically close choices, or related-but-wrong concepts.
+- Avoid distractors that are obviously false, antonyms, or off-topic.
+- Distractors should use similar phrasing and terminology as the correct answer.
+- Use simple, clear language suitable for the target ICSE grade.
+- Keep sentence capitalisation and punctuation consistent across options.
+- Use the same grammatical form across all options.
+- Assign the correct answer to A/B/C/D with an approximately even distribution across the batch.
+- Do not bias selection based on option length, punctuation, or position.
+- After generation, verify every option is at most 10 words.
+- After generation, verify the maximum option word count minus the minimum option word count is at most 2.
+- After generation, verify each distractor has topical overlap with the correct answer.
+- After generation, verify correct-answer positions are roughly balanced across the batch.`;
 
   const metaBlock = `
 
@@ -3838,7 +3926,8 @@ Return ONLY a valid JSON array. No markdown code fences, no explanation, no text
 Each element must have: cognitiveLevel, difficultyLevel, questionType, question, options, answers, solution
 - questionType must be one of: SCQ, MSQ, TF, FIB, MTF, OA, CS, DIA, CALC, DEF, DIFF, LIST, APPLY, EVAL
 - options is always an array (can be [] for non-MCQ types)
-- answers is always an array of strings`;
+- answers is always an array of strings
+${commerceRules}`;
 
   return section + metaBlock;
 }
