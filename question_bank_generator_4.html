@@ -2893,6 +2893,9 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const doObjectiveHere = doObjective && !isGeoSubtopicCaseB;
   const objQ = await runStep('objective', 'Objective Questions', '❓', doObjectiveHere, async () => {
     const includeRA = !isNano;
+    const chemistryObjective = state.subject === 'Chemistry' && state.curriculum === 'ICSE'
+      ? parseChemistryObjectiveCount((state.objMetadata || '').trim())
+      : null;
     const result = isCommerce
       ? await callClaude(buildCommerceObjectivePrompt(name, item, masterPrompt, loResult), 40000)
       : await callClaude(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 40000);
@@ -2912,6 +2915,9 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
         opts[targetPos] = correctText;
         return { ...q, options: opts };
       });
+    }
+    if (chemistryObjective && chemistryObjective.total > 0) {
+      validateChemistryObjectiveBatch(parsed, chemistryObjective.total);
     }
     if (isCommerce) validateCommerceObjectiveBatch(parsed);
     saveFile(fp('Objective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
@@ -3664,6 +3670,30 @@ function applyPromptCountEdits(text) {
   });
 }
 
+function parseChemistryObjectiveCount(text) {
+  const src = String(text || '').trim();
+  if (!src) return { total: 0, explicit: false, text: '' };
+
+  const explicitMatches = [...src.matchAll(/\b(SCQ|RA)\b\s*[:=\-]?\s*(\d+)/gi)];
+  if (explicitMatches.length) {
+    return {
+      total: explicitMatches.reduce((sum, m) => sum + (parseInt(m[2], 10) || 0), 0),
+      explicit: true,
+      text: src
+    };
+  }
+
+  const numMatch = src.match(/\b(\d+)\b/);
+  if (!numMatch) return { total: 0, explicit: false, text: src };
+
+  const total = parseInt(numMatch[1], 10) || 0;
+  return {
+    total,
+    explicit: false,
+    text: 'SCQ: ' + total
+  };
+}
+
 function validateCommerceObjectiveBatch(items) {
   if (!Array.isArray(items)) return;
 
@@ -3744,7 +3774,14 @@ function buildObjectivePrompt(conceptName, item, masterPrompt, includeRA, loText
       || masterPrompt
     : extractSection(masterPrompt, 'OBJECTIVE_CREATION_PROMPT') || masterPrompt;
   let section = applyPromptCountEdits(fillPlaceholders(rawSection, conceptName, item, loText));
-  const countsText = (state.objMetadata || '').trim();
+  let countsText = (state.objMetadata || '').trim();
+  const isChemistryICSE = state.subject === 'Chemistry' && state.curriculum === 'ICSE';
+  if (isChemistryICSE) {
+    const chemSpec = parseChemistryObjectiveCount(countsText);
+    if (chemSpec.total > 0 && !chemSpec.explicit) {
+      countsText = chemSpec.text;
+    }
+  }
   const isEnglish = state.subject === 'English';
   // When user has provided their own counts, strip [Number of ...] lines from the template
   // so there is no conflict — METADATA INPUT counts become the sole source of truth.
