@@ -3991,7 +3991,6 @@ function buildSubjectivePrompt(conceptName, item, masterPrompt, loText) {
 
   if (isEnglishCBSEGrammar) {
     const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
-    const grammarCounts = (countsText || '').trim() || 'VSA-FIB: 1; VSA: 1';
     return `Act as an experienced English teacher who has expertise in creating descriptive grammar questions.
 
 You are tasked with generating academic descriptive grammar questions suitable for CBSE curriculum students following NCERT textbook standards. Your goal is to create well-structured grammar questions that test students' understanding of the specified topic at the given difficulty level and cognitive level.
@@ -4000,17 +3999,21 @@ METADATA INPUT SPECIFICATIONS:
 
 [Subject]: English
 [Curriculum]: CBSE
-[Textbook]: ${state.textbook || 'NCERT'}
+[Textbook]: NCERT
 [Grade]: ${state.grade}
 [Chapter Name]: ${state.chapterName}
 [Subtopic Name]: ${conceptName}
 [Subconcepts]: ${nanoList || ''}
 [Learning Outcomes]: ${loText || '(Auto-generated in previous step)'}
 [Script]: [Attached]
-${grammarCounts}
+[Number of Understanding Easy Questions]: VSA-FIB: 2; VSA: 2
+[Number of Understanding Medium Questions]: VSA-FIB: 2; VSA: 1
+[Number of Understanding Hard Questions]: VSA-FIB: 2; VSA: 1
+[Number of Application Medium Questions]: VSA-FIB: 2; VSA: 1
+[Number of Application Hard Questions]: VSA-FIB: 2; VSA: 1
 
 QUESTION TYPES and FRAMING RULES:
-1. VSA-FIB (Very Short Answer with fill-in-the-blank format) - 1 mark each
+1. VSA-FIB (Very Short Answer with fill-in-the-blank format)- 1 mark each
 
 Question format types:
 A. The "Error and Correction" Pair:
@@ -4026,11 +4029,11 @@ Correction
 B. Sentence Transformation: "Do as Directed" :
 Ex: Add a question tag: "Nobody trusts a liar, ______?"
 
-C. Contextual Gap Filling:
-Ex: Fill in the blank with the correct form of the verb in the brackets:
-The auto driver did not sustain injuries, though the passenger who was ______ (sit) in the auto was injured.
-Fill in the blank with the correct article:
-______ Ganga is ______ sacred river.
+C. Bracket-guided Gap Fill (with bracket options):
+Two plausible options are provided in brackets; the student must choose the contextually and grammatically correct one.
+Ex: Fill in the blank with the correct coordinate conjunction from the options given in brackets:
+The roads were flooded after the heavy rains, ______ (yet/so) the school authorities declared a holiday.
+IMPORTANT: The two bracket options must be plausible enough to require careful reading (e.g., yet/so, but/for, and/or, neither…nor/either…or), not obviously wrong distractors.
 
 D. Dialogue Reporting:
 Ex: Read the dialogue:
@@ -4061,11 +4064,10 @@ Content Rules:
 - Make questions within chapter context
 - Ensure clear instruction statements for grammar questions.
 - Use [Grade] appropriate vocabulary and avoid complex phrasing.
-
 NOTE:
 1. For VSA-FIB (Very Short Answer with fill-in-the-blank format) questions where the target noun is an uncountable, collective, or invariant noun that cannot be transformed into a different form, the correct word must not be provided in brackets at the end of the sentence.
-2. If a bracketed hint is provided, it must require the student to actively apply a rule to change its form. If no transformation is needed, the bracketed clue must be removed entirely, and the sentence context must be made strong enough to elicit the correct vocabulary word naturally.
-3. The above rule 1 and 2 apply to all the grammar topics.
+2. Cover all Question format types while generating.
+
 
 Language and Grammar Rules:
 - Use British English throughout (spelling, punctuation, grammar)
@@ -4099,28 +4101,28 @@ HARD (for the grade):
 - Requires grammatical reasoning, not just pattern recognition
 - May include edge cases or less common applications of the rule
 
-For VSA-FIB (Very Short Answer with fill-in-the-blank format) allowed question_type_tag is "question_type_tag": "FIB"
-For VSA question format - no question_type_tag is required.
+For VSA-FIB (Very Short Answer with fill-in-the-blank format) allowed question_type_tag is  "question_type_tag": "FIB"
+For VSA question format- NO question_type_tag is required.
 
-Generate the output in the following JSON format:
+Generate the output in following JSON format:
 
-[
-  {
+ [
+   {
     "cognitiveLevel": "Understanding",
     "difficultyLevel": "Easy",
     "questionType": "VSA",
-    "question": "Change the following sentence into the Passive Voice:\\nSomeone stole my watch last year.",
+     "question": "Change the following sentence into the Passive Voice:\\nSomeone stole my watch last year.",
     "solution": "My watch was stolen last year.",
-    "marks": "1"
+ "marks": "1"
   },
-  {
+{
     "cognitiveLevel": "Application",
     "difficultyLevel": "Medium",
     "questionType": "VSA",
     "question_type_tag": "FIB",
     "question": "Fill in the blank with the correct form of the verb in the brackets: \\nThe auto driver did not sustain injuries, though the passenger who was ______ (sit) in the auto was injured.",
     "solution": "sitting",
-    "marks": "1"
+ "marks": "1"
   }
 ]`;
   }
