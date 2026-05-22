@@ -3694,6 +3694,19 @@ function parseChemistryObjectiveCount(text) {
   };
 }
 
+function validateChemistryObjectiveBatch(items, expectedTotal) {
+  if (!Array.isArray(items)) {
+    throw new Error('Chemistry validation failed: objective output is not a JSON array.');
+  }
+  const total = items.filter(q => {
+    const qt = String(q && q.questionType ? q.questionType : '').trim().toUpperCase();
+    return qt === 'SCQ' || qt === 'RA';
+  }).length;
+  if (total !== expectedTotal) {
+    throw new Error(`Chemistry validation failed: expected exactly ${expectedTotal} objective questions but received ${total}.`);
+  }
+}
+
 function validateCommerceObjectiveBatch(items) {
   if (!Array.isArray(items)) return;
 
