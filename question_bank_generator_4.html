@@ -3941,7 +3941,13 @@ function buildSubjectivePrompt(conceptName, item, masterPrompt, loText) {
 
   if (isEnglishCBSEGrammar) {
     const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
-    const grammarCounts = (countsText || '').trim() || 'VSA-FIB: 1; VSA: 1';
+    const grammarCounts = (countsText || '').trim() || [
+      '[Number of Understanding Easy Questions]: VSA-FIB: 2; VSA: 2',
+      '[Number of Understanding Medium Questions]: VSA-FIB: 2; VSA: 1',
+      '[Number of Understanding Hard Questions]: VSA-FIB: 2; VSA: 1',
+      '[Number of Application Medium Questions]: VSA-FIB: 2; VSA: 1',
+      '[Number of Application Hard Questions]: VSA-FIB: 2; VSA: 1'
+    ].join('\n');
     return `Act as an experienced English teacher who has expertise in creating descriptive grammar questions.
 
 You are tasked with generating academic descriptive grammar questions suitable for CBSE curriculum students following NCERT textbook standards. Your goal is to create well-structured grammar questions that test students' understanding of the specified topic at the given difficulty level and cognitive level.
@@ -3954,7 +3960,6 @@ METADATA INPUT SPECIFICATIONS:
 [Grade]: ${state.grade}
 [Chapter Name]: ${state.chapterName}
 [Subtopic Name]: ${conceptName}
-[Subconcepts]: ${nanoList || ''}
 [Learning Outcomes]: ${loText || '(Auto-generated in previous step)'}
 [Script]: [Attached]
 ${grammarCounts}
@@ -3976,11 +3981,12 @@ Correction
 B. Sentence Transformation: "Do as Directed" :
 Ex: Add a question tag: "Nobody trusts a liar, ______?"
 
-C. Contextual Gap Filling:
-Ex: Fill in the blank with the correct form of the verb in the brackets:
+C. Fill in the Blank (with three bracket options):
+You must provide exactly three plausible, slash-separated options inside the brackets. The student must choose the single contextually and grammatically correct option.
+Ex: Fill in the blank with the correct coordinate conjunction from the options given in brackets:
 The auto driver did not sustain injuries, though the passenger who was ______ (sit) in the auto was injured.
-Fill in the blank with the correct article:
-______ Ganga is ______ sacred river.
+IMPORTANT: The three bracket options must be plausible enough to require careful reading (e.g., yet/so/because, but/for/at, and/or/in), not obviously wrong distractors.
+NOTE: Do not generate FIB questions without options in the brackets.
 
 D. Dialogue Reporting:
 Ex: Read the dialogue:
@@ -4013,9 +4019,8 @@ Content Rules:
 - Use [Grade] appropriate vocabulary and avoid complex phrasing.
 
 NOTE:
-1. For VSA-FIB (Very Short Answer with fill-in-the-blank format) questions where the target noun is an uncountable, collective, or invariant noun that cannot be transformed into a different form, the correct word must not be provided in brackets at the end of the sentence.
-2. If a bracketed hint is provided, it must require the student to actively apply a rule to change its form. If no transformation is needed, the bracketed clue must be removed entirely, and the sentence context must be made strong enough to elicit the correct vocabulary word naturally.
-3. The above rule 1 and 2 apply to all the grammar topics.
+1. For VSA-FIB (Very Short Answer with fill-in-the-blank format) questions where the target noun is an uncountable, collective, or invariant noun that cannot be transformed into a different form, you must still provide three distinct options in brackets. Include the correct invariant form alongside two incorrect variations (e.g., changing number or suffix).
+2. Cover all Question format types while generating.
 
 Language and Grammar Rules:
 - Use British English throughout (spelling, punctuation, grammar)
