@@ -3663,11 +3663,6 @@ function applyPromptCountEdits(text) {
   });
 }
 
-function validateCommerceObjectiveBatch(items) {
-  if (!Array.isArray(items)) return;
-  return;
-}
-
 function buildObjectivePrompt(conceptName, item, masterPrompt, includeRA, loText) {
   if (includeRA === undefined) includeRA = true;
   const isEnglishCBSE = state.subject === 'English' && state.curriculum === 'CBSE';
@@ -3824,25 +3819,6 @@ function buildCommerceObjectivePrompt(conceptName, item, masterPrompt, loText) {
   const section = applyPromptCountEdits(fillPlaceholders(rawSection, conceptName, item, loText));
   const countsText = (state.objMetadata || '').trim();
   const nanoList = item && item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
-  const commerceRules = `
-
-COMMERCE-SPECIFIC RULES:
-- Maximum number of words per option: 10.
-- Aim for option lengths to be similar across the four options, with a difference of at most 2 words.
-- Do not make the correct answer consistently the longest option.
-- Each distractor must be plausible: use common misconceptions, numerically close choices, or related-but-wrong concepts.
-- Avoid distractors that are obviously false, antonyms, or off-topic.
-- Distractors should use similar phrasing and terminology as the correct answer.
-- Use simple, clear language suitable for the target ICSE grade.
-- Keep sentence capitalisation and punctuation consistent across options.
-- Use the same grammatical form across all options.
-- Assign the correct answer to A/B/C/D with an approximately even distribution across the batch.
-- Do not bias selection based on option length, punctuation, or position.
-- After generation, verify every option is at most 10 words.
-- After generation, verify the maximum option word count minus the minimum option word count is at most 2.
-- After generation, verify each distractor has topical overlap with the correct answer.
-- After generation, verify correct-answer positions are roughly balanced across the batch.`;
-
   const metaBlock = `
 
 ---
@@ -3868,7 +3844,7 @@ Each element must have: cognitiveLevel, difficultyLevel, questionType, question,
 - questionType must be one of: SCQ, MSQ, TF, FIB, MTF, OA, CS, DIA, CALC, DEF, DIFF, LIST, APPLY, EVAL
 - options is always an array (can be [] for non-MCQ types)
 - answers is always an array of strings
-${commerceRules}`;
+`;
 
   return section + metaBlock;
 }
