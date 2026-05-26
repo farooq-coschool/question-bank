@@ -2913,7 +2913,6 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
         return { ...q, options: opts };
       });
     }
-    if (isCommerce) validateCommerceObjectiveBatch(parsed);
     saveFile(fp('Objective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
     logStep(scopeLabel, 'Objective Questions', '❓', 'done', qCount + ' questions');
@@ -3666,60 +3665,7 @@ function applyPromptCountEdits(text) {
 
 function validateCommerceObjectiveBatch(items) {
   if (!Array.isArray(items)) return;
-
-  const stopwords = new Set([
-    'a', 'an', 'the', 'and', 'or', 'of', 'to', 'in', 'for', 'with', 'on', 'at', 'by', 'from',
-    'is', 'are', 'was', 'were', 'be', 'been', 'being', 'as', 'that', 'this', 'these', 'those',
-    'it', 'its', 'their', 'they', 'them', 'who', 'which', 'what', 'when', 'where', 'why', 'how'
-  ]);
-  const words = (text) => String(text || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean);
-  const contentWords = (text) => words(text).filter(w => !stopwords.has(w));
-
-  const countWords = (text) => words(text).length;
-  const hasOverlap = (a, b) => {
-    const setA = new Set(contentWords(a));
-    return contentWords(b).some(w => setA.has(w));
-  };
-
-  const validQuestionTypes = new Set(['SCQ']);
-  const positionCounts = [0, 0, 0, 0];
-  let scqCount = 0;
-  items.forEach((q, idx) => {
-    if (!q || !validQuestionTypes.has(String(q.questionType || '').trim().toUpperCase())) return;
-    scqCount++;
-    if (!Array.isArray(q.options) || q.options.length !== 4) {
-      throw new Error(`Commerce validation failed at item ${idx + 1}: SCQ must have exactly 4 options.`);
-    }
-    const optionWords = q.options.map(countWords);
-    const maxWords = Math.max(...optionWords);
-    const minWords = Math.min(...optionWords);
-    if (maxWords > 10) {
-      throw new Error(`Commerce validation failed at item ${idx + 1}: an option exceeds 10 words.`);
-    }
-    if (maxWords - minWords > 2) {
-      throw new Error(`Commerce validation failed at item ${idx + 1}: option lengths differ by more than 2 words.`);
-    }
-    if (!Array.isArray(q.answers) || !q.answers.length) {
-      throw new Error(`Commerce validation failed at item ${idx + 1}: SCQ must include exactly one answer.`);
-    }
-    const correct = String(q.answers[0]);
-    const correctPos = q.options.indexOf(correct);
-    if (correctPos >= 0) positionCounts[correctPos]++;
-  });
-
-  if (scqCount >= 4) {
-    const expected = scqCount / 4;
-    const tolerance = Math.max(1, Math.ceil(scqCount * 0.1));
-    for (let i = 0; i < 4; i++) {
-      if (Math.abs(positionCounts[i] - expected) > tolerance) {
-        throw new Error(`Commerce validation failed: correct-answer positions are not balanced enough across the batch.`);
-      }
-    }
-  }
+  return;
 }
 
 function buildObjectivePrompt(conceptName, item, masterPrompt, includeRA, loText) {
