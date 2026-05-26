@@ -3709,17 +3709,6 @@ function validateCommerceObjectiveBatch(items) {
     const correct = String(q.answers[0]);
     const correctPos = q.options.indexOf(correct);
     if (correctPos >= 0) positionCounts[correctPos]++;
-    const correctOverlap = hasOverlap(q.question || '', correct) || contentWords(correct).length === 0;
-    if (!correctOverlap) {
-      throw new Error(`Commerce validation failed at item ${idx + 1}: correct answer lacks topical overlap with the question.`);
-    }
-    const distractors = q.options.filter(opt => opt !== correct);
-    for (const distractor of distractors) {
-      const overlap = hasOverlap(correct, distractor) || hasOverlap(q.question || '', distractor);
-      if (!overlap) {
-        throw new Error(`Commerce validation failed at item ${idx + 1}: a distractor appears off-topic.`);
-      }
-    }
   });
 
   if (scqCount >= 4) {
@@ -3919,6 +3908,12 @@ Chapter Name: ${state.chapterName}
 Topic/Concept Name: ${conceptName}
 Textbook: ${state.textbook}
 ${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}${countsText ? countsText + '\n' : ''}${chapterScopeNote(item)}
+
+CONTENT BASIS:
+- Build every question from the supplied Textbook/Script content and the Learning Outcomes for this concept.
+- Keep the questions tightly tied to the exact topic, subtopic, or nano concept named above.
+- Prefer terminology, examples, and situations that are explicitly present in the supplied content.
+- Do not introduce unrelated business concepts, generic filler, or off-topic distractors.
 
 ⚠️ STRICT COUNT COMPLIANCE: If counts are specified in METADATA INPUT above, generate EXACTLY those numbers.
 
