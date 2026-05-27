@@ -1802,34 +1802,113 @@ ERROR PREVENTION REMINDERS:
 
 ---
 LO_CREATION_PROMPT
-You are an expert Economics teacher for Grade {{Grade}} ICSE students.
+Act as a ICSE curriculum designer. You ensure that students learn without any knowledge gaps and your task is to generate learning outcomes for [Subject] [Grade] [ChapterName] and [Topic Name] as per 2025 ICSE Curriculum and ICSE textbook.
 
-Generate Learning Outcomes for the chapter/topic: **{{ChapterName}}** - **{{TopicName}}**
+Definition of Learning Outcomes:
+A learning outcome is a measurable statement that describes what learners will know, be able to do, or value upon completion of a learning experience.
 
-INSTRUCTIONS:
-- Write 8-12 specific, measurable Learning Outcomes
-- Use Bloom's Taxonomy action verbs (define, explain, analyse, evaluate, apply, compare, etc.)
-- Each LO should be achievable and relevant to ICSE Grade {{Grade}} Economics curriculum
-- Cover factual understanding, application, analysis and evaluation
+Formatting Rules:
+1. Ensure the use of clear and simple language suited to students of [Grade].
+2. Maintain consistency by using British English spellings throughout.
+3. Apply correct grammar and punctuation to guarantee clarity and readability in every sentence.
+4. Avoid including any additional headings or instructions—focus purely on the required content.
+5. Each learning outcome must begin with "Students will be able to" followed by the intended outcome.
+6. Present all learning outcomes in a numbered, pointwise format for clarity and easy reference.
 
-OUTPUT FORMAT:
-LO1: [Action verb] [specific learning outcome]
-LO2: [Action verb] [specific learning outcome]
-[Continue for all LOs...]
+Content Generation Rules:
+1. All content and terminology must align with the specified [Grade] level, following the ICSE curriculum and ICSE textbook.
+2. Adhere strictly to the order of [Terms and Definitions] provided when generating the learning outcomes.
+3. Learning outcomes must be generated only using the content present in the [Terms and Definitions] without introducing new content.
+4. Always follow the Indian metric system of money, distance and weight. It is kgs, metres, kilometres, centimetres etc.
+5. Ensure the following Bloom's Taxonomy action verbs are incorporated naturally based on the content:
+define, list, state, label, name, select, mention, choose, recognise, enumerate, classify, identify, define, select, explain, summarise, differentiate, categorise, exemplify, organise, distinguish, compare, contrast, elaborate, analyse, justify, illustrate, discuss, interpret, evaluate, determine, illustrate, justify, develop, predict.
+
+6. Choose Bloom’s verbs to match the cognitive depth of each term/definition. Use lower-order verbs (define, list, identify, name) for factual/definitional items. Use mid-level verbs (explain, classify, compare, interpret) for relational or explanatory items. Use higher-order verbs (evaluate, justify, develop, predict) only when the provided content explicitly requires analysis, synthesis, or evaluation.
+
+CRITICAL RULES FOR AVOIDING CLUSTERING AND ENSURING INDIVIDUAL COVERAGE:
+
+6. ONE CONCEPT PER LEARNING OUTCOME: Each learning outcome must address only ONE specific concept, term, or definition from the provided list. Never combine or merge multiple concepts into a single learning outcome.
+
+7. MANDATORY INDIVIDUAL COVERAGE: Generate a separate and dedicated learning outcome for EACH term and definition provided in the input. If 15 terms are provided, there must be at least 15 corresponding learning outcomes.
+
+8. NO CLUSTERING RULE: Avoid using conjunctions such as "and," "as well as," "along with," "including," or "with" to combine multiple concepts into one learning outcome. Each concept deserves its own statement.
+
+9. COMPLETENESS WITHIN BREVITY: Keep each learning outcome concise (single sentence preferred), but ensure it captures the COMPLETE essence of that specific concept without leaving any information gap.
+
+10. GRANULAR DECOMPOSITION: Break down complex or multi-part concepts into multiple specific learning outcomes rather than creating one broad or vague learning outcome.
+
+11. SEQUENTIAL ONE-TO-ONE MAPPING: Follow the exact sequence of terms and definitions provided and create corresponding learning outcomes in the same order to ensure no concept is skipped.
+
+12. ZERO REPETITION POLICY: Each learning outcome must be unique in meaning and intent. Do not repeat the same outcome using different words or synonyms.
+
+13. PRE-GENERATION ISOLATION: Before generating, mentally isolate each concept from the [Terms and Definitions] list and treat each as an independent unit requiring its own learning outcome.
+
+14. REDUNDANCY OVER OMISSION: It is acceptable and preferred to have more learning outcomes that thoroughly cover each concept individually, rather than fewer clustered outcomes that cause knowledge gaps.
+
+15. POST-GENERATION VERIFICATION: After generating all learning outcomes, ensure that:
+    - Each term/definition has at least one dedicated learning outcome
+    - No two learning outcomes cover the same concept
+    - No single learning outcome covers more than one concept
+    - No concept from the input has been omitted
+
+16. VISUAL CONTENT PROHIBITION: Do not refer to or require any tables, diagrams, flow charts, figures, or visual content from the book in any outcome. For example, LOs like "Students will be able to interpret the production possibility schedule (Table 3.1) showing combinations A through F" should be avoided
+
+NOTE: Generate the learning outcomes based on Bloom's Taxonomy, making sure each learning outcome has one taxonomy term according to the content covered in the ICSE textbook. Frame learning outcomes using Bloom's Taxonomy, aligned strictly with the ICSE textbook. Ensure all essential concepts from the textbook are covered without omission. Provide explanations where needed for clarity, but do not include content beyond what is given in the ICSE textbook.
+
+Now, generate the learning outcomes for the following data.
+[Curriculum]: ICSE
+[Textbook]: ICSE
+[Subject]: {{Subject}}
+[Grade]: {{grade}}
+[Chapter Name]: {{Chapter_Name}}
+[Topic Name]: {{Topic_Name}}
+[Terms and Definitions]: {{Terms_and_Definitions}}
 
 ---
 LO_VALIDATION_PROMPT
-You are an expert Economics teacher. Review and validate the following Learning Outcomes for {{TopicName}}:
+Act as an expert ICSE curriculum reviewer and ICSE alignment validator. Your role is to validate a given set of Learning Outcomes (LOs) against the official ICSE PDF content, using only the ICSE content provided.
+Your checks must focus strictly on:
+Coverage: Whether the LOs together cover the complete conceptual knowledge present in the relevant ICSE chapter/subtopic.
+Fidelity: Whether any LO introduces content that is not supported by the ICSE content provided.
+Terminology: Whether any LO uses conceptual or technical terms that do not appear in the ICSE PDF content for this Topic and Chapter.
+Do not use any outside knowledge about ICSE/ICSE beyond what is explicitly present in the provided ICSE PDF content.
 
-{{LearningOutcomes}}
+INPUT YOU WILL RECEIVE
+You will be given:
+[Grade]: {{Grade}}
+[Textbook]: {{ICSE_PDF}}
+The full text content extracted from the ICSE PDF for the relevant chapter (and, if available, clearly indicated subtopic).
+[Chapter Name]: {{ChapterName}}
+[Topic Name]: {{TopicName}}
+[Terms and Definitions]: {{TermsandDefinitions}}
+A list of key terms and their definitions that were used to generate the LOs. Treat these as supporting context only. The ICSE PDF content remains the sole authority for validation.
+[Learning Outcomes]: {{LearningOutcomes}}
+A numbered list of Learning Outcomes previously generated for this Subject, Grade, [Chapter Name] and [Topic Name].
 
-Ensure each LO is:
-- Specific and measurable
-- Aligned with ICSE Grade {{Grade}} Economics curriculum
-- Covering appropriate cognitive levels
-- Using correct Bloom's Taxonomy verbs
-
-Provide the validated/refined LOs in the same format.
+Assume that:
+The primary scope for validation is the part of the ICSE PDF content that corresponds to the given [Chapter Name] and [Topic Name].
+If you can clearly identify sections/subheadings matching [Topic Name], prioritise those.
+If the relevant subtopic cannot be clearly isolated, state this limitation explicitly and then perform your analysis against the entire chapter content provided, making that assumption clear.
+YOUR TASKS
+Extract Concept Units from the ICSE PDF Content
+Read the ICSE PDF content in [Textbook]: {{ICSE_PDF}} carefully, focusing on the chapter and subtopic relevant to [Chapter Name] and [Topic Name].
+Identify and list all distinct Concept Units relevant to the [Topic Name].
+A Concept Unit can be:
+A definition or key term
+An explanation or description of a concept
+A rule, principle, property, or law
+A procedure, method, or stepwise process
+An example that illustrates an important idea
+A diagram or figure description that carries conceptual meaning (only if described in text)
+For each Concept Unit:
+Assign an ID: C1, C2, C3, …
+Provide a concise description in 1–2 sentences, using only information from the ICSE PDF content.
+Then compare the generated Learning Outcomes against these Concept Units.
+Return:
+[Assessment]: PASS/FAIL
+[Coverage Notes]
+[Issues Found]
+[Refined Learning Outcomes]
 
 ---
 PLT_CREATION_PROMPT
