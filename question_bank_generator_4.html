@@ -608,9 +608,9 @@
       <div class="subject-name">English</div>
       <div class="subject-tag">ICSE</div></div><div class="subject-card disabled"><div class="subject-icon">💼</div>
       <div class="subject-name">Commerce</div>
-      <div class="subject-tag">⏳ Soon</div></div><div class="subject-card disabled"><div class="subject-icon">📊</div>
+      <div class="subject-tag">⏳ Soon</div></div><div class="subject-card"><div class="subject-icon">📊</div>
       <div class="subject-name">Economics</div>
-      <div class="subject-tag">⏳ Soon</div></div><div class="subject-card disabled"><div class="subject-icon">🏢</div>
+      <div class="subject-tag">ICSE</div></div><div class="subject-card disabled"><div class="subject-icon">🏢</div>
       <div class="subject-name">Business Studies</div>
       <div class="subject-tag">⏳ Soon</div></div><div class="subject-card disabled"><div class="subject-icon">🧾</div>
       <div class="subject-name">Accountancy</div>
@@ -1262,6 +1262,196 @@ MANDATORY RULES:
 
 };
 
+PROMPTS.ECONOMICS_ICSE = `## GLOSSARY_CREATION_PROMPT
+You are an expert Economics teacher for Grade {{Grade}} ICSE students.
+
+Create a comprehensive glossary for the chapter: **{{ChapterName}}**
+
+INSTRUCTIONS:
+- Generate 15-20 important economics terms from this chapter
+- Each term must have a clear, student-friendly definition
+- Include a brief example or use case where helpful
+- Focus on terms that are essential for understanding the chapter
+
+OUTPUT FORMAT (plain text, no JSON):
+Glossary - {{ChapterName}}
+
+Term 1: [Term Name]
+Definition: [Clear definition with example if applicable]
+
+Term 2: [Term Name]
+Definition: [Clear definition with example if applicable]
+
+[Continue for all terms...]
+
+---
+TERMS_CREATION_PROMPT
+You are an expert Economics teacher for Grade {{Grade}} ICSE students.
+
+Create detailed Terms and Definitions for the chapter/topic: **{{ChapterName}}** - **{{TopicName}}**
+
+INSTRUCTIONS:
+- Generate 10-15 key economics terms specific to this topic
+- Provide precise, curriculum-aligned definitions
+- Include the significance or application of each term in economics context
+
+OUTPUT FORMAT (plain text, no JSON):
+Terms and Definitions - {{TopicName}}
+
+1. [Term]: [Definition] - [Significance/Application]
+2. [Term]: [Definition] - [Significance/Application]
+[Continue...]
+
+---
+LO_CREATION_PROMPT
+You are an expert Economics teacher for Grade {{Grade}} ICSE students.
+
+Generate Learning Outcomes for the chapter/topic: **{{ChapterName}}** - **{{TopicName}}**
+
+INSTRUCTIONS:
+- Write 8-12 specific, measurable Learning Outcomes
+- Use Bloom's Taxonomy action verbs (define, explain, analyse, evaluate, apply, compare, etc.)
+- Each LO should be achievable and relevant to ICSE Grade {{Grade}} Economics curriculum
+- Cover factual understanding, application, analysis and evaluation
+
+OUTPUT FORMAT:
+LO1: [Action verb] [specific learning outcome]
+LO2: [Action verb] [specific learning outcome]
+[Continue for all LOs...]
+
+---
+LO_VALIDATION_PROMPT
+You are an expert Economics teacher. Review and validate the following Learning Outcomes for {{TopicName}}:
+
+{{LearningOutcomes}}
+
+Ensure each LO is:
+- Specific and measurable
+- Aligned with ICSE Grade {{Grade}} Economics curriculum
+- Covering appropriate cognitive levels
+- Using correct Bloom's Taxonomy verbs
+
+Provide the validated/refined LOs in the same format.
+
+---
+PLT_CREATION_PROMPT
+You are an expert Economics teacher for Grade {{Grade}} ICSE students.
+
+Create a Proficiency Level Transcript (PLT) for: **{{ChapterName}}** - **{{TopicName}}**
+
+Based on these Learning Outcomes:
+{{LearningOutcomes}}
+
+INSTRUCTIONS:
+- Create a structured transcript that covers all the LOs above
+- Write in a clear, engaging narrative style suitable for Grade {{Grade}} students
+- Include explanations, examples and real-world applications
+- The transcript should serve as a comprehensive study guide
+- Cover factual, understanding, application, analysing and evaluating levels
+
+OUTPUT FORMAT (plain text narrative):
+Proficiency Level Transcript - {{TopicName}}
+
+[Write a comprehensive, well-structured narrative covering all LOs with examples and explanations...]
+
+---
+PLT_VALIDATION_PROMPT
+You are an expert Economics teacher. Review the following PLT for {{TopicName}} and ensure it covers all the Learning Outcomes adequately.
+
+Validate and refine if needed to ensure complete coverage of all LOs.
+
+---
+OBJECTIVE_CREATION_PROMPT
+You are an expert Economics teacher for Grade {{Grade}} ICSE students.
+
+Generate objective questions for the chapter/topic: **{{ChapterName}}** - **{{TopicName}}**
+
+Based on these Learning Outcomes:
+{{LearningOutcomes}}
+
+QUESTION TYPES TO GENERATE:
+Generate a mix of the following question types as appropriate for the topic:
+1. SCQ - Single Correct Question (4 options, 1 correct)
+2. MSQ - Multiple Select Question (4 options, 2+ correct)
+3. TF - True/False
+4. FIB - Fill in the Blank
+5. MTF - Match the Following
+6. OA - Ordering/Arrange in sequence
+7. CS - Case Study based
+8. DIA - Diagram/Chart based
+9. CALC - Calculation based
+10. DEF - Definition based
+11. DIFF - Differentiate between
+12. LIST - List/Enumerate
+13. APPLY - Application based scenario
+14. EVAL - Evaluate/Justify
+
+INSTRUCTIONS:
+- Generate 15-20 questions covering factual, understanding, application, analysing and evaluating levels
+- Cover easy, medium and hard difficulty levels
+- Each question must test a specific LO
+- The "questionType" field must be one of the 14 types above
+- For SCQ: provide exactly 4 options and 1 correct answer
+- For MSQ: provide exactly 4 options and 2 or more correct answers
+- For TF: options are ["True", "False"]
+- For FIB: question contains a blank "_____" and options may be []
+- For MTF: question contains two columns to match
+- For other types: options may be empty [] if not applicable; answers must still be provided
+- Keep all questions strictly within the supplied textbook/script and LO scope
+
+OUTPUT: Return ONLY a valid JSON array. No markdown, no explanation.
+
+Every element MUST use EXACTLY this schema:
+{
+  "cognitiveLevel": "Understanding",
+  "difficultyLevel": "Medium",
+  "questionType": "SCQ",
+  "question": "<question text>",
+  "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+  "answers": ["Correct option text exactly"],
+  "solution": "Brief explanation of the correct answer"
+}
+
+MANDATORY RULES:
+- "questionType" MUST be one of: SCQ, MSQ, TF, FIB, MTF, OA, CS, DIA, CALC, DEF, DIFF, LIST, APPLY, EVAL
+- "answers" is always an array of strings
+- "options" is always an array of strings (can be empty [] for FIB, LIST, DEF type)
+- Allowed field names ONLY: cognitiveLevel, difficultyLevel, questionType, question, options, answers, solution
+- FORBIDDEN fields: question_type, cognitive_level, difficulty, type_tag, correct_answer, explanation, hint, topic
+- NEVER include marks or mark allocations inside the "question" string
+- Do NOT wrap output in markdown code fences
+
+---
+SUBJECTIVE_CREATION_PROMPT
+You are an expert Economics teacher for Grade {{Grade}} ICSE students.
+
+Generate subjective questions for the chapter/topic: **{{ChapterName}}** - **{{TopicName}}**
+
+Based on these Learning Outcomes:
+{{LearningOutcomes}}
+
+INSTRUCTIONS:
+- Generate the required number of subjective questions with solutions
+- Keep the language clear, student-friendly and aligned to ICSE Grade {{Grade}} Economics
+- Use only the provided textbook/script and learning outcomes
+- Cover factual, understanding, application and evaluative demand where relevant
+- Return questions in the same structured JSON style used by the generator
+
+---
+SUBJECTIVE_VALIDATION_PROMPT
+You are an expert Economics teacher. Review the following subjective questions for {{TopicName}} and ensure they match the learning outcomes and the chapter scope.
+
+{{GeneratedQuestions}}
+
+Check that:
+- every question is directly traceable to the supplied content and learning outcomes
+- solutions are correct and complete
+- the difficulty progression is sensible
+- there are no duplicates or off-topic items
+
+Return the refined output in the same format.
+`;
+
 PROMPTS.ENGLISH_CBSE_GRAMMAR = `## SUBJECTIVE_CREATION_PROMPT
 ENGLISH_Grammar_CBSE: "Act as an experienced English teacher who has expertise in creating descriptive grammar questions.
 
@@ -1438,7 +1628,7 @@ const SUBJECTS = [
   { id:'History',  icon:'📜',  label:'History',        icse:true,  cbse:false },
   { id:'English',  icon:'📖',  label:'English',        icse:true,  cbse:true  },
   { id:'Commerce', icon:'💼',  label:'Commerce',       icse:true,  cbse:false },
-  { id:'Economics',icon:'📊',  label:'Economics',      icse:false, cbse:false, soon:true },
+  { id:'Economics',icon:'📊',  label:'Economics',      icse:true,  cbse:false },
   { id:'Business Studies',icon:'🏢',label:'Business Studies',icse:false,cbse:false,soon:true},
   { id:'Accountancy',icon:'🧾',label:'Accountancy',   icse:false, cbse:false, soon:true },
 ];
@@ -2397,6 +2587,7 @@ function getSubtopicName() {
 }
 
 function getPromptKey() {
+  if (state.subject === 'Economics' && state.curriculum === 'ICSE') return 'ECONOMICS_ICSE';
   if (state.subject === 'Commerce' && state.curriculum === 'ICSE') return 'COMMERCE_ICSE';
   if (state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar') return 'ENGLISH_CBSE_GRAMMAR';
   if (state.subject === 'English' && state.curriculum === 'CBSE') return 'ENGLISH_CBSE';
