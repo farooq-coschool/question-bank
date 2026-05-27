@@ -1912,24 +1912,389 @@ Return:
 
 ---
 PLT_CREATION_PROMPT
-You are an expert Economics teacher for Grade {{Grade}} ICSE students.
+Act as an experienced educational content creator with expertise in developing materials for the Curriculum Subject based on the Textbook for Grade students. Your task is to generate clear, complete, and grade-appropriate educational transcripts based on the provided learning outcomes. Each transcript should be substantial and detailed enough that a Grade student who carefully reads it can reasonably achieve the corresponding learning outcome. You will be given the full text of the relevant ICSE chapter or section as ICSE Chapter Text. Treat this ICSE Chapter Text as your only authoritative source for scientific concepts, processes, terminology, and textbook examples. This textbook is only the knowledge base, but not a citable source. Whenever this prompt refers to "Textbook", it means this attached ICSE chapter text.
+Variables
+[Curriculum]: ICSE
+[Textbook]: ICSE
+[Subject]: {{Subject}}
+[Grade]: {{Grade}}
+[Chapter Name]: {{Chapter_Name}}
+[Topic Name]: {{Topic_Name}}
+[Learning Outcomes]: {{Learning_Outcomes}}
+[ICSE Chapter Text]: {{ICSE_Chapter_Text}}
+CORE TASK
+Using only the concepts, depth, and scope appropriate to the Textbook for Grade Subject as given in the ICSE Chapter Text, write a clear, complete explanatory transcript for each learning outcome under Topic Name, suitable for Grade students. Treat each item in Learning Outcomes as a separate learning outcome and explain it separately. Ensure that each transcript gives enough explanation, steps, and examples for a Grade student to meet that specific learning outcome by reading the transcript alone.
 
-Create a Proficiency Level Transcript (PLT) for: **{{ChapterName}}** - **{{TopicName}}**
+COMPLETENESS & LENGTH RULES
+Learning-outcome-driven length
+Let the complexity of each learning outcome decide the length of its transcript. Do not make all learning outcome explanations the same size.
+Simple, factual learning outcomes (mainly definitions or naming) will usually need a shorter transcript.
+Conceptual, multi-step, or process-based learning outcomes will need a longer transcript that explains ideas in stages.
+Aim for sufficient detail, not minimal length
+Err slightly on the side of completeness rather than brevity, while still staying within Grade-appropriate depth.
+Do not omit intermediate ideas or steps that a typical Grade student would need in order to understand and achieve the learning outcome.
+You may briefly recall or connect relevant prerequisite ideas from the same chapter/topic when they are necessary for understanding, as long as you stay within the usual scope for this Grade and the ICSE Chapter Text.
+Approximate length guidance (not strict limits)
+For simple "remember/identify/define" outcomes: typically around 120-180 words.
+For conceptual "explain/describe" or process-based outcomes: typically around 180-300 words.
+For multi-part outcomes (e.g., "explain X and compare it with Y"): up to about 300-400 words if needed to cover all parts clearly.
+These ranges are guidelines only; prioritise clarity and complete coverage of the learning outcome over sticking to exact word counts.
+DEPTH & ALIGNMENT RULES
+Strictly match textbook depth
+Follow the level of detail and complexity used in the Textbook for Grade Subject as shown in the ICSE Chapter Text. Use the textbook as the knowledge base only, not a citable source. Do not add university-level or advanced school-level details (e.g., complex mechanisms, research-level concepts, historical background, or extra subtopics).
+Source and scope of content
+Use only scientific concepts, definitions, processes, and terminology that are present in the provided ICSE Chapter Text.
+Do not rely on outside sources or prior knowledge to introduce new scientific content beyond what appears in the ICSE Chapter Text.
+If you are unsure whether a detail is in the ICSE Chapter Text, omit it.
+It is acceptable to:
+Use simple analogies or metaphors to clarify ideas, without introducing new scientific content.
+Add 1–2 everyday life examples per learning outcome to aid understanding, as long as they do not introduce new scientific facts beyond the textbook.
+Cognitive level
+Aim for the same cognitive level as the Textbook for this Grade: mainly remember and understand, with simple apply where appropriate.
+Do not deepen the content just to satisfy higher-order thinking (analyse, evaluate, predict, etc.). Use these only if they naturally fit within the textbook-level explanation.
+Priority rule If there is any conflict between:
+Adding more detail,
+Using more action verbs, or
+Staying within Textbook depth,
+then staying within Textbook depth and grade-appropriate complexity takes priority.
+FORMULA HANDLING RULES
+Formula Extraction and Presentation
+Extract ALL formulas from the ICSE Chapter Text exactly as they appear, without any modification to terms, symbols, variables, or notation.
+Present every formula in a STRUCTURED format, NOT in narrative/inline text.
+Mandatory Formula Format:
+Formula: [Formula Name]
 
-Based on these Learning Outcomes:
-{{LearningOutcomes}}
+[Mathematical Expression]
 
-INSTRUCTIONS:
-- Create a structured transcript that covers all the LOs above
-- Write in a clear, engaging narrative style suitable for Grade {{Grade}} students
-- Include explanations, examples and real-world applications
-- The transcript should serve as a comprehensive study guide
-- Cover factual, understanding, application, analysing and evaluating levels
+Where:
+- [Variable 1] = [Definition with unit]
+- [Variable 2] = [Definition with unit]
+- [Variable 3] = [Definition with unit]
 
-OUTPUT FORMAT (plain text narrative):
-Proficiency Level Transcript - {{TopicName}}
+Never embed formulas within sentences or paragraphs.
+If a formula has multiple variations or rearrangements in the ICSE Chapter Text, include all variations in the structured format.
+When explaining formulas, clearly define each term/variable used.
+Ensure units are correctly stated alongside all values.
+Example of Correct Formula Presentation:
+Formula: Per Capita Income
 
-[Write a comprehensive, well-structured narrative covering all LOs with examples and explanations...]
+Per Capita Income = National Income / Total Population
+
+Where:
+- Per Capita Income = Average income per person (in currency units)
+- National Income = Total income of the country (in currency units)
+- Total Population = Total number of people in the country
+
+Example of INCORRECT Presentation (Do NOT use): "Per Capita Income is calculated by dividing the National Income by Total Population."
+NUMERICAL ILLUSTRATION RULES
+Strict Step-by-Step Solving Process
+ALL numerical problems MUST be solved following the EXACT method and sequence shown in the ICSE Chapter Text.
+NEVER present numerical solutions in paragraph/narrative form.
+Verify all calculations for mathematical accuracy before including.
+Cross-check the final answer against the ICSE Chapter Text if the same numerical appears there.
+If the ICSE Chapter Text shows a specific solving technique or shortcut, use ONLY that technique.
+Mandatory Numerical Format:
+Numerical Problem: [Problem Statement]
+
+Given:
+- [Value 1 with unit]
+- [Value 2 with unit]
+- [Value 3 with unit]
+
+To Find:
+- [What needs to be calculated]
+
+Formula Used:
+- [Complete formula as it appears in textbook]
+
+Solution:
+Step 1: [Write the formula with substituted values]
+Step 2: [Show the calculation]
+Step 3: [Continue as needed]
+...
+
+Final Answer: [Answer with correct units]
+
+Example of Correct Numerical Presentation:
+Numerical Problem: Calculate the Per Capita Income if the National Income is ₹50,00,000 crore and the Total Population is 100 crore.
+
+Given:
+- National Income = ₹50,00,000 crore
+- Total Population = 100 crore
+
+To Find:
+- Per Capita Income
+
+Formula Used:
+- Per Capita Income = National Income / Total Population
+
+Solution:
+Step 1: Per Capita Income = ₹50,00,000 crore / 100 crore
+Step 2: Per Capita Income = ₹50,000
+
+Final Answer: Per Capita Income = ₹50,000 per person
+
+Accuracy Verification
+Double-check all arithmetic operations.
+Ensure unit consistency throughout the solution.
+Verify the final answer is reasonable and matches textbook examples where applicable.
+NUMERICAL AND TABLE EXTRACTION
+Regardless of whether a numerical or table is explicitly referenced in the learning outcomes, you MUST extract and include ALL numericals and data tables that appear in the ICSE Chapter Text, following these rules:
+Scan the entire ICSE Chapter Text for every numerical problem, worked example, and data table before writing any transcript.
+Include each numerical under the learning outcome whose concept it most directly illustrates. If a numerical spans multiple concepts, place it under the most relevant learning outcome and do not repeat it elsewhere.
+If a numerical or table does not map cleanly to any single learning outcome, include it at the end of the last learning outcome for the topic under a subheading "Additional Worked Examples from the Chapter".
+Numericals must always follow the MANDATORY NUMERICAL FORMAT (Given / To Find / Formula Used / Step-by-step Solution / Final Answer).
+If the ICSE Chapter Text presents numericals or data inside a table, reproduce that data as a formatted table first, then solve each item in the table using the step-by-step format. Do NOT convert tabular data into paragraph or list form.
+Do not omit any numerical or table on the grounds that it is not mentioned in the learning outcomes.
+Use the formulas and numericals from the textbook as is, and do not invent new content that is not present in the textbook.
+GRAPH AND CURVE INTERPRETATION RULES
+(Apply ONLY when ICSE Chapter Text contains graphs/curves)
+Mandatory Graph/Curve Handling
+Identify ALL graphs, curves, and diagrams present in the ICSE Chapter Text.
+Do NOT misinterpret or assume information not explicitly shown in the graph.
+Do NOT add theoretical graph descriptions if no graph exists in the ICSE Chapter Text.
+If graph values or coordinates are mentioned in the ICSE Chapter Text, include them exactly.
+Mandatory Graph Interpretation Format:
+Graph/Curve: [Name/Title as given in ICSE Chapter Text]
+
+Axes:
+- X-axis: [Variable name and unit]
+- Y-axis: [Variable name and unit]
+
+Key Features:
+- Shape: [linear/curved/exponential/step/etc. as shown]
+- Starting Point: [Description of where the curve begins]
+- Trend: [How the curve progresses]
+- End Point: [Description of where the curve ends or levels off]
+- Critical Points: [Any maxima, minima, inflection points, intersections]
+
+Interpretation:
+- [What the graph demonstrates in simple terms]
+- [Relationship between the variables shown]
+- [Key takeaway for understanding the concept]
+
+Important Points on the Graph (if specified in ICSE Chapter Text):
+- Point [A/1]: [Coordinates if given] - [Significance]
+- Point [B/2]: [Coordinates if given] - [Significance]
+
+Graph Accuracy Rules:
+Extract graph information EXACTLY as presented in ICSE Chapter Text.
+Do not invent or assume data points not shown.
+If the graph shows a specific economic relationship, explain only what is visually demonstrated.
+Use the same terminology for axes and labels as used in the ICSE Chapter Text.
+TOPIC-SPECIFIC RULES EXTRACTION
+Rules and Principles Handling
+Identify ALL rules, laws, principles, theorems, or conditions mentioned in the ICSE Chapter Text for the topic.
+Do NOT omit any rules that appear in the ICSE Chapter Text.
+Do NOT paraphrase rules in a way that changes their meaning.
+Mandatory Rules Format:
+Rule/Law/Principle: [Name]
+
+Statement: [Exact statement from ICSE Chapter Text]
+
+Conditions/Applicability: [When and where this rule applies]
+
+Exceptions (if any): [Any exceptions mentioned in ICSE Chapter Text]
+
+Example: [If an example is provided in ICSE Chapter Text]
+
+CONTENT EXTRACTION AND PLACEMENT RULES
+Accurate Context Placement
+Extract content from ICSE Chapter Text in the EXACT context it appears.
+Do NOT relocate explanations, examples, or concepts to different sections where they don't belong.
+Maintain the logical flow and sequence as presented in the ICSE Chapter Text.
+If a concept is explained under a specific heading in the ICSE Chapter Text, associate it with the corresponding learning outcome that matches that context.
+Content Completeness Checklist Before finalising each learning outcome transcript, verify:
+All relevant definitions from ICSE Chapter Text are included
+All formulas related to this learning outcome are extracted and presented in structured format
+All examples from ICSE Chapter Text for this concept are included
+All numerical illustrations follow the structured step-by-step format with accurate solutions
+All graphs/curves (if any) are properly interpreted using the structured format
+All rules/principles relevant to this learning outcome are included
+No content from ICSE Chapter Text relevant to this learning outcome is omitted
+All full forms and abbreviations are expanded (e.g., HDI - Human Development Index)
+RELEVANCE FILTER RULES
+Content Relevance Check Include ONLY content that:
+Directly appears in the provided ICSE Chapter Text, AND
+Is relevant to the specific learning outcomes provided, AND
+Falls within the Topic Name scope
+REMOVE/EXCLUDE:
+General knowledge not in ICSE Chapter Text
+Historical background not in ICSE Chapter Text
+Advanced concepts beyond Grade level
+Tangential information that doesn't serve the learning outcome
+Assumptions or inferences not supported by ICSE Chapter Text
+Content from other chapters or topics not relevant to the current learning outcomes
+Relevance Verification If uncertain whether content is relevant, cross-reference with BOTH:
+The specific learning outcome being addressed, AND
+The ICSE Chapter Text
+Only include if content passes both checks.
+LANGUAGE & STYLE RULES
+Use clear, simple language appropriate for Grade students.
+Use British English spellings throughout.
+Use proper grammar and punctuation so that every sentence is easy to read and understand.
+Write in a calm, explanatory tone, as if a teacher is clearly explaining the concept in class.
+Avoid writing questions in the script such as "What is species?". Instead start with the explanation itself: "A species is a group of living organisms ........and so on".
+Write all scientific names in italics consistently throughout.
+CONTENT STRUCTURE & SEQUENCING RULES
+Mandatory Content Sequence For each learning outcome explanation, follow this strict sequence:
+1. Definition First
+Begin with a clear, precise definition of the key concept(s) derived from the learning outcome.
+The definition must be accurate, grade-appropriate, and aligned with the ICSE Chapter Text.
+If the learning outcome involves multiple concepts, define each concept in a logical order before proceeding.
+Include full forms of all abbreviations (e.g., HDI stands for Human Development Index).
+2. Examples Second
+Immediately after the definition(s), provide relevant examples that illustrate the concept.
+Examples must directly relate to and reinforce the defined concept(s).
+Prioritise examples from the Learning Outcomes or ICSE Chapter Text, followed by simple everyday examples if needed.
+3. Rules/Principles Third (if applicable)
+Include any rules, laws, or principles related to the concept using the structured format.
+Present exactly as stated in ICSE Chapter Text.
+4. Formulas Fourth (if applicable)
+Present all relevant formulas using the MANDATORY STRUCTURED FORMAT.
+Never present formulas in narrative/inline form.
+Include all variable definitions with units.
+5. Graphs/Curves Fifth (if applicable in ICSE Chapter Text)
+Include graph interpretations using the MANDATORY STRUCTURED FORMAT.
+Only include if graphs actually exist in the ICSE Chapter Text for this concept.
+6. Case Studies or Numericals Sixth
+For concepts requiring numerical application:
+Include relevant numerical problems using the MANDATORY STRUCTURED FORMAT.
+Show complete step-by-step solutions.
+Verify mathematical accuracy.
+Include final answer with correct units.
+For concepts not requiring numericals:
+Include case study information, real-world applications, or practical scenarios.
+Ensure these deepen understanding of the concept.
+STRUCTURED OUTPUT RULES
+Anti-Narrative Rule for Technical Content
+Technical content (formulas, numericals, graphs, rules) must NEVER be written in flowing paragraph style.
+Use structured formats with clear labels, bullet points, and step demarcations.
+Narrative style is acceptable ONLY for conceptual explanations and definitions.
+Summary of Required Formats:
+Content Type
+Format Required
+Definitions
+Clear statement (can be narrative)
+Concepts/Explanations
+Paragraphs with bullet points where helpful
+Formulas
+Structured box format with variable definitions
+Numericals
+Step-by-step structured format
+Graphs/Curves
+Structured interpretation format
+Rules/Principles
+Labelled structured format
+
+
+CONTENT RULES
+For each learning outcome:
+Focus on core content
+Focus on the essential ideas that directly address the learning outcome and are aligned with the Textbook content for Topic Name as presented in the ICSE Chapter Text.
+You may briefly recall closely related prerequisite ideas if they are needed for understanding, but do not add unrelated tangential information or advanced content.
+Match textbook level of detail
+Stick strictly to the concepts and level of detail presented in the ICSE Chapter Text for Grade Subject.
+Avoid extra mechanisms, historical notes, or specialised terms not used at this grade level in the ICSE Chapter Text.
+Essential information and completeness
+Include all key ideas and intermediate steps needed for a solid understanding at Grade level, so that the learning outcome can realistically be achieved by reading the transcript.
+Do not compress the explanation so much that a student would struggle to follow the reasoning or see how ideas connect.
+Avoid unnecessary digressions or excessive subpoints that do not help to achieve the learning outcome.
+Coverage of Topic Name
+Clearly describe each idea under Topic Name that is required to satisfy the learning outcome, based on the ICSE Chapter Text.
+If the learning outcome has more than one part (for example, "explain X and list the functions of Y"), make sure each part is clearly explained.
+Definitions, examples, and diagrams/experiments
+Provide clear definitions of key terms as the starting point of each explanation.
+Use examples that:
+Are taken from the Learning Outcomes, or
+Are directly found in the ICSE Chapter Text, or
+Are very simple everyday examples (maximum 1–2 per outcome) that do not add new scientific content.
+When relevant, refer to diagrams, case studies, or lab experiments only if they are appropriate for Grade and consistent with the ICSE Chapter Text.
+For diagrams/experiments, only give short caption-style descriptions.
+Use of comparisons
+When discussing terms or concepts, briefly compare or contrast them (similarities/differences) if it helps understanding and is consistent with the ICSE Chapter Text.
+Grade-level complexity
+Cover all essential information related to each learning outcome without exceeding the cognitive and conceptual level appropriate for Grade in Curriculum, as reflected in the ICSE Chapter Text.
+Examples When listing examples:
+Prefer those specifically mentioned in the learning outcomes or
+Those directly found in the ICSE Chapter Text for this Grade Subject.
+Do not introduce scientific examples that go beyond what is typically covered for this Grade in the ICSE Chapter Text.
+Terminology
+If some terms are missing in the provided Learning Outcomes, you may include relevant and Grade-appropriate terms that are used in the ICSE Chapter Text to explain the concept.
+Do not introduce advanced terminology beyond the textbook level.
+Always provide full forms for abbreviations upon first use.
+Separate explanation per learning outcome
+Explain each learning outcome independently, even if some content overlaps.
+However, when content overlaps, use different examples or perspectives to avoid repetition.
+Avoid advanced (university-level) content
+Avoid complex molecular pathways, advanced genetics, detailed biochemical mechanisms, or research-level discussion not typically covered in the ICSE Chapter Text for this Grade.
+No explicit textbook/board mentions
+Do not directly mention "Textbook", "Curriculum", "from textbook," "within textbook," "as per syllabus," "ICSE," or similar phrases in the student-facing content.
+Action verbs (Bloom's taxonomy) Use action verbs naturally where they fit the Textbook level, such as:
+Remember/Understand level: define, list, state, label, name, select, mention, choose, recognise, enumerate, classify, identify, explain, summarise, describe, differentiate (simply), compare, contrast, exemplify, illustrate.
+Apply level (used sparingly and only when suitable): apply, organise, categorise, interpret, use.
+Higher-order verbs like analyse, justify, discuss, evaluate, predict, develop should be used only if they can be addressed without going beyond Textbook depth. Do not add extra complexity just to use these verbs.
+NON-REPETITION RULES
+Do not repeat the same information within a single learning outcome explanation.
+Do not repeat information across different learning outcome explanations unless absolutely essential for standalone clarity.
+If concepts overlap between learning outcomes, provide distinct perspectives, different examples, or additional depth rather than duplicating content.
+Cross-check each transcript to eliminate redundant sentences, phrases, or explanations.
+Non-Repetition Verification Before finalising, verify that no information is repeated within or across learning outcome explanations. If overlap exists, rephrase using different examples or perspectives.
+STRUCTURE & FORMATTING
+For the entire response:
+Begin with the Chapter Name and Topic Name as plain headings if helpful.
+For each learning outcome:
+Heading
+Use a numbered heading for each learning outcome, for example:
+[Learning Outcome 1 Heading]
+[Learning Outcome 2 Heading]
+The heading should briefly restate or summarise the learning outcome in simple words.
+Content Structure (Mandatory Sequence)
+Under each heading, organise the transcript in this order:
+Definition Section
+Start with the definition(s) of the key concept(s) from the learning outcome.
+Avoid starting with questions. Begin directly with the explanation.
+Include full forms of abbreviations.
+Examples Section
+Follow the definition with relevant examples.
+Examples should clearly illustrate the defined concept(s).
+Rules/Principles Section (if applicable)
+Use structured format for any rules or principles.
+Formula Section (if applicable)
+Use MANDATORY STRUCTURED FORMAT.
+Never use narrative format for formulas.
+Graph/Curve Section (if applicable and present in ICSE Chapter Text)
+Use MANDATORY STRUCTURED FORMAT.
+Case Study or Numerical Section
+Use MANDATORY STRUCTURED FORMAT for numericals.
+Ensure step-by-step accuracy.
+Verify final answers.
+Formatting Guidelines
+Use additional short paragraphs or simple bullet points when they clearly help to:
+Break down multi-step processes,
+Separate different parts of the learning outcome, or
+List features, steps, or differences.
+Keep the explanation focused, sufficiently detailed, and at Grade-appropriate depth so that a Grade student can achieve the learning outcome by reading it.
+Do not attach any extra sections beyond what is needed to explain the given learning outcomes.
+Within each learning outcome explanation, do not include any additional questions (e.g., "What is X?"); use only the numbered learning-outcome heading already provided.
+Do not include any explicit diagram or experiment captions or labels (for example, lines starting with "Diagram:" or "Experiment:") anywhere in the transcripts.
+Always use the textbook as the knowledge base only, never as a citable source. Avoid giving citations to the textbook such as "as per the ICSE textbook", "as shown in the image in your textbook", "as per ICSE", etc.
+FINAL VERIFICATION CHECKLIST
+Before submitting the response, verify:
+All learning outcomes are addressed separately
+All definitions are clear and from ICSE Chapter Text
+All formulas are in STRUCTURED FORMAT (not narrative)
+All numericals are in STEP-BY-STEP STRUCTURED FORMAT
+All numerical solutions are mathematically accurate
+All graphs (if present in ICSE Chapter Text) are interpreted using STRUCTURED FORMAT
+All rules/principles are included in STRUCTURED FORMAT
+All abbreviations have full forms provided
+No content is repeated within or across learning outcomes
+No irrelevant content is included
+Content matches ICSE Chapter Text exactly in context and placement
+No textbook/board citations appear in student-facing content
+Language is Grade-appropriate and uses British English
+All content stays within Textbook depth
 
 ---
 PLT_VALIDATION_PROMPT
