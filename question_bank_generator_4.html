@@ -1262,7 +1262,178 @@ MANDATORY RULES:
 
 };
 
-PROMPTS.ECONOMICS_ICSE = `## GLOSSARY_CREATION_PROMPT
+PROMPTS.ECONOMICS_ICSE = `## PRE_REQUISITE_CREATION_PROMPT
+You are a subject matter expert in the ICSE Economics curriculum, with deep knowledge of:
+- ICSE textbooks and their grade-wise progression
+- How concepts are introduced and sequenced across Classes 6-12
+- Conceptual pre-requisites required to understand each ICSE Economics chapter
+
+Your task is to design pre-requisite single-choice questions (SCQs) for a specific ICSE Economics chapter. These questions are intended for ICSE students of a specified grade.
+
+Goal:
+Design a set of essential pre-requisite SCQs for one target chapter from an ICSE Economics textbook.
+
+These questions must:
+1. Diagnose whether students have necessary foundational knowledge before starting the target chapter.
+2. Help teachers identify learning gaps from earlier chapters or lower grades.
+3. Ensure students are adequately prepared for the new content in the specified ICSE chapter.
+
+Pre-requisite Questions:
+- Format: Single Choice Questions (SCQ) with exactly one correct answer.
+- Purpose: Test basic concepts, skills, and knowledge from:
+- The specified prerequisite chapter/s, and/or
+- Earlier ICSE chapters from lower classes
+- Questions must not require knowledge of:
+- Concepts from lower grades or concepts first introduced in the target chapter itself.
+- If [Numerical questions] = Yes, then 7 out of the 10 concept sets must produce numerical questions (i.e., all 3 questions in those 7 sets must be numerical). The remaining 3 sets must be theoretical. If [Numerical questions] = No, all 10 sets must be theoretical.
+- Match the complexity level of questions as per the grade [Grade]. Easy to Hard from 6 to 12.
+
+Pre-requisite SCQs ensure that students have a solid foundation in Economics that is necessary to understand the upcoming ICSE chapter.
+
+Input You Will Receive:
+
+[Grade]: {{grade}}
+[Subject]: {{subject}}
+[Chapter Name]: {{chaptername}}
+Prerequisite Chapters: {{prerequisitechapter}}
+[Numerical questions]: {{Yes/No}}
+[Comments]:
+
+Critical Constraints to Follow:
+1. Use only prior concepts and do not use any new concept.
+2. Use only concepts, definitions, formulas, and skills that:
+3. Are covered in the specified prerequisite chapter/s
+4. Are covered in earlier ICSE chapters of the same or lower classes.
+5. Do not introduce or rely on:
+5.1 Any concept, law, definition, formula, term, or diagram that appears for the first time in the target chapter or any higher class.
+5.2 If you are uncertain whether a concept is introduced earlier or only in the target or higher chapter, treat it as not allowed and choose a simpler, clearly prior concept instead.
+6. Strictly follow all instructions provided in the [Comments] section.
+
+Question Type Specifications:
+A Single Choice Question (SCQ) is a type of objective question that presents the learner with a stem and four alternative options (A, B, C, D), out of which only one option is correct.
+Key Features of SCQs:
+Stem: The problem statement or question that needs to be answered.
+Options: Four possible clearly distinct answers are provided. All options shall have almost equal number of words (maximum number of words in any one option: 7).
+Correct Answer: Exactly one of the four options is correct. Never make the correct option the longest option. Use different letters (A, B, C, D) for each question. All four letters must be used randomly in every generation.
+Distractors: The remaining three options are incorrect but related to the same concept as the correct option and question, designed to test the student's understanding and avoid guesswork.
+
+All options must be within 10% word count of each other. At least one distractor option shall be longer than the correct option.
+
+Numerical SCQ Format
+When a question involves calculation, the Solution Steps field in the output must follow this structure:
+Given: [list all values with units]
+Formula: [state the formula used]
+Step 1: [substitute values]
+Step 2: [calculate]
+Final Answer: [value with unit]
+Never present numerical working inside a prose sentence. The Explanation field should then state why each distractor is wrong.
+
+Cognitive Level & Difficulty Framework
+There are 3 difficulty levels: Easy, Medium, and Hard.
+There are 6 different types of questions with different cognitive and difficulty level combinations.
+1. Factual Easy: Questions that check direct recall of facts, terms, or definitions. Straightforward, with no reasoning or interpretation required.
+2. Understanding Easy: Questions that test basic comprehension of concepts. Require simple explanation, identification, or restatement in their own words.
+3. Understanding Medium: Questions that involve deeper comprehension. Students must interpret, classify, compare, or summarise ideas beyond recall.
+4. Understanding Hard: Questions that demand in-depth explanation of complex concepts. Involves linking multiple ideas, analysing causes, or justifying reasoning.
+5. Application Medium: Questions where students apply concepts or formulas to routine real-world problems which are not from the textbook examples. Requires step-by-step use of knowledge in familiar contexts.
+6. Application Hard: Questions requiring application of concepts to new or unfamiliar real-world situations which are not from the textbook examples. Involves higher-order problem-solving, reasoning, or case-based scenarios.
+
+Task Steps
+1. Analyse the target chapter.
+2. Based on its title and typical ICSE content for that grade, infer:
+- Main ideas, formulas, and skills that students will encounter.
+- Identify what students must already know from earlier chapters and grades to understand these ideas.
+- Do not use the target chapter's new content directly in the questions.
+- Identify key pre-requisite concepts and skills.
+- From the listed prerequisite chapter/s and earlier relevant chapters, list essential prior concepts.
+3. Clearly introduced before the target chapter in the ICSE sequence.
+4. Design pre-requisite question sets with a target of 10 concepts and 30 SCQs.
+5. For each key concept:
+Create 1 main SCQ testing that concept.
+Then create 2 additional similar SCQs for the same concept, varying context, wording, or numerical values if applicable, but keeping the same difficulty level.
+That means:
+Up to 10 sets
+Each set = 3 questions (1 main + 2 similar)
+Total = up to 30 SCQs
+6. Within each set:
+All three questions must test the same core concept.
+Maintain the same difficulty level.
+Use different option sets.
+- Each of the three questions must have a unique set of four options.
+- Do not repeat the exact same option set across the three questions, even if the correct idea is similar.
+
+Question Design Requirements:
+1. Use standard ICSE terminology, notation, units, and sign conventions appropriate for the given grade.
+2. Keep questions concise and suitable for quick assessment.
+3. Ensure a range of complexity within pre-requisite scope:
+4. Start with basic recall and recognition.
+5. Include questions that require simple understanding and application, but never demand target-chapter knowledge.
+6. If [Numerical questions] = Yes, then 7 out of the 10 concept sets must produce numerical questions. The remaining 3 sets must be theoretical. If [Numerical questions] = No, all 10 sets must be theoretical.
+7. Match the complexity level of questions as per the grade [Grade]. Easy to Hard from 6 to 12.
+8. Table-based questions when [Numerical questions] = Yes: at least 2 of the 7 numerical questions must be based on a data table presented within the question stem.
+Eligible table formats include:
+Frequency distribution tables, demand or supply schedule tables, income and expenditure tables, production or cost data tables, and national income or GDP component tables.
+Rules for table-based questions:
+The table must be embedded directly in the question stem, with clearly labelled columns and at least 3-4 data rows.
+The question must ask the student to read, calculate from, or interpret the table.
+All four options must be plausible values derivable from the table.
+The Solution Steps must reference the specific row or column used.
+Do not use the same table across more than one question in the same set.
+
+Avoid:
+1. Questions whose answers are trivial memorised facts without conceptual value.
+2. Overly abstract or unrealistic scenarios.
+3. Giving very easy questions to higher grades.
+
+Output Structure
+Follow this exact structure in your response:
+
+Class/Grade: [Based on Input]
+Subject:
+ICSE Chapter Title (Target Chapter): [Based on Input]
+Prerequisite chapter/s: [Based on Input]
+Key Prerequisite Concepts Needed
+
+List the essential prior concepts and skills by name, for example:
+Concept 1: [e.g. demand and supply]
+Concept 2: [e.g. market equilibrium]
+Concept 3: [e.g. national income]
+... (Continue listing up to around 10 essential prior concepts and skills)
+
+Pre-requisite Questions:
+
+For each concept, create a set of 3 SCQs:
+You must generate questions covering all of the following cognitive level and difficulty combinations. Each combination must appear at least the specified number of times.
+
+Continue similarly up to Set 10, resulting in up to 30 questions (10 x 3).
+
+All distractors (wrong options) are plausible but clearly incorrect and do not accidentally become correct under any normal interpretation.
+For each set generate questions on all factual easy, understanding easy, understanding medium, understanding hard, application medium, and application hard.
+
+Generate the output in this JSON format:
+[
+  {
+    "preRequest": true,
+    "preRequestId": "M1",
+    "cognitiveLevel": "...",
+    "difficultyLevel": "...",
+    "questionType": "SCQ",
+    "question": "...",
+    "options": [
+      "...",
+      "...",
+      "...",
+      "..."
+    ],
+    "answers": [
+      "..."
+    ],
+    "solution": "..."
+  }
+]
+
+---
+## GLOSSARY_CREATION_PROMPT
 You are an expert Economics teacher for Grade {{Grade}} ICSE students.
 
 Create a comprehensive glossary for the chapter: **{{ChapterName}}**
