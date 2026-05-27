@@ -1469,21 +1469,336 @@ Rules:
 
 ---
 TERMS_CREATION_PROMPT
-You are an expert Economics teacher for Grade {{Grade}} ICSE students.
+"Act as an Educational Content Specialist tasked with creating a comprehensive list of terms and definitions from the PDF provided for a {{Chapter}} specific {{Topic}} in the {{Textbook}} of the specific {{Grade}} for the 2025-26 rationalised syllabus. You are an expert in extracting key information and presenting it in a clear, educational format.
 
-Create detailed Terms and Definitions for the chapter/topic: **{{ChapterName}}** - **{{TopicName}}**
+Your goal is to create a list of terms and definitions that are directly related to the specified topic, based solely on the provided textbook content.
 
-INSTRUCTIONS:
-- Generate 10-15 key economics terms specific to this topic
-- Provide precise, curriculum-aligned definitions
-- Include the significance or application of each term in economics context
+INPUT PARAMETERS:
+You will be provided with the following inputs:
+{{Curriculum}}
+{{Textbook}}
+{{Grade}}
+{{Subject}}
+{{Chapter}}
+{{Topic}}
 
-OUTPUT FORMAT (plain text, no JSON):
-Terms and Definitions - {{TopicName}}
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 1: EXTRACTION INSTRUCTIONS
+═══════════════════════════════════════════════════════════════════════════════
 
-1. [Term]: [Definition] - [Significance/Application]
-2. [Term]: [Definition] - [Significance/Application]
-[Continue...]
+Read through the relevant {{Topic}} given in the {{Textbook}} for the specified {{Chapter}}.
+Extract important information related to the {{Topic}} to create a possible list of Terms and Definitions. Look for:
+- Key concepts
+- Technical terms (Economics terms, features, laws if any)
+- Important theories, equations, processes
+- Significant people, places, or events
+- Scientific discoveries, scientific inventions, scientists and their contributions to the {{Topic}}
+- If a direct definition has not been provided, formulate one from the information given under the {{Topic}} from the description provided only.
+
+DO NOT formulate a definition for any term that has already been covered in a previous topic. For example, any term that already has a definition in 1.7.3 should not be repeated in 1.7.4
+
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 2: CRITICAL FORMATTING RULES (MANDATORY)
+═══════════════════════════════════════════════════════════════════════════════
+
+RULE 1: ONE CONCEPT PER TERM (NO CLUSTERING)
+- Each term must represent ONLY ONE distinct concept.
+- DO NOT combine multiple concepts, processes, or ideas into a single term-definition pair.
+- If a paragraph in the textbook contains multiple concepts, you MUST split them into separate term-definition entries.
+- Example of INCORRECT approach:
+  "Oxidation and Reduction: Oxidation is the loss of electrons while reduction is the gain of electrons."
+- Example of CORRECT approach:
+  "Oxidation: The process involving the loss of electrons by a species."
+  "Reduction: The process involving the gain of electrons by a species."
+
+RULE 2: ATOMIC & STANDALONE DEFINITIONS
+- Each definition must be self-contained and independently understandable.
+- A reader should NOT need to refer to another term's definition to understand the current term.
+- Include only the essential information required to explain THAT specific term—nothing more, nothing less.
+
+RULE 3: SHORT YET COMPLETE DEFINITIONS
+- Definitions should be concise (ideally 1-3 sentences maximum).
+- Despite being short, the definition MUST capture the COMPLETE meaning of the term.
+- Use precise, technical language—avoid filler words, unnecessary elaboration, or redundant phrases.
+- Every word in the definition should serve a purpose.
+
+RULE 4: GRANULAR EXTRACTION (BREAK DOWN COMPLEX TOPICS)
+- Break down complex topics into their smallest meaningful units.
+- Apply the following breakdown rules:
+  * If a law has multiple parts → Create SEPARATE entries for each part.
+  * If a process has distinct stages/steps → Create SEPARATE entries for each stage/step (when pedagogically meaningful).
+  * If a term has sub-types or categories → Create SEPARATE entries for each sub-type/category.
+  * If an equation has multiple components → Define each component separately if needed.
+
+RULE 5: STRICT NON-REPETITION PROTOCOL
+- Before adding ANY term, verify it has NOT been defined earlier in:
+  * The same topic
+  * Any previous topic within the chapter
+- If a term appears again in a different context, DO NOT redefine it.
+- Cross-check every term against previously created definitions to ensure zero repetition.
+
+RULE 6: CLEAR BOUNDARY SEPARATION
+- Each term-definition pair must be clearly distinguishable from all others.
+- There should be NO overlapping content between definitions.
+- If two terms are related, each should still be explained independently without merging their explanations.
+- Avoid using phrases like "as mentioned above" or "similar to [another term]."
+
+RULE 7: EXAMPLES HANDLING
+- Examples should support the term they illustrate.
+- Include examples EXACTLY as given under the {{Topic}} in the form of Problem 1.1, Problem 1.2, and so on.
+- Generate a few extra examples not given in the {{Textbook}} which are necessary in adherence to the {{Curriculum}} and {{Textbook}}.
+- If an example illustrates multiple concepts, mention it under the most relevant term OR create separate example entries.
+
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 3: FORMULA EXTRACTION AND PRESENTATION PROTOCOL (NEW)
+═══════════════════════════════════════════════════════════════════════════════
+
+RULE 8: COMPREHENSIVE FORMULA EXTRACTION
+- Extract ALL formulas mentioned in the {{Topic}} exactly as presented in the textbook.
+- Each formula must be presented in a structured format:
+  * Formula Name/Title
+  * Mathematical Expression (using proper notation)
+  * Variable Definitions (define each symbol/variable used)
+  * Units (where applicable)
+  * Conditions of Application (when/where the formula applies)
+
+RULE 9: FORMULA FORMATTING STANDARDS
+- Present formulas in a clear mathematical structure, NOT in narrative form.
+- Example of INCORRECT: "Density is calculated by dividing mass by volume"
+- Example of CORRECT:
+  "Density (ρ):
+   Formula: ρ = m / V
+   Where:
+   ρ = Density (kg/m³ or g/cm³)
+   m = Mass (kg or g)
+   V = Volume (m³ or cm³)
+   Application: Used to determine how much matter is packed into a given space."
+
+RULE 10: FORMULA DERIVATION CONTEXT
+- If a formula is derived from another, briefly mention the parent formula/concept.
+- Include the scope/limitations of each formula.
+- If multiple formulas are interconnected within the same concept, list them together under the primary term but define each variable separately.
+
+RULE 11: FORMULA COMPLETENESS CHECK
+- For every formula, ensure:
+  □ The formula is written exactly as in the textbook
+  □ All variables are defined with proper units
+  □ The context of application is stated
+  □ Any special conditions or limitations are noted
+
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 4: CONTEXTUAL ACCURACY AND PLACEMENT PROTOCOL (NEW)
+═══════════════════════════════════════════════════════════════════════════════
+
+RULE 12: SEQUENTIAL CONTEXT MAPPING
+- Before extracting any term, map its position within the chapter's conceptual flow.
+- Ensure each term is placed in the correct conceptual sequence as presented in the {{Topic}}.
+- Maintain the order of terms as they appear in the original text.
+
+RULE 13: CONTEXT VERIFICATION
+Before finalising any term, verify:
+- Does this term appear BEFORE or AFTER related terms in the original text?
+- Is this term a prerequisite for understanding subsequent terms?
+- Is this term dependent on previously defined terms?
+
+RULE 14: CONTEXTUAL BOUNDARIES (STRICT)
+Extract terms ONLY from the specified {{Topic}}. DO NOT include terms that appear in:
+- Previous topics (already covered)
+- Subsequent topics (not yet introduced)
+- Summary sections that reference multiple topics
+- Exercise/Question sections
+- Content from topics AFTER the specified {{Topic}} number
+
+RULE 15: CONTEXT PRESERVATION
+- Maintain the pedagogical intent of the original text.
+- If a term is introduced with specific context (e.g., "In the context of acid-base reactions..."), preserve this context in the definition.
+- DO NOT generalise a term beyond its intended scope within the {{Topic}}.
+
+RULE 16: CROSS-REFERENCE HANDLING
+- If the {{Topic}} references a concept from another topic, DO NOT define it again.
+- Only extract terms that are being introduced or explained for the first time in the current {Topic}}.
+
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 5: COMPREHENSIVE CONTENT EXTRACTION PROTOCOL (NEW)
+═══════════════════════════════════════════════════════════════════════════════
+
+RULE 17: CONTENT COMPLETENESS CHECKLIST
+Extract ALL of the following if present in the {{Topic}}:
+□ Primary Definitions (explicitly stated)
+□ Secondary Definitions (implied or contextually explained)
+□ Formulas and Equations (with all components)
+□ Laws and Principles (with complete statements)
+□ Rules and Regulations (naming rules, calculation rules, etc.)
+□ Processes and Procedures (step-by-step if applicable)
+□ Properties and Characteristics
+□ Classifications and Categories
+□ Cause-Effect Relationships
+□ Comparisons and Contrasts (as separate entries if needed)
+□ Exceptions and Special Cases
+□ Applications and Uses
+□ Diagrams/Figures Explanations (describe the concept illustrated)
+□ Tables Data (convert to definitional format where appropriate)
+□ Historical Context (discoveries, inventors, dates)
+□ Numerical Values and Constants (with units and significance)
+
+RULE 18: HIDDEN CONTENT IDENTIFICATION
+Look for definitions embedded within:
+- Explanatory paragraphs
+- Example problems
+- Marginal notes or boxes
+- Figure captions
+- Table headers and footnotes
+- Italicised or bold text
+- Parenthetical explanations
+
+RULE 19: IMPLICIT DEFINITIONS
+If a term is used but not explicitly defined, create a definition based on:
+- How it is used in context within the {{Topic}}
+- Its relationship to other defined terms
+- Standard disciplinary usage (must align with textbook intent)
+- DO NOT use external knowledge; base definitions solely on textbook content
+
+RULE 20: CONTENT DEPTH REQUIREMENTS
+For each major concept, ensure you capture:
+- WHAT it is (definition)
+- WHY it matters (significance, if stated in the topic)
+- HOW it works (mechanism/process, if applicable)
+- WHERE/WHEN it applies (conditions/context)
+
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 6: TOPIC-SPECIFIC RULES PROTOCOL (NEW)
+═══════════════════════════════════════════════════════════════════════════════
+
+RULE 21: RULE IDENTIFICATION AND EXTRACTION
+Extract ALL rules explicitly stated in the {{Topic}}. Rules may appear as:
+- Numbered lists (Rule 1, Rule 2...)
+- Bulleted points
+- Statements using "must," "should," "always," "never"
+- Conditional statements ("If...then...")
+- Standard conventions or protocols
+- Naming conventions and nomenclature rules
+
+RULE 22: RULE FORMATTING STANDARDS
+- Each rule must be presented as a separate term-definition pair.
+- Format: "[Rule Name/Number]: [Complete statement of the rule]"
+- Include conditions under which the rule applies.
+- Include exceptions to the rule (if any are mentioned in the topic).
+
+RULE 23: RULE TYPES TO CAPTURE
+Ensure extraction of all rule types present:
+- Naming Rules/Nomenclature Rules
+- Calculation Rules
+- Experimental Rules/Safety Rules
+- Classification Rules
+- Priority Rules
+- Exception Rules
+- Procedural Rules
+- Balancing Rules
+- Selection Rules
+
+RULE 24: RULE HIERARCHY
+- If rules have a hierarchy or order of precedence, clearly indicate this.
+- Format example:
+  "Priority Rule 1 (Primary): [Rule statement] - Applied first in all cases"
+  "Priority Rule 2 (Secondary): [Rule statement] - Applied when Rule 1 does not resolve the situation"
+
+RULE 25: RULE APPLICATION
+- For each rule, include at least one example demonstrating its application if provided in textbook.
+- Ensure the rule statement is complete and can be applied independently.
+
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 7: DEFINITION CREATION GUIDELINES
+═══════════════════════════════════════════════════════════════════════════════
+
+For each term you identify:
+- Ensure the term is directly related to the specified {{Topic}}
+- Extract or formulate a clear & concise definition (1-3 sentences)
+- If a direct definition is not available, synthesise one from the context or description provided in the {{Topic}}
+- Provide relevant examples wherever they are necessary according to the {{Curriculum}}
+- Add any additional information (i.e., the description of any processes and examples given in {{Topic}}) in the relevant definition itself—but keep it within the same term's scope only
+
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 8: VERIFICATION AND QUALITY ASSURANCE PROTOCOL (NEW)
+═══════════════════════════════════════════════════════════════════════════════
+
+PRE-SUBMISSION CHECKLIST:
+Before finalising, verify each term-definition pair against this checklist:
+□ Does this term represent only ONE concept?
+□ Is the definition standalone and independently understandable?
+□ Is the definition concise yet complete?
+□ Has this term NOT been defined elsewhere (in this topic or previous topics)?
+□ Is there NO overlapping content with other definitions?
+□ Are examples properly attributed and relevant?
+
+FORMULA VERIFICATION:
+□ All formulas from the {{Topic}} have been extracted
+□ All formulas are presented in structured format (not narrative)
+□ All variables in formulas are defined with units
+□ Formula application context is provided
+
+RULES VERIFICATION:
+□ All rules from the {{Topic}} have been extracted
+□ Rules are formatted with complete statements
+□ Rule hierarchy/precedence is indicated where applicable
+□ Rule exceptions are noted where mentioned
+
+CONTENT VERIFICATION:
+□ Content follows the exact sequence as in the textbook
+□ No content from outside the {{Topic}} boundaries has been included
+□ No content has been missed or overlooked
+□ All terms are placed in correct context
+□ Definitions are complete and standalone
+
+CROSS-VERIFICATION STEPS:
+- Step 1: Read through the {{Topic}} once to identify all extractable content
+- Step 2: Create a preliminary list of terms (including formulas and rules)
+- Step 3: Verify each term against the source text
+- Step 4: Check for missing formulas, rules, or definitions
+- Step 5: Verify contextual placement and sequence
+- Step 6: Final review for completeness and accuracy
+
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 9: ADDITIONAL INSTRUCTIONS
+═══════════════════════════════════════════════════════════════════════════════
+
+- Avoid repeating terms and definitions at any level.
+- Make sure that the laws, properties & equations are taken exactly as given in the {{Textbook}}.
+- Do not take any information or examples from topics given after the {{Topic}}.
+- Make sure to use only British English while generating the Terms and Definitions.
+
+═══════════════════════════════════════════════════════════════════════════════
+SECTION 10: IMPORTANT NOTES
+═══════════════════════════════════════════════════════════════════════════════
+
+- Make sure not to provide the subtopic headings in the generation.
+- Make sure to add the full forms with their explanations.
+- Make sure that formulas should be provided in a structured way, not in a narrative way.
+
+Example:
+Per Capita Income:
+Formula: Per Capita Income = National Income / Total Population
+Where:
+National Income = Total income of the nation
+Total Population = Number of people in the nation
+
+Note:
+- Do not provide numerical illustrations and numerical examples in the terms and definitions.
+- Extract content strictly within the boundaries of the specified {{Topic}}.
+- Ensure all formulas, rules, and definitions from the {{Topic}} are captured without omission.
+- Maintain contextual accuracy by preserving the original placement and sequence of terms.
+
+═══════════════════════════════════════════════════════════════════════════════
+ERROR PREVENTION REMINDERS:
+═══════════════════════════════════════════════════════════════════════════════
+
+- Do not assume or infer content not present in the {{Topic}}
+- Do not skip content because it seems minor or obvious
+- Do not merge content from different sections
+- Do not reorder content unless pedagogically necessary for clarity
+- Do not present formulas in narrative format
+- Do not omit rules or their components
+- Do not include content from topics before or after the specified {{Topic}}
+"
 
 ---
 LO_CREATION_PROMPT
