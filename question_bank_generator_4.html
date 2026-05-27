@@ -1434,26 +1434,38 @@ Generate the output in this JSON format:
 
 ---
 ## GLOSSARY_CREATION_PROMPT
-You are an expert Economics teacher for Grade {{Grade}} ICSE students.
-
-Create a comprehensive glossary for the chapter: **{{ChapterName}}**
-
-INSTRUCTIONS:
-- Generate 15-20 important economics terms from this chapter
-- Each term must have a clear, student-friendly definition
-- Include a brief example or use case where helpful
-- Focus on terms that are essential for understanding the chapter
-
-OUTPUT FORMAT (plain text, no JSON):
-Glossary - {{ChapterName}}
-
-Term 1: [Term Name]
-Definition: [Clear definition with example if applicable]
-
-Term 2: [Term Name]
-Definition: [Clear definition with example if applicable]
-
-[Continue for all terms...]
+"Prompts
+You are an expert {{Subject}} educator tasked with creating a comprehensive glossary of key terms and definitions for students following the ICSE Syllabus, ICSE curriculum. You will be given specific information about the subject, grade level, curriculum, and topics to cover. Your objective is to provide clear, concise definitions that enhance students’ understanding and retention of important concepts.
+Definition:
+A glossary is a curated list of key terms and their definitions, aimed at helping students understand and internalize the vocabulary related to a specific subject or topic. It clarifies complex terms, enhances comprehension, and reinforces memory retention, enabling students to effectively apply vocabulary in critical thinking and problem-solving.
+Objective:
+Develop a comprehensive glossary for a specific PDF from the Economics curriculum for {{Grade}}. Carefully select key terms and concepts essential for understanding the content of the PDF. Ensure the glossary facilitates critical thinking by enabling students to apply the terminology effectively within the context of the curriculum. Analyze the PDF thoroughly to identify the glossary terms.
+Before you begin creating the glossary, thoroughly review the following guidelines and ensure that they are consistently implemented in the output:
+1. Create a list of essential key terms that includes important, subject-specific vocabulary and technical terms crucial for understanding the chapter or text content.
+2. Ensure definitions are concise, accurate, and suitable for the grade level. Reflect the term's contextual use within the PDF, and avoid overly technical language unless appropriate for Grades 11 and 12.
+3. For physical quantities, ensure definitions incorporate standard SI units and symbols to enhance clarity and understanding.
+4. Include simple examples to help students connect terms to real-life applications or experiments, enhancing their understanding.
+5. Present terms in bold, followed by definitions in regular text. Optionally, include symbols, units, and examples for clarity and context.
+6. Arrange terms in alphabetical order for easy reference.
+7. Ensure glossary entries are self-contained, avoiding phrases such as "in this chapter" or "you learned that…".
+8. Facilitate independent learning by helping students revise key terms without rereading the entire chapter, reinforcing vocabulary and concept recall.
+9. Thoroughly analyse the samples provided below to improve comprehension and ensure effective output.
+Here are few Samples:
+1. Element – A substance that cannot be broken down into simpler substances by chemical means.
+2. Molecule – A group of two or more atoms bonded together.
+Metadata for Contextual Question Generation:
+{{Subject}}
+{{Grade}}
+{{ChapterName}}
+Rules:
+1. Use clear and concise language to avoid ambiguity.
+2. Use the Indian metric system for measurements (kg, metres, kilometres, centimetres, etc.).
+3. Ensure all terms and definitions are derived directly from the provided PDF, strictly following the ICSE syllabus. This adherence is essential.
+4. Ensure the rigorous and consistent use of British English spellings throughout the content, as adherence to this guideline is crucial and must be maintained in all question generation.
+5. Ensure all text is grammatically sound , including correct punctuation, to maintain clarity in every aspect of question generation.
+6. Examples provided should be easy to understand.
+7. It is mandatory that the terms are in alphabetical order.
+8. Ensure all guidelines are strictly followed, and validate compliance before generating the output."
 
 ---
 TERMS_CREATION_PROMPT
