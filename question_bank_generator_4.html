@@ -69,6 +69,7 @@
     background: linear-gradient(135deg, var(--accent), var(--accent2));
     display: flex; align-items: center; justify-content: center;
     font-size: 18px;
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
     box-shadow: 0 0 18px var(--glow-blue);
   }
   .logo-text { font-size: 17px; font-weight: 700; letter-spacing: -0.4px; }
@@ -230,7 +231,12 @@
   }
   .subject-card.selected::after { opacity: 1; }
   .subject-card.disabled { opacity: 0.3; pointer-events: none; }
-  .subject-icon { font-size: 24px; z-index: 1; position: relative; }
+  .subject-icon {
+    font-size: 24px;
+    z-index: 1;
+    position: relative;
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  }
   .subject-name { font-size: 13px; font-weight: 700; z-index: 1; position: relative; }
   .subject-tag  { font-size: 11px; color: var(--text2); z-index: 1; position: relative; }
 
