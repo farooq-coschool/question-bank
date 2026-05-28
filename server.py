@@ -28,6 +28,7 @@ API_KEYS = {
     'Chemistry':   os.environ.get('CHEMISTRY_KEY',   ''),
     'Mathematics': os.environ.get('MATHEMATICS_KEY', ''),
     'English':     os.environ.get('ENGLISH_KEY',     ''),
+    'Economics':   os.environ.get('ECONOMICS_KEY',    '') or os.environ.get('ECONOMICS_API_KEY', '') or os.environ.get('COMMERCE_KEY', ''),
     'Commerce':    os.environ.get('COMMERCE_KEY',    ''),
     'Civics':      os.environ.get('CIVICS_KEY',      '') or _SOCIAL_KEY,
     'Geography':   os.environ.get('GEOGRAPHY_KEY',   '') or _SOCIAL_KEY,
