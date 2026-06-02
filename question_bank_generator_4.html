@@ -4804,14 +4804,13 @@ function buildRADescPrompt(conceptName, item, masterPrompt, loText) {
   const specsText = radSpecs.map((s, i) => `RAD ${i+1}: cognitiveLevel="${s.cognitiveLevel}" difficultyLevel="${s.difficultyLevel}"`).join('\n');
 
   const radExample = `{
-  "cognitiveLevel": "<Factual|Understanding|Application>",
-  "difficultyLevel": "<Easy|Medium|Hard>",
-  "questionType": "VSA",
-  "question_type_tag": "Reason-Assertion Description",
-  "question": "Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\\n\\n<b>Assertion (A):</b> <assertion statement>.\\n<b>Reason (R):</b> <reason statement>.\\n\\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\\n\\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\\n(C) Assertion (A) is true, but Reason (R) is false.\\n(D) Assertion (A) is false, but Reason (R) is true.",
-  "solution": "Option (<correct letter>) is correct.\\n<one-line justification explaining why the chosen option is correct>",
-  "marks": "1"
-}`;
+    "cognitiveLevel": "Application",
+    "difficultyLevel": "Medium",
+    "questionType": "VSA",
+    "question_type_tag": "Reason-Assertion Description",
+    "question": "Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\\n\\n<b>Assertion (A):</b>Carbon shares its valence electrons with other atoms of carbon or with atoms of other elements.\\n<b>Reason (R):</b> The shared electrons belong to the outermost shells of both the atoms and lead to both atoms attaining the noble gas configuration.\\n\\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\\n\\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\\n(C) Assertion (A) is true, but Reason (R) is false.\\n(D) Assertion (A) is false, but Reason (R) is true.",
+    "solution": "Option (B) is correct.\\n Carbon forms covalent bonds by sharing valence electrons, and these shared electrons count toward both atoms' outermost shells, enabling both to achieve the stable noble gas configuration."
+  }`;
 
   const formatSpec = `
 
