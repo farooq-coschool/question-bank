@@ -1448,7 +1448,7 @@ const state = {
   promptCounts: {},
   objMetadata: '',   // user-editable objective metadata text (empty = skip)
   subjMetadata: '',  // user-editable subjective metadata text (empty = skip)
-  radMetadata: '',   // user-editable RAD metadata text — Math CBSE / Chemistry ICSE / Biology ICSE / Social CBSE only (empty = skip)
+  radMetadata: '',   // user-editable RAD metadata text — Math CBSE / Chemistry CBSE / Biology ICSE / Social CBSE only (empty = skip)
   mtfLOText: '',     // LO textarea for MTF mode — Biology ICSE only
   mtfMetadata: '',   // notepad for MTF counts — Biology ICSE only (each line = one MTF question spec)
   generatedFiles: {},
@@ -2109,12 +2109,12 @@ function setupPage3() {
 
   const isEnglish = state.subject === 'English';
   const isMathCBSEPage3 = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
-  const isChemICSEPage3 = state.subject === 'Chemistry' && state.curriculum === 'ICSE';
+  const isChemCBSEPage3 = state.subject === 'Chemistry' && state.curriculum === 'CBSE';
   const isBioICSEPage3 = state.subject === 'Biology' && state.curriculum === 'ICSE';
   const isSocialCBSEPage3 = state.subject === 'Social' && state.curriculum === 'CBSE';
   document.getElementById('englishFields').style.display = isEnglish ? 'block' : 'none';
   document.getElementById('grammarFieldWrap').style.display = 'none';
-  document.getElementById('radSection').style.display = (isMathCBSEPage3 || isChemICSEPage3 || isBioICSEPage3 || isSocialCBSEPage3) ? 'block' : 'none';
+  document.getElementById('radSection').style.display = (isMathCBSEPage3 || isChemCBSEPage3 || isBioICSEPage3 || isSocialCBSEPage3) ? 'block' : 'none';
   // Restore RTC pill selection + count input visibility
   if (isEnglish && state.chapterType) {
     document.querySelectorAll('#englishFields .pill').forEach(p => {
@@ -2244,7 +2244,7 @@ function renderCountsTable() {
   const defaultObj  = toFriendlyText([...objCounts, ...raCounts]);
 
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
-  const isChemICSE = state.subject === 'Chemistry' && state.curriculum === 'ICSE';
+  const isChemCBSE = state.subject === 'Chemistry' && state.curriculum === 'CBSE';
   const isBioICSE = state.subject === 'Biology' && state.curriculum === 'ICSE';
   const isSocialCBSE = state.subject === 'Social' && state.curriculum === 'CBSE';
   const extractQTypeTotals = (src) => {
@@ -2283,11 +2283,11 @@ function renderCountsTable() {
 
   // RAD textarea — Biology ICSE / Math CBSE default count from the RAD prompt section
   if (radEl) {
-    if (!state.radMetadata && (isMathCBSE || isChemICSE || isBioICSE || isSocialCBSE)) {
+    if (!state.radMetadata && (isMathCBSE || isChemCBSE || isBioICSE || isSocialCBSE)) {
       const raRaw = isBioICSE
         ? BIOLOGY_ICSE_RAD_PROMPT
-        : (isChemICSE
-            ? CHEMISTRY_ICSE_RAD_PROMPT
+        : (isChemCBSE
+            ? CHEMISTRY_CBSE_RAD_PROMPT
             : (isSocialCBSE
                 ? SOCIAL_CBSE_RAD_PROMPT
                 : (extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || '')));
@@ -3046,14 +3046,14 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   }, 600000); // 10-minute timeout — subjective is the heaviest step under parallel load
   if (subjQ !== undefined) { addedQ += subjQ; cp.totalQ += subjQ; }
 
-  // REASON-ASSERTION DESCRIPTIVE — Mathematics CBSE, Biology ICSE and Social CBSE
+  // REASON-ASSERTION DESCRIPTIVE — Mathematics CBSE, Chemistry CBSE, Biology ICSE and Social CBSE
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
-  const isChemICSE = state.subject === 'Chemistry' && state.curriculum === 'ICSE';
+  const isChemCBSE = state.subject === 'Chemistry' && state.curriculum === 'CBSE';
   const isBioICSE  = state.subject === 'Biology' && state.curriculum === 'ICSE';
   const isSocialCBSE = state.subject === 'Social' && state.curriculum === 'CBSE';
-  const doRAD = (isMathCBSE || isChemICSE || isBioICSE || isSocialCBSE) && !isMetaSkip(state.radMetadata);
+  const doRAD = (isMathCBSE || isChemCBSE || isBioICSE || isSocialCBSE) && !isMetaSkip(state.radMetadata);
   const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '⚖️',
-    doRAD || ((isMathCBSE || isChemICSE || isBioICSE || isSocialCBSE) && isRADOnly), async () => {
+    doRAD || ((isMathCBSE || isChemCBSE || isBioICSE || isSocialCBSE) && isRADOnly), async () => {
     const rawResult = await callClaude(buildRADescPrompt(name, item, masterPrompt, loResult), 40000, undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('ReasonAssertion.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
@@ -3313,7 +3313,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
   const doObjective   = !isEnglishCBSEGrammar && (state.questionsType === 'both' || state.questionsType === 'objective' || isRADOnly) && !isMetaSkip(state.objMetadata);
   const doSubjective  = (state.questionsType === 'both' || state.questionsType === 'subjective') && !isMetaSkip(state.subjMetadata);
   const isMathCBSE    = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
-  const isChemICSE    = state.subject === 'Chemistry' && state.curriculum === 'ICSE';
+  const isChemCBSE    = state.subject === 'Chemistry' && state.curriculum === 'CBSE';
   const isBioICSE     = state.subject === 'Biology' && state.curriculum === 'ICSE';
   const isSocialCBSE   = state.subject === 'Social' && state.curriculum === 'CBSE';
   const isRTCMode     = state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType === 'RTC';
@@ -3397,7 +3397,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
     }
 
     // RAD
-    if ((isMathCBSE || isChemICSE || isBioICSE || isSocialCBSE) && (!isMetaSkip(state.radMetadata) || isRADOnly))
+    if ((isMathCBSE || isChemCBSE || isBioICSE || isSocialCBSE) && (!isMetaSkip(state.radMetadata) || isRADOnly))
       expected.push({ path: fp('ReasonAssertion.json'), label: scopeLabel + ' • Reason-Assertion', item });
 
     // RTC
@@ -4512,7 +4512,7 @@ Generate the output in following JSON code block format:
   }
 ]\"`;
 
-const CHEMISTRY_ICSE_RAD_PROMPT = `CHEMISTRY_ICSE_RAD_prompt:
+const CHEMISTRY_CBSE_RAD_PROMPT = `CHEMISTRY_CBSE_RAD_prompt:
 "You are an experienced Chemistry teacher who has a good record with creation of question banks which aligns with the new bloom’s taxonomy. Understand the information given below and perform the assigned task.
 
 Your task is to generate Reason-Assertion questions for the following information.
@@ -4692,11 +4692,11 @@ const SOCIAL_CBSE_RAD_PROMPT = [
 function buildRADescPrompt(conceptName, item, masterPrompt, loText) {
   const raw = (state.subject === 'Biology' && state.curriculum === 'ICSE')
     ? BIOLOGY_ICSE_RAD_PROMPT
-    : (state.subject === 'Chemistry' && state.curriculum === 'ICSE')
-      ? CHEMISTRY_ICSE_RAD_PROMPT
+    : (state.subject === 'Chemistry' && state.curriculum === 'CBSE')
+      ? CHEMISTRY_CBSE_RAD_PROMPT
     : (state.subject === 'Social' && state.curriculum === 'CBSE')
       ? SOCIAL_CBSE_RAD_PROMPT
-    : (extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || masterPrompt);
+      : (extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || masterPrompt);
   let section = applyPromptCountEdits(fillPlaceholders(raw, conceptName, item, loText));
   // Strip [Number of ...] lines — METADATA INPUT below is sole source of truth
   section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
@@ -5152,10 +5152,10 @@ function onGenModeChange(mode) {
 function updateRADOptionVisibility() {
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
   const isBioICSE  = state.subject === 'Biology'     && state.curriculum === 'ICSE';
-  const isChemICSE = state.subject === 'Chemistry'   && state.curriculum === 'ICSE';
+  const isChemCBSE = state.subject === 'Chemistry'   && state.curriculum === 'CBSE';
   const isSocialCBSE = state.subject === 'Social'    && state.curriculum === 'CBSE';
   const opt = document.getElementById('radOnlyOption');
-  if (opt) opt.style.display = (isMathCBSE || isBioICSE || isChemICSE || isSocialCBSE) ? 'flex' : 'none';
+  if (opt) opt.style.display = (isMathCBSE || isBioICSE || isChemCBSE || isSocialCBSE) ? 'flex' : 'none';
   const mtfScqOpt = document.getElementById('mtfScqOnlyOption');
   const mtfSubOpt = document.getElementById('mtfSubOnlyOption');
   const mtfMultiOpt = document.getElementById('mtfMultiOnlyOption');
@@ -5163,7 +5163,7 @@ function updateRADOptionVisibility() {
   if (mtfSubOpt) mtfSubOpt.style.display = isBioICSE ? 'flex' : 'none';
   if (mtfMultiOpt) mtfMultiOpt.style.display = isBioICSE ? 'flex' : 'none';
   // Reset questionsType if the selected option is no longer valid
-  if (!(isMathCBSE || isBioICSE || isChemICSE || isSocialCBSE) && state.questionsType === 'rad') {
+  if (!(isMathCBSE || isBioICSE || isChemCBSE || isSocialCBSE) && state.questionsType === 'rad') {
     state.questionsType = 'both';
     const bothRadio = document.querySelector('input[name="qType"][value="both"]');
     if (bothRadio) bothRadio.checked = true;
