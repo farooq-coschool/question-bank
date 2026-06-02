@@ -1647,6 +1647,9 @@ function selectSubject(id, el) {
   document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   document.getElementById('subjectError').style.display = 'none';
+  updateRADOptionVisibility();
+  updateRADQuestionPanelVisibility();
+  updateSharedLOPanelVisibility();
 }
 
 function selectCurriculum(cur, el) {
@@ -1658,6 +1661,9 @@ function selectCurriculum(cur, el) {
   state.subjMetadata = '';
   state.radMetadata = '';
   renderSubjectGrid();
+  updateRADOptionVisibility();
+  updateRADQuestionPanelVisibility();
+  updateSharedLOPanelVisibility();
 }
 
 // ============================================================
@@ -3118,7 +3124,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '⚖️',
     doRAD || ((isMathCBSE || isChemCBSE || isPhysCBSE || isBioICSE || isSocialCBSE) && isRADOnly), async () => {
     const radLoText = (state.radLOText || state.globalLOText || '').trim() || loResult;
-    const rawResult = await callClaude(buildRADescPrompt(name, item, masterPrompt, radLoText), 40000, undefined, '[');
+    const rawResult = await callClaude(buildRADescPrompt(name, item, masterPrompt, radLoText), 16000, undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('ReasonAssertion.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
@@ -3302,27 +3308,24 @@ async function startGeneration() {
   _genCtx = { masterPrompt, isEnglish, ch };
 
   document.getElementById('generationSubtitle').textContent =
-    totalConcepts + ' concepts · ' + numWorkers + ' workers · each worker picks next concept when free';
+    totalConcepts + ' concepts · ' + numWorkers + ' workers · running in ordered batches';
 
-  // Shared queue index — atomic in JS since it's single-threaded
-  let queueIdx = 0;
   let doneCount = 0, failCount = 0, totalQ = 0;
 
-  function updateAgentBar() {
-    const handled = doneCount + failCount;
-    const active = Math.min(numWorkers, Math.max(0, totalConcepts - handled));
-    const queued = Math.max(0, totalConcepts - handled - active);
+  const updateAgentBar = (activeCount, queuedCount) => {
     document.getElementById('agentStatusBar').textContent =
-      '⚙️ ' + active + ' active  |  ⏳ ' + queued + ' queued  |  ✅ ' + doneCount + ' done  |  ⚠️ ' + failCount + ' failed';
-  }
-  updateAgentBar();
+      '⚙️ ' + activeCount + ' active  |  ⏳ ' + queuedCount + ' queued  |  ✅ ' + doneCount + ' done  |  ⚠️ ' + failCount + ' failed';
+  };
 
-  // Each worker loops: grab next item from queue ? process it fully ? repeat
-  async function runWorker() {
-    while (true) {
-      const idx = queueIdx++;          // claim next slot
-      if (idx >= totalConcepts) break; // queue exhausted
-      const item = scopeItems[idx];
+  for (let start = 0; start < totalConcepts; start += numWorkers) {
+    const batch = scopeItems.slice(start, start + numWorkers);
+    const batchNumber = Math.floor(start / numWorkers) + 1;
+    const totalBatches = Math.ceil(totalConcepts / numWorkers);
+    document.getElementById('generationSubtitle').textContent =
+      'Batch ' + batchNumber + ' of ' + totalBatches + ' · ' + batch.length + ' concepts running in parallel';
+    updateAgentBar(batch.length, Math.max(0, totalConcepts - start - batch.length));
+
+    await Promise.allSettled(batch.map(async (item) => {
       try {
         const q = await runConceptAgent(item, masterPrompt, isEnglish, ch, null);
         doneCount++;
@@ -3330,12 +3333,9 @@ async function startGeneration() {
       } catch (_) {
         failCount++;
       }
-      updateAgentBar();
-    }
+      updateAgentBar(batch.length, Math.max(0, totalConcepts - doneCount - failCount - batch.length));
+    }));
   }
-
-  // Launch numWorkers workers; when one finishes a concept it immediately takes the next
-  await Promise.allSettled(Array.from({ length: numWorkers }, runWorker));
 
   document.getElementById('genStats').style.display = 'flex';
   document.getElementById('statTotal').textContent = totalQ;
