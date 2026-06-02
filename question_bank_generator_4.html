@@ -1446,7 +1446,7 @@ const state = {
   promptCounts: {},
   objMetadata: '',   // user-editable objective metadata text (empty = skip)
   subjMetadata: '',  // user-editable subjective metadata text (empty = skip)
-  radMetadata: '',   // user-editable RAD metadata text — Math CBSE only (empty = skip)
+  radMetadata: '',   // user-editable RAD metadata text — Math CBSE / Biology ICSE / Social CBSE only (empty = skip)
   mtfLOText: '',     // LO textarea for MTF mode — Biology ICSE only
   mtfMetadata: '',   // notepad for MTF counts — Biology ICSE only (each line = one MTF question spec)
   generatedFiles: {},
@@ -1467,6 +1467,7 @@ const SUBJECTS = [
   { id:'Chemistry',icon:'⚗️',  label:'Chemistry',      icse:true,  cbse:false },
   { id:'Physics',  icon:'⚡',  label:'Physics',        icse:true,  cbse:false },
   { id:'Mathematics',icon:'📐',label:'Mathematics',   icse:true,  cbse:true  },
+  { id:'Social',   icon:'🏛️', label:'Social',         icse:false, cbse:true  },
   { id:'Civics',   icon:'🏛️', label:'Civics',         icse:true,  cbse:false },
   { id:'Geography',icon:'🌍',  label:'Geography',      icse:true,  cbse:false },
   { id:'History',  icon:'📜',  label:'History',        icse:true,  cbse:false },
@@ -2060,7 +2061,7 @@ function renderStructurePreview(parsed) {
   document.getElementById('structureParseStatus').innerHTML =
     `Found: <strong>${(parsed.subtopics || []).length}</strong> subtopics, <strong>${(parsed.subtopics || []).reduce((a, s) => a + (s.nanoConcepts || []).length, 0)}</strong> nano concepts`;
 
-  const scienceSubjects = ['Biology','Chemistry','Physics','Mathematics','Civics','Geography','History'];
+  const scienceSubjects = ['Biology','Chemistry','Physics','Mathematics','Social','Civics','Geography','History'];
   const showPlt = scienceSubjects.includes(state.subject);
   const pltContainer = document.getElementById('pltTogglesContainer');
   if (pltContainer) pltContainer.style.display = showPlt ? 'block' : 'none';
@@ -2107,9 +2108,10 @@ function setupPage3() {
   const isEnglish = state.subject === 'English';
   const isMathCBSEPage3 = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
   const isBioICSEPage3 = state.subject === 'Biology' && state.curriculum === 'ICSE';
+  const isSocialCBSEPage3 = state.subject === 'Social' && state.curriculum === 'CBSE';
   document.getElementById('englishFields').style.display = isEnglish ? 'block' : 'none';
   document.getElementById('grammarFieldWrap').style.display = 'none';
-  document.getElementById('radSection').style.display = (isMathCBSEPage3 || isBioICSEPage3) ? 'block' : 'none';
+  document.getElementById('radSection').style.display = (isMathCBSEPage3 || isBioICSEPage3 || isSocialCBSEPage3) ? 'block' : 'none';
   // Restore RTC pill selection + count input visibility
   if (isEnglish && state.chapterType) {
     document.querySelectorAll('#englishFields .pill').forEach(p => {
@@ -2143,6 +2145,7 @@ function setupPage3() {
     Chemistry: isCBSE ? ['NCERT'] : ['Selina (Concise series)'],
     Physics: isCBSE ? ['NCERT'] : ['Selina (Concise series)', 'Evergreen'],
     Mathematics: isCBSE ? ['NCERT'] : ['Selina (Concise series)', 'APC'],
+    Social: isCBSE ? ['NCERT'] : ['NCERT'],
     Civics: isCBSE ? ['NCERT'] : ['Morning Star', 'APC'],
     Geography: isCBSE ? ['NCERT'] : ['Morning Star (Total Geography)', 'Frank EMU'],
     History: isCBSE ? ['NCERT'] : ['Morning Star', 'APC'],
@@ -2238,6 +2241,8 @@ function renderCountsTable() {
   const defaultObj  = toFriendlyText([...objCounts, ...raCounts]);
 
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
+  const isBioICSE = state.subject === 'Biology' && state.curriculum === 'ICSE';
+  const isSocialCBSE = state.subject === 'Social' && state.curriculum === 'CBSE';
   const extractQTypeTotals = (src) => {
     const totals = { VSA: 0, SA: 0, LA: 0 };
     ['VSA', 'SA', 'LA'].forEach(t => {
@@ -2274,10 +2279,12 @@ function renderCountsTable() {
 
   // RAD textarea — Biology ICSE / Math CBSE default count from the RAD prompt section
   if (radEl) {
-    if (!state.radMetadata && (isMathCBSE || isBioICSE)) {
+    if (!state.radMetadata && (isMathCBSE || isBioICSE || isSocialCBSE)) {
       const raRaw = isBioICSE
         ? BIOLOGY_ICSE_RAD_PROMPT
-        : (extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || '');
+        : (isSocialCBSE
+            ? SOCIAL_CBSE_RAD_PROMPT
+            : (extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || ''));
       const raCountLines = raRaw.match(/\[Number of [^\]]+\]:\s*[^\n\r]+/g) || [];
       const defaultRad = raCountLines.map(l => {
         const m = l.match(/\[Number of ([^\]]+)\]:\s*(.+)/);
@@ -3033,12 +3040,13 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   }, 600000); // 10-minute timeout — subjective is the heaviest step under parallel load
   if (subjQ !== undefined) { addedQ += subjQ; cp.totalQ += subjQ; }
 
-  // REASON-ASSERTION DESCRIPTIVE — Mathematics CBSE and Biology ICSE
+  // REASON-ASSERTION DESCRIPTIVE — Mathematics CBSE, Biology ICSE and Social CBSE
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
   const isBioICSE  = state.subject === 'Biology' && state.curriculum === 'ICSE';
-  const doRAD = (isMathCBSE || isBioICSE) && !isMetaSkip(state.radMetadata);
+  const isSocialCBSE = state.subject === 'Social' && state.curriculum === 'CBSE';
+  const doRAD = (isMathCBSE || isBioICSE || isSocialCBSE) && !isMetaSkip(state.radMetadata);
   const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '⚖️',
-    doRAD || ((isMathCBSE || isBioICSE) && isRADOnly), async () => {
+    doRAD || ((isMathCBSE || isBioICSE || isSocialCBSE) && isRADOnly), async () => {
     const rawResult = await callClaude(buildRADescPrompt(name, item, masterPrompt, loResult), 40000, undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('ReasonAssertion.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
@@ -3299,6 +3307,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
   const doSubjective  = (state.questionsType === 'both' || state.questionsType === 'subjective') && !isMetaSkip(state.subjMetadata);
   const isMathCBSE    = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
   const isBioICSE     = state.subject === 'Biology' && state.curriculum === 'ICSE';
+  const isSocialCBSE   = state.subject === 'Social' && state.curriculum === 'CBSE';
   const isRTCMode     = state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType === 'RTC';
   const isGeoHistCivICSE = ['Geography', 'History', 'Civics'].includes(state.subject) && state.curriculum === 'ICSE';
   const hasPrereqSection = !!extractSection(masterPrompt, 'PRE_REQUISITE_CREATION_PROMPT');
@@ -3380,7 +3389,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
     }
 
     // RAD
-    if ((isMathCBSE || isBioICSE) && (!isMetaSkip(state.radMetadata) || isRADOnly))
+    if ((isMathCBSE || isBioICSE || isSocialCBSE) && (!isMetaSkip(state.radMetadata) || isRADOnly))
       expected.push({ path: fp('ReasonAssertion.json'), label: scopeLabel + ' • Reason-Assertion', item });
 
     // RTC
@@ -4495,9 +4504,73 @@ Generate the output in following JSON code block format:
   }
 ]\"`;
 
+const SOCIAL_CBSE_RAD_PROMPT = [
+  'SOCIAL_CBSE_RAD_prompt:',
+  '"You are an experienced Social teacher who has a good record with creation of question banks which aligns with the new bloom\'s taxonomy. Understand the information given below and perform the assigned task.',
+  '',
+  'Your task is to generate Reason-Assertion questions for the following information.',
+  '',
+  'META DATA INPUT SPECIFICATIONS',
+  '[Subject]: {{Subject}}',
+  '[Curriculum]: CBSE',
+  '[Textbook]: NCERT',
+  '[Grade]: {{GradeNumber}}',
+  '[Chapter Name]: {{ChapterName}}',
+  '[Subtopic Name]: {{SubtopicName}}',
+  '[Subconcepts]: {{Subconcepts}}',
+  '[Learning Outcomes]: {{LearningOutcomes}}',
+  '[Script]: [Attached]',
+  '[Number of Application Medium Questions]: RA:4',
+  '[Number of Application Hard Questions]: RA:4',
+  '',
+  'Question rules:',
+  '1. Use Application Medium and Application Hard only.',
+  '2. Frame each item as Assertion (A) and Reason (R).',
+  '3. The correct option must rotate across A, B, C, D in order.',
+  '4. Use simple language, British spellings, and only NCERT-level content from the given script.',
+  '5. If a chemical name appears, include its formula or symbol in brackets.',
+  '',
+  'Question ending formats:',
+  'Question 1: Answer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.',
+  'Question 2: Choose the appropriate option given below and justify your answer with a one-line explanation.',
+  'Question 3: Choose the appropriate option given below and answer with a 1-2 liner explanation.',
+  'Question 4: AI-generated variation similar to the above formats.',
+  'Question 5: AI-generated variation.',
+  'Question 6: AI-generated variation.',
+  'Question 7: Repeat from format 1, and so on.',
+  'No two consecutive questions should have the same ending format.',
+  '',
+  'Numerical questions:',
+  '1. Show the standard formula first.',
+  '2. Convert into the required form.',
+  '3. Substitute values and calculate step by step.',
+  '4. End with the final answer.',
+  '',
+  'Option rules:',
+  'A. Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).',
+  'B. Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).',
+  'C. Assertion (A) is true, but Reason (R) is false.',
+  'D. Assertion (A) is false, but Reason (R) is true.',
+  '',
+  'Output format:',
+  '[',
+  '  {',
+  '    "cognitiveLevel": "Application",',
+  '    "difficultyLevel": "Medium",',
+  '    "questionType": "VSA",',
+  '    "question_type_tag": "Reason-Assertion Description",',
+  '    "question": "Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\\n\\n<b>Assertion (A):</b> ...\\n<b>Reason (R):</b> ...\\n\\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\\n\\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\\n(C) Assertion (A) is true, but Reason (R) is false.\\n(D) Assertion (A) is false, but Reason (R) is true.",',
+  '    "solution": "Option (A) is correct.\\n<one-line justification>",',
+  '    "marks": "1"',
+  '  }',
+  ']"',
+].join('\n');
+
 function buildRADescPrompt(conceptName, item, masterPrompt, loText) {
   const raw = (state.subject === 'Biology' && state.curriculum === 'ICSE')
     ? BIOLOGY_ICSE_RAD_PROMPT
+    : (state.subject === 'Social' && state.curriculum === 'CBSE')
+      ? SOCIAL_CBSE_RAD_PROMPT
     : (extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || masterPrompt);
   let section = applyPromptCountEdits(fillPlaceholders(raw, conceptName, item, loText));
   // Strip [Number of ...] lines — METADATA INPUT below is sole source of truth
@@ -4954,8 +5027,9 @@ function onGenModeChange(mode) {
 function updateRADOptionVisibility() {
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
   const isBioICSE  = state.subject === 'Biology'     && state.curriculum === 'ICSE';
+  const isSocialCBSE = state.subject === 'Social'    && state.curriculum === 'CBSE';
   const opt = document.getElementById('radOnlyOption');
-  if (opt) opt.style.display = (isMathCBSE || isBioICSE) ? 'flex' : 'none';
+  if (opt) opt.style.display = (isMathCBSE || isBioICSE || isSocialCBSE) ? 'flex' : 'none';
   const mtfScqOpt = document.getElementById('mtfScqOnlyOption');
   const mtfSubOpt = document.getElementById('mtfSubOnlyOption');
   const mtfMultiOpt = document.getElementById('mtfMultiOnlyOption');
@@ -4963,7 +5037,7 @@ function updateRADOptionVisibility() {
   if (mtfSubOpt) mtfSubOpt.style.display = isBioICSE ? 'flex' : 'none';
   if (mtfMultiOpt) mtfMultiOpt.style.display = isBioICSE ? 'flex' : 'none';
   // Reset questionsType if the selected option is no longer valid
-  if (!(isMathCBSE || isBioICSE) && state.questionsType === 'rad') {
+  if (!(isMathCBSE || isBioICSE || isSocialCBSE) && state.questionsType === 'rad') {
     state.questionsType = 'both';
     const bothRadio = document.querySelector('input[name="qType"][value="both"]');
     if (bothRadio) bothRadio.checked = true;
