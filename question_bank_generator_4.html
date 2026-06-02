@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -600,13 +600,11 @@
       <div class="subject-name">Biology</div>
       <div class="subject-tag">ICSE</div></div><div class="subject-card"><div class="subject-icon">⚗️</div>
       <div class="subject-name">Chemistry</div>
-      <div class="subject-tag">CBSE</div></div><div class="subject-card"><div class="subject-icon">⚡</div>
+      <div class="subject-tag">ICSE</div></div><div class="subject-card"><div class="subject-icon">⚡</div>
       <div class="subject-name">Physics</div>
       <div class="subject-tag">ICSE</div></div><div class="subject-card"><div class="subject-icon">📐</div>
       <div class="subject-name">Mathematics</div>
       <div class="subject-tag">ICSE</div></div><div class="subject-card"><div class="subject-icon">🏛️</div>
-      <div class="subject-name">Social</div>
-      <div class="subject-tag">CBSE</div></div><div class="subject-card"><div class="subject-icon">🏛️</div>
       <div class="subject-name">Civics</div>
       <div class="subject-tag">ICSE</div></div><div class="subject-card"><div class="subject-icon">🌍</div>
       <div class="subject-name">Geography</div>
@@ -661,7 +659,7 @@
         <div class="form-group" style="margin-bottom:16px">
           <label>Chapter Structure Image <span class="req">*</span></label>
           <div class="img-upload-area" id="imgUploadArea" onclick="triggerImageUpload()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
-            <div class="img-upload-icon">🖼️</div>
+            <div class="img-upload-icon">???</div>
             <div class="img-upload-text">Click to upload image or drag & drop here</div>
             <div class="img-upload-sub">Supports JPG, PNG, WEBP, GIF — screenshots, photos of textbooks, PDFs printed as images</div>
             <input type="file" id="structureImageInput" accept="image/*" style="display:none" onchange="handleImageSelect(event)">
@@ -672,7 +670,7 @@
               <div style="flex:1">
                 <div id="imgFileName" style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px"></div>
                 <div id="imgFileSize" style="font-size:12px;color:var(--text2);margin-bottom:10px"></div>
-                <button class="btn btn-secondary btn-sm" onclick="removeImage()">🗑️ Remove</button>
+                <button class="btn btn-secondary btn-sm" onclick="removeImage()">? Remove</button>
               </div>
             </div>
           </div>
@@ -680,7 +678,7 @@
 
         <!-- FALLBACK TEXT INPUT -->
         <details style="margin-bottom:16px">
-          <summary style="font-size:13px;color:var(--text2);cursor:pointer;user-select:none;padding:8px 0">📝 Or paste text structure instead (fallback)</summary>
+          <summary style="font-size:13px;color:var(--text2);cursor:pointer;user-select:none;padding:8px 0">?? Or paste text structure instead (fallback)</summary>
           <div style="margin-top:8px">
             <textarea id="chapterStructure" style="min-height:100px;margin-top:0" placeholder="Paste your chapter outline here if you don't have an image...&#10;&#10;Example:&#10;Chapter: Cell — The Unit of Life&#10;  1. Cell Membrane&#10;     - Fluid Mosaic Model&#10;     - Selective Permeability&#10;  2. Nucleus&#10;     - Nuclear Membrane"></textarea>
           </div>
@@ -689,31 +687,31 @@
         <div id="structureError" class="error-msg" style="display:none">Please upload an image or paste a text structure of the chapter.</div>
 
         <div class="btn-row">
-          <button class="btn btn-primary btn-lg" onclick="page2Analyze()">🔍 Analyse Structure</button>
-          <button class="btn btn-secondary" onclick="goToPage(1)">← Back</button>
+          <button class="btn btn-primary btn-lg" onclick="page2Analyze()">?? Analyse Structure ?</button>
+          <button class="btn btn-secondary" onclick="goToPage(1)">? Back</button>
         </div>
       </div>
 
       <!-- TEXTBOOK UPLOAD (PDF or Images) -->
       <div class="card">
-        <div class="card-title">📘 Upload Textbook</div>
+        <div class="card-title">?? Upload Textbook</div>
         <div class="card-sub">Upload the textbook as a PDF or as one or more images. Claude reads all pages directly as the primary knowledge source.</div>
         <div class="form-group">
           <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:500;">
-              <input type="radio" name="tbUploadMode" value="pdf" checked onchange="onTbModeChange('pdf')" style="accent-color:var(--accent)"> 📄 PDF
+              <input type="radio" name="tbUploadMode" value="pdf" checked onchange="onTbModeChange('pdf')" style="accent-color:var(--accent)"> ?? PDF
             </label>
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:500;">
-              <input type="radio" name="tbUploadMode" value="images" onchange="onTbModeChange('images')" style="accent-color:var(--accent)"> 🖼️ Images (JPG / PNG)
+              <input type="radio" name="tbUploadMode" value="images" onchange="onTbModeChange('images')" style="accent-color:var(--accent)"> ??? Images (JPG / PNG)
             </label>
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:500;">
-              <input type="radio" name="tbUploadMode" value="text" onchange="onTbModeChange('text')" style="accent-color:var(--accent)"> 📝 Text (paste / type)
+              <input type="radio" name="tbUploadMode" value="text" onchange="onTbModeChange('text')" style="accent-color:var(--accent)"> ?? Text (paste / type)
             </label>
           </div>
           <!-- PDF mode -->
           <div id="tbPdfArea">
             <div class="img-upload-area" id="pdfUploadArea" onclick="document.getElementById('textbookPdfInput').click()" style="cursor:pointer">
-              <div class="img-upload-icon">📄</div>
+              <div class="img-upload-icon">??</div>
               <div class="img-upload-text" id="pdfUploadText">Click to upload textbook PDF(s)</div>
               <div class="img-upload-sub">Select one or more PDFs — up to 100 MB each</div>
               <input type="file" id="textbookPdfInput" accept="application/pdf" multiple style="display:none" onchange="loadTextbookPdfs(this.files)">
@@ -723,7 +721,7 @@
           <!-- Image mode -->
           <div id="tbImagesArea" style="display:none">
             <div class="img-upload-area" onclick="document.getElementById('textbookImagesInput').click()" style="cursor:pointer">
-              <div class="img-upload-icon">🖼️</div>
+              <div class="img-upload-icon">???</div>
               <div class="img-upload-text" id="tbImagesUploadText">Click to upload images</div>
               <div class="img-upload-sub">JPG / PNG — select multiple pages (max 5 MB each)</div>
               <input type="file" id="textbookImagesInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple style="display:none" onchange="loadTextbookImages(this.files)">
@@ -750,7 +748,7 @@
 
       <!-- STRUCTURE PREVIEW (shown after AI analysis) -->
       <div class="card" id="structurePreviewCard" style="display:none">
-        <div class="card-title">🗂️ Parsed Structure</div>
+        <div class="card-title">?? Parsed Structure</div>
         <div class="card-sub">Review the structure and set PLT availability per subtopic, then confirm to proceed.</div>
         <div class="struct-preview" id="structurePreview"></div>
         <div id="structureParseStatus" style="margin-top:12px;font-size:13px;color:var(--text2)"></div>
@@ -759,7 +757,7 @@
           <div id="pltTogglesList"></div>
         </div>
         <div class="btn-row">
-          <button class="btn btn-success btn-lg" onclick="confirmStructure()">✅ Confirm & Continue</button>
+          <button class="btn btn-success btn-lg" onclick="confirmStructure()">? Confirm & Continue ?</button>
           <button class="btn btn-secondary" onclick="document.getElementById('structurePreviewCard').style.display='none'">Re-enter Structure</button>
         </div>
       </div>
@@ -854,14 +852,14 @@
 
         <div id="questionCountsSection">
         <div class="section-divider"></div>
-        <div style="font-size:14px;font-weight:600;margin-bottom:8px">❓ Question Input</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px">?? Question Input</div>
         <div class="info-box" style="margin-bottom:12px;font-size:12px">
           Type your requirements directly in the notepads below. Leave a notepad <strong>empty</strong> to skip generating that type (treated as 0).<br>
           <span style="color:var(--muted)">Your text is passed directly to the AI — describe counts, difficulty, topics, or any instructions you need.</span>
         </div>
 
         <div style="margin-bottom:16px">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">🎯 Objective Questions (SCQ + RA)</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">? Objective Questions (SCQ + RA)</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Leave empty to skip Objective generation (count = 0).</div>
           <div style="position:relative">
             <div style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;border-radius:10px;background:repeating-linear-gradient(transparent,transparent 27px,rgba(99,102,241,0.08) 28px);z-index:0"></div>
@@ -875,7 +873,7 @@
         </div>
 
         <div style="margin-bottom:4px">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">✍️ Subjective Questions (VSA / SA / LA)</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">?? Subjective Questions (VSA / SA / LA)</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Leave empty to skip Subjective generation (count = 0).</div>
           <div style="position:relative">
             <div style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;border-radius:10px;background:repeating-linear-gradient(transparent,transparent 27px,rgba(99,102,241,0.08) 28px);z-index:0"></div>
@@ -889,14 +887,12 @@
         </div>
 
         <div id="radSection" style="display:none;margin-top:16px;margin-bottom:4px">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">⚖️ Reason-Assertion Descriptive (RAD)</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Leave empty to skip RAD generation (count = 0). Use one line per count group.</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Example: Number of Application Medium Questions: RA:2</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Example: Number of Application Hard Questions: RA:2</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">?? Reason-Assertion Descriptive (RAD)</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Leave empty to skip RAD generation (count = 0). Math CBSE only.</div>
           <div style="position:relative">
             <div style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;border-radius:10px;background:repeating-linear-gradient(transparent,transparent 27px,rgba(99,102,241,0.08) 28px);z-index:0"></div>
             <textarea id="radMetadataTextarea"
-              placeholder="Number of Application Medium Questions: RA:2&#10;Number of Application Hard Questions: RA:2"
+              placeholder="e.g. 5 RAD questions"
               oninput="state.radMetadata=this.value"
               style="position:relative;z-index:1;width:100%;min-height:80px;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;line-height:28px;outline:none;transition:border-color .2s"
               onfocus="this.style.borderColor='var(--accent)'"
@@ -909,8 +905,8 @@
 
         <div id="inputError" class="error-msg" style="display:none">Please fill all required fields.</div>
         <div class="btn-row">
-          <button class="btn btn-primary btn-lg" onclick="page3Next()">Validate & Proceed</button>
-          <button class="btn btn-secondary" onclick="goToPage(2)">← Back</button>
+          <button class="btn btn-primary btn-lg" onclick="page3Next()">Validate & Proceed ?</button>
+          <button class="btn btn-secondary" onclick="goToPage(2)">? Back</button>
         </div>
       </div>
     </div>
@@ -918,12 +914,12 @@
     <!-- PAGE 4: GENERATION -->
     <div class="page" id="page-4">
       <div class="card">
-        <div class="card-title">⚙️ Generating Content</div>
+        <div class="card-title">?? Generating Content</div>
         <div class="card-sub" id="generationSubtitle">Configure parallel agents below, then click Start.</div>
 
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;font-size:13px;color:var(--muted)">
           <label style="display:flex;align-items:center;gap:6px;font-weight:500">
-            ⚙️ Workers (concepts in parallel):
+            ? Workers (concepts in parallel):
             <select id="concurrencySelect" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);font-size:13px;color:var(--text)">
               <option value="1">1 — Sequential</option>
               <option value="3">3</option>
@@ -946,12 +942,12 @@
         <div class="progress-track" id="progressTrack"></div>
 
         <div id="genError" style="display:none" class="info-box warn">
-          ⚠️ <span id="genErrorMsg"></span>
+          ?? <span id="genErrorMsg"></span>
         </div>
 
         <!-- GENERATION MODE -->
         <div style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface);">
-          <div style="font-weight:600;font-size:13px;color:var(--text);margin-bottom:10px;">🧭 Generation Mode</div>
+          <div style="font-weight:600;font-size:13px;color:var(--text);margin-bottom:10px;">?? Generation Mode</div>
           <div style="display:flex;gap:20px;flex-wrap:wrap;">
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
               <input type="radio" name="genMode" value="full" checked onchange="onGenModeChange('full')" style="accent-color:var(--accent)"> Full Generation (Terms ? LO ? PLT ? Questions)
@@ -972,7 +968,7 @@
 
           <!-- Prereq / Glossary note panel -->
           <div id="prereqGlossaryPanel" style="display:none;margin-top:12px;padding:10px 14px;border-top:1px solid var(--border);background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted);">
-            📎 This mode uses the PDF / images you attached on page 2 as the source. Make sure your textbook file is uploaded before generating.
+            ?? This mode uses the PDF / images you attached on page 2 as the source. Make sure your textbook file is uploaded before generating.
           </div>
 
           <!-- Questions-only sub-options (hidden by default) -->
@@ -980,68 +976,34 @@
             <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;">Generate:</div>
             <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px;">
               <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="qType" value="both" checked onchange="setQuestionsType('both')" style="accent-color:var(--accent)"> Both (Objective + Subjective)
+                <input type="radio" name="qType" value="both" checked onchange="state.questionsType='both'" style="accent-color:var(--accent)"> Both (Objective + Subjective)
               </label>
               <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="qType" value="objective" onchange="setQuestionsType('objective')" style="accent-color:var(--accent)"> Objective Only
+                <input type="radio" name="qType" value="objective" onchange="state.questionsType='objective'" style="accent-color:var(--accent)"> Objective Only
               </label>
               <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="qType" value="subjective" onchange="setQuestionsType('subjective')" style="accent-color:var(--accent)"> Subjective Only
+                <input type="radio" name="qType" value="subjective" onchange="state.questionsType='subjective'" style="accent-color:var(--accent)"> Subjective Only
               </label>
               <label id="radOnlyOption" style="display:none;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="qType" value="rad" onchange="setQuestionsType('rad')" style="accent-color:var(--accent)"> RAD Only
+                <input type="radio" name="qType" value="rad" onchange="state.questionsType='rad'" style="accent-color:var(--accent)"> RAD Only
               </label>
               <label id="mtfScqOnlyOption" style="display:none;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="qType" value="mtfScq" onchange="setQuestionsType('mtfScq')" style="accent-color:var(--accent)"> MTF SCQ Only
+                <input type="radio" name="qType" value="mtfScq" onchange="state.questionsType='mtfScq';updateMTFPanelVisibility()" style="accent-color:var(--accent)"> MTF SCQ Only
               </label>
               <label id="mtfSubOnlyOption" style="display:none;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="qType" value="mtfSub" onchange="setQuestionsType('mtfSub')" style="accent-color:var(--accent)"> MTF Subjective Only
+                <input type="radio" name="qType" value="mtfSub" onchange="state.questionsType='mtfSub';updateMTFPanelVisibility()" style="accent-color:var(--accent)"> MTF Subjective Only
               </label>
               <label id="mtfMultiOnlyOption" style="display:none;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="qType" value="mtfMulti" onchange="setQuestionsType('mtfMulti')" style="accent-color:var(--accent)"> Multistatement SCQ Only
+                <input type="radio" name="qType" value="mtfMulti" onchange="state.questionsType='mtfMulti';updateMTFPanelVisibility()" style="accent-color:var(--accent)"> Multistatement SCQ Only
               </label>
-            </div>
-
-            <div id="radPanel" style="display:none;margin-top:12px;padding:14px 16px;border-top:1px solid var(--border);background:var(--surface2);border-radius:8px;">
-              <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px;">⚖️ RAD Input</div>
-              <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">Add the RAD count metadata and the learning outcomes to use for Reason-Assertion generation.</div>
-              <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">Example: Number of Application Medium Questions: RA:2</div>
-              <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">Example: Number of Application Hard Questions: RA:2</div>
-              <div style="display:grid;grid-template-columns:1fr;gap:12px;">
-                <div>
-                  <label style="display:block;margin-bottom:6px;">RAD Metadata</label>
-                  <textarea id="radQuestionsMetadataTextarea"
-                    placeholder="Number of Application Medium Questions: RA:2&#10;Number of Application Hard Questions: RA:2"
-                    oninput="state.radMetadata=this.value"
-                    style="width:100%;min-height:86px;padding:12px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;line-height:1.7;outline:none;transition:border-color .2s"></textarea>
-                </div>
-                <div>
-                  <label style="display:block;margin-bottom:6px;">Learning Outcomes</label>
-                  <textarea id="radQuestionsLOTextarea"
-                    placeholder="Paste learning outcomes here for RAD generation..."
-                    oninput="state.radLOText=this.value"
-                    style="width:100%;min-height:110px;padding:12px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;line-height:1.7;outline:none;transition:border-color .2s"></textarea>
-                  <div style="font-size:12px;color:var(--muted);margin:10px 0 8px;">
-                    Option 2 - Upload folder containing <code>*_LO.txt</code> files:
-                  </div>
-                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                    <label style="padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:var(--card);font-size:12px;cursor:pointer;color:var(--text);">
-                      📂 Choose LO Folder
-                      <input type="file" id="radLoFolderInput" webkitdirectory multiple accept=".txt" style="display:none" onchange="loadLOsFromFolder(this.files, 'radLo')">
-                    </label>
-                    <span id="radLoFolderStatus" style="font-size:12px;color:var(--muted);">No folder selected</span>
-                  </div>
-                  <div id="radLoFolderPreview" style="margin-top:8px;font-size:11px;color:var(--muted);max-height:80px;overflow-y:auto;"></div>
-                </div>
-              </div>
             </div>
 
             <!-- MTF panel — shown only when MTF SCQ Only or MTF Subjective Only is selected -->
             <div id="mtfPanel" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-              <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;">🎓 Learning Outcomes (for MTF generation)</div>
+              <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;">?? Learning Outcomes (for MTF generation)</div>
               <textarea id="mtfLOTextarea" placeholder="Paste Learning Outcomes here..." onchange="state.mtfLOText=this.value" oninput="state.mtfLOText=this.value"
                 style="width:100%;min-height:80px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;resize:vertical;box-sizing:border-box;font-family:monospace;"></textarea>
-              <div style="font-size:13px;font-weight:500;color:var(--text);margin:10px 0 6px;">🗒️ MTF Count Notepad <span style="font-size:11px;color:var(--text2);font-weight:400;">(each line = one MTF question; specify cognitive + difficulty)</span></div>
+              <div style="font-size:13px;font-weight:500;color:var(--text);margin:10px 0 6px;">??? MTF Count Notepad <span style="font-size:11px;color:var(--text2);font-weight:400;">(each line = one MTF question; specify cognitive + difficulty)</span></div>
               <textarea id="mtfMetadataTextarea" placeholder="e.g.&#10;Understanding Easy&#10;Understanding Medium&#10;Application Hard" onchange="state.mtfMetadata=this.value" oninput="state.mtfMetadata=this.value"
                 style="width:100%;min-height:80px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;resize:vertical;box-sizing:border-box;font-family:monospace;"></textarea>
             </div>
@@ -1049,7 +1011,7 @@
 
           <!-- LO input panel — shown for Questions Only and PLT Only -->
           <div id="loInputPanel" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-            <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;">🎯 Learning Outcomes</div>
+            <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;">?? Learning Outcomes</div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
               Option 1 — Paste LOs directly (used for all selected concepts):
             </div>
@@ -1061,7 +1023,7 @@
             </div>
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
               <label style="padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:var(--card);font-size:12px;cursor:pointer;color:var(--text);">
-                📂 Choose LO Folder
+                ?? Choose LO Folder
                 <input type="file" id="loFolderInput" webkitdirectory multiple accept=".txt" style="display:none" onchange="loadLOsFromFolder(this.files)">
               </label>
               <span id="loFolderStatus" style="font-size:12px;color:var(--muted);">No folder selected</span>
@@ -1073,7 +1035,7 @@
         <!-- CONCEPT SELECTION -->
         <div id="conceptSelectionCard" style="margin-bottom:16px;border:1px solid var(--border);border-radius:10px;padding:16px;background:var(--surface);">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="font-weight:600;font-size:14px;color:var(--text);">☑️ Select Concepts to Generate</div>
+            <div style="font-weight:600;font-size:14px;color:var(--text);">?? Select Concepts to Generate</div>
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--accent);font-weight:500;">
               <input type="checkbox" id="selectAllConcepts" onchange="toggleAllConcepts(this.checked)" checked style="accent-color:var(--accent);width:15px;height:15px;">
               Select All
@@ -1083,8 +1045,8 @@
         </div>
 
         <div class="btn-row" id="genButtons">
-          <button class="btn btn-primary btn-lg" id="startGenBtn" onclick="startGeneration()">🚀 Start Generation</button>
-          <button class="btn btn-secondary" onclick="goToPage(3)">← Back to Configure</button>
+          <button class="btn btn-primary btn-lg" id="startGenBtn" onclick="startGeneration()">? Start Generation</button>
+          <button class="btn btn-secondary" onclick="goToPage(3)">? Back to Configure</button>
         </div>
       </div>
     </div>
@@ -1092,7 +1054,7 @@
     <!-- PAGE 5: DOWNLOAD -->
     <div class="page" id="page-5">
       <div class="card">
-        <div class="card-title">✅ Generation Complete</div>
+        <div class="card-title">? Generation Complete</div>
         <div class="card-sub">Your question bank has been generated. Download files or copy content below.</div>
 
         <div class="stat-row">
@@ -1102,17 +1064,17 @@
         </div>
 
         <div class="output-section">
-          <h3>📁 Folder Structure</h3>
+          <h3>?? Folder Structure</h3>
           <div class="file-tree" id="fileTree"></div>
         </div>
 
         <div class="output-section">
-          <h3>⬇️ Download Files</h3>
+          <h3>?? Download Files</h3>
           <div class="download-grid" id="downloadGrid"></div>
         </div>
 
         <div class="btn-row">
-          <button class="btn btn-primary btn-lg" onclick="downloadAll()">📦 Download All as ZIP</button>
+          <button class="btn btn-primary btn-lg" onclick="downloadAll()">? Download All as ZIP</button>
           <button class="btn btn-primary" onclick="generateMore()" style="background:var(--success,#22c55e);border-color:var(--success,#22c55e)">+ Generate More Topics</button>
           <button class="btn btn-secondary" onclick="startOver()">Start New Chapter</button>
         </div>
@@ -1482,8 +1444,7 @@ const state = {
   promptCounts: {},
   objMetadata: '',   // user-editable objective metadata text (empty = skip)
   subjMetadata: '',  // user-editable subjective metadata text (empty = skip)
-  radMetadata: '',   // user-editable RAD metadata text — Math CBSE / Chemistry CBSE / Physics CBSE / Biology ICSE / Social CBSE only (empty = skip)
-  radLOText: '',     // user-editable LO text for RAD-only generation
+  radMetadata: '',   // user-editable RAD metadata text — Math CBSE only (empty = skip)
   mtfLOText: '',     // LO textarea for MTF mode — Biology ICSE only
   mtfMetadata: '',   // notepad for MTF counts — Biology ICSE only (each line = one MTF question spec)
   generatedFiles: {},
@@ -1501,10 +1462,9 @@ const state = {
 // ============================================================
 const SUBJECTS = [
   { id:'Biology',  icon:'🧬', label:'Biology',        icse:true,  cbse:false },
-  { id:'Chemistry',icon:'⚗️',  label:'Chemistry',      icse:true,  cbse:true  },
-  { id:'Physics',  icon:'⚡',  label:'Physics',        icse:true,  cbse:true  },
+  { id:'Chemistry',icon:'⚗️',  label:'Chemistry',      icse:true,  cbse:false },
+  { id:'Physics',  icon:'⚡',  label:'Physics',        icse:true,  cbse:false },
   { id:'Mathematics',icon:'📐',label:'Mathematics',   icse:true,  cbse:true  },
-  { id:'Social',   icon:'🏛️', label:'Social',         icse:false, cbse:true  },
   { id:'Civics',   icon:'🏛️', label:'Civics',         icse:true,  cbse:false },
   { id:'Geography',icon:'🌍',  label:'Geography',      icse:true,  cbse:false },
   { id:'History',  icon:'📜',  label:'History',        icse:true,  cbse:false },
@@ -1535,15 +1495,6 @@ const DEFAULT_COUNTS = {
     'Understanding Hard LA': 1, 'Application Hard LA': 1,
   },
   Physics_ICSE: {
-    'Factual Easy SCQ': 4, 'Understanding Easy SCQ': 4,
-    'Understanding Medium SCQ': 4, 'Understanding Hard SCQ': 4,
-    'Application Medium SCQ': 4, 'Application Hard SCQ': 4,
-    'Application Medium RA': 4, 'Application Hard RA': 4,
-    'Factual Easy VSA': 2, 'Understanding Easy VSA': 2, 'Application Easy VSA': 2,
-    'Understanding Medium SA': 2, 'Application Medium SA': 2, 'Application Hard SA': 2,
-    'Understanding Hard LA': 1, 'Application Hard LA': 1,
-  },
-  Physics_CBSE: {
     'Factual Easy SCQ': 4, 'Understanding Easy SCQ': 4,
     'Understanding Medium SCQ': 4, 'Understanding Hard SCQ': 4,
     'Application Medium SCQ': 4, 'Application Hard SCQ': 4,
@@ -1647,9 +1598,6 @@ function selectSubject(id, el) {
   document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   document.getElementById('subjectError').style.display = 'none';
-  updateRADOptionVisibility();
-  updateRADQuestionPanelVisibility();
-  updateSharedLOPanelVisibility();
 }
 
 function selectCurriculum(cur, el) {
@@ -1661,9 +1609,6 @@ function selectCurriculum(cur, el) {
   state.subjMetadata = '';
   state.radMetadata = '';
   renderSubjectGrid();
-  updateRADOptionVisibility();
-  updateRADQuestionPanelVisibility();
-  updateSharedLOPanelVisibility();
 }
 
 // ============================================================
@@ -2101,19 +2046,19 @@ Rules:
 }
 
 function renderStructurePreview(parsed) {
-  let html = `<span class="struct-ch">📘 ${parsed.chapter}</span>`;
+  let html = `<span class="struct-ch">?? ${parsed.chapter}</span>`;
   (parsed.subtopics || []).forEach(st => {
-    html += `\n<span class="struct-st">  +- 📙 ${st.name}</span>`;
+    html += `\n<span class="struct-st">  +- ?? ${st.name}</span>`;
     (st.nanoConcepts || []).forEach((nc, i, arr) => {
       const prefix = i === arr.length - 1 ? '+-' : '+-';
-      html += `\n<span class="struct-nc">      ${prefix} 🔹 ${nc}</span>`;
+      html += `\n<span class="struct-nc">      ${prefix} ?? ${nc}</span>`;
     });
   });
   document.getElementById('structurePreview').innerHTML = html;
   document.getElementById('structureParseStatus').innerHTML =
     `Found: <strong>${(parsed.subtopics || []).length}</strong> subtopics, <strong>${(parsed.subtopics || []).reduce((a, s) => a + (s.nanoConcepts || []).length, 0)}</strong> nano concepts`;
 
-  const scienceSubjects = ['Biology','Chemistry','Physics','Mathematics','Social','Civics','Geography','History'];
+  const scienceSubjects = ['Biology','Chemistry','Physics','Mathematics','Civics','Geography','History'];
   const showPlt = scienceSubjects.includes(state.subject);
   const pltContainer = document.getElementById('pltTogglesContainer');
   if (pltContainer) pltContainer.style.display = showPlt ? 'block' : 'none';
@@ -2159,13 +2104,9 @@ function setupPage3() {
 
   const isEnglish = state.subject === 'English';
   const isMathCBSEPage3 = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
-  const isChemCBSEPage3 = state.subject === 'Chemistry' && state.curriculum === 'CBSE';
-  const isPhysCBSEPage3 = state.subject === 'Physics' && state.curriculum === 'CBSE';
-  const isBioICSEPage3 = state.subject === 'Biology' && state.curriculum === 'ICSE';
-  const isSocialCBSEPage3 = state.subject === 'Social' && state.curriculum === 'CBSE';
   document.getElementById('englishFields').style.display = isEnglish ? 'block' : 'none';
   document.getElementById('grammarFieldWrap').style.display = 'none';
-  document.getElementById('radSection').style.display = (isMathCBSEPage3 || isChemCBSEPage3 || isPhysCBSEPage3 || isBioICSEPage3 || isSocialCBSEPage3) ? 'block' : 'none';
+  document.getElementById('radSection').style.display = isMathCBSEPage3 ? 'block' : 'none';
   // Restore RTC pill selection + count input visibility
   if (isEnglish && state.chapterType) {
     document.querySelectorAll('#englishFields .pill').forEach(p => {
@@ -2199,7 +2140,6 @@ function setupPage3() {
     Chemistry: isCBSE ? ['NCERT'] : ['Selina (Concise series)'],
     Physics: isCBSE ? ['NCERT'] : ['Selina (Concise series)', 'Evergreen'],
     Mathematics: isCBSE ? ['NCERT'] : ['Selina (Concise series)', 'APC'],
-    Social: isCBSE ? ['NCERT'] : ['NCERT'],
     Civics: isCBSE ? ['NCERT'] : ['Morning Star', 'APC'],
     Geography: isCBSE ? ['NCERT'] : ['Morning Star (Total Geography)', 'Frank EMU'],
     History: isCBSE ? ['NCERT'] : ['Morning Star', 'APC'],
@@ -2213,7 +2153,7 @@ function setupPage3() {
   if (pdfEl) {
     if (state.textbookPdfName) {
       pdfEl.style.display = 'block';
-      pdfEl.innerHTML = `📘 Textbook PDF loaded: <strong>${state.textbookPdfName}</strong> — Claude will read it as the primary knowledge source.`;
+      pdfEl.innerHTML = `?? Textbook PDF loaded: <strong>${state.textbookPdfName}</strong> — Claude will read it as the primary knowledge source.`;
     } else {
       pdfEl.style.display = 'none';
     }
@@ -2295,10 +2235,6 @@ function renderCountsTable() {
   const defaultObj  = toFriendlyText([...objCounts, ...raCounts]);
 
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
-  const isChemCBSE = state.subject === 'Chemistry' && state.curriculum === 'CBSE';
-  const isPhysCBSE = state.subject === 'Physics' && state.curriculum === 'CBSE';
-  const isBioICSE = state.subject === 'Biology' && state.curriculum === 'ICSE';
-  const isSocialCBSE = state.subject === 'Social' && state.curriculum === 'CBSE';
   const extractQTypeTotals = (src) => {
     const totals = { VSA: 0, SA: 0, LA: 0 };
     ['VSA', 'SA', 'LA'].forEach(t => {
@@ -2333,18 +2269,10 @@ function renderCountsTable() {
     subjEl.value = state.subjMetadata;
   }
 
-  // RAD textarea — Biology ICSE / Math CBSE default count from the RAD prompt section
+  // RAD textarea — Math CBSE only: default count from REASON_ASSERTION_CREATION_PROMPT
   if (radEl) {
-    if (!state.radMetadata && (isMathCBSE || isChemCBSE || isPhysCBSE || isBioICSE || isSocialCBSE)) {
-      const raRaw = isBioICSE
-        ? BIOLOGY_ICSE_RAD_PROMPT
-        : (isChemCBSE
-            ? CHEMISTRY_CBSE_RAD_PROMPT
-            : (isPhysCBSE
-                ? PHYSICS_CBSE_RAD_PROMPT
-                : (isSocialCBSE
-                    ? SOCIAL_CBSE_RAD_PROMPT
-                    : (extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || ''))));
+    if (!state.radMetadata && isMathCBSE) {
+      const raRaw = extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || '';
       const raCountLines = raRaw.match(/\[Number of [^\]]+\]:\s*[^\n\r]+/g) || [];
       const defaultRad = raCountLines.map(l => {
         const m = l.match(/\[Number of ([^\]]+)\]:\s*(.+)/);
@@ -2477,25 +2405,13 @@ function page3Next() {
     counts: state.counts
   };
 
-  const socialRadOnly = state.subject === 'Social' && state.curriculum === 'CBSE';
-
-  // Reset generation mode for each new chapter, but force Social CBSE into RAD-only mode.
-  state.genMode = socialRadOnly ? 'questions' : 'full';
-  state.questionsType = socialRadOnly ? 'rad' : 'both';
+  // Reset generation mode to Full for each new chapter so prior PLT/Questions-Only selections don't carry over
+  state.genMode = 'full';
+  state.questionsType = 'both';
   const fullRadio = document.querySelector('input[name="genMode"][value="full"]');
-  const questionsRadio = document.querySelector('input[name="genMode"][value="questions"]');
-  if (socialRadOnly) {
-    if (questionsRadio) questionsRadio.checked = true;
-    const radRadio = document.querySelector('input[name="qType"][value="rad"]');
-    if (radRadio) radRadio.checked = true;
-    onGenModeChange('questions');
-    setQuestionsType('rad');
-  } else {
-    if (fullRadio) fullRadio.checked = true;
-    onGenModeChange('full');
-    const bothQType = document.querySelector('input[name="qType"][value="both"]');
-    if (bothQType) bothQType.checked = true;
-  }
+  if (fullRadio) { fullRadio.checked = true; onGenModeChange('full'); }
+  const bothQType = document.querySelector('input[name="qType"][value="both"]');
+  if (bothQType) bothQType.checked = true;
 
   enableNav(4);
   goToPage(4);
@@ -2519,28 +2435,27 @@ function getPromptKey() {
   if (state.subject === 'English' && state.curriculum === 'CBSE') return 'ENGLISH_CBSE';
   if (state.subject === 'English' && state.chapterType === 'RTC') return 'ENGLISH_ICSE_RTC';
   if (state.subject === 'English') return 'ENGLISH_ICSE';
-  if (state.subject === 'Social' && state.curriculum === 'CBSE') return 'CIVICS_ICSE';
   if (state.subject === 'Biology' && state.curriculum === 'ICSE' && (state.grade === '06' || state.grade === '07')) return 'BIOLOGY_ICSE_67';
   return `${state.subject.toUpperCase()}_${state.curriculum}`;
 }
 
 // Steps for ICSE Science subjects
 const SCIENCE_STEPS = [
-  { id:'prereq', name:'Pre-requisite Questions', icon:'🧠' },
-  { id:'terms',  name:'Terms and Definition',     icon:'📚' },
-  { id:'lo',     name:'Learning Outcomes',        icon:'🎯' },
-  { id:'plt',    name:'Proficiency Level Transcript (PLT)', icon:'📈' },
-  { id:'glossary',name:'Glossary',               icon:'📖' },
-  { id:'objective',name:'Objective Questions (SCQ + RA)',  icon:'❓' },
-  { id:'subjective',name:'Subjective Questions (VSA/SA/LA)',icon:'✍️'},
-  { id:'reason_assertion', name:'Reason-Assertion Descriptive', icon:'⚖️' },
+  { id:'prereq', name:'Pre-requisite Questions', icon:'??' },
+  { id:'terms',  name:'Terms and Definition',     icon:'??' },
+  { id:'lo',     name:'Learning Outcomes',        icon:'??' },
+  { id:'plt',    name:'Proficiency Level Transcript (PLT)', icon:'??' },
+  { id:'glossary',name:'Glossary',               icon:'??' },
+  { id:'objective',name:'Objective Questions (SCQ + RA)',  icon:'?' },
+  { id:'subjective',name:'Subjective Questions (VSA/SA/LA)',icon:'??'},
+  { id:'reason_assertion', name:'Reason-Assertion Descriptive', icon:'??' },
 ];
 
 const ENGLISH_STEPS = [
-  { id:'lo',     name:'Learning Outcomes',        icon:'🎯' },
-  { id:'plt',    name:'PLT',                      icon:'📈' },
-  { id:'objective',name:'Objective Questions (SCQ)',icon:'❓' },
-  { id:'subjective',name:'Subjective Questions',  icon:'✍️' },
+  { id:'lo',     name:'Learning Outcomes',        icon:'??' },
+  { id:'plt',    name:'PLT',                      icon:'??' },
+  { id:'objective',name:'Objective Questions (SCQ)',icon:'?' },
+  { id:'subjective',name:'Subjective Questions',  icon:'??' },
 ];
 
 function getSteps() {
@@ -2567,8 +2482,8 @@ function renderConceptCheckboxes() {
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:9px 12px;border-radius:7px;background:var(--surface2);border:1px solid var(--accent);transition:border-color .15s;">
       <input type="checkbox" class="concept-cb" data-type="chapter" onchange="updateSelectAll()" ${chapterDone ? '' : 'checked'} style="accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;cursor:pointer;">
       <span style="font-size:13px;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
-        <strong style="color:var(--accent);">📘</strong>${state.chapterName}
-        ${chapterDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">✔ Already generated</span>' : ''}
+        <strong style="color:var(--accent);">??</strong>${state.chapterName}
+        ${chapterDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">? Already generated</span>' : ''}
         <span style="color:var(--muted);font-size:11px;">(Chapter — prereq questions, terms, learning outcomes, glossary)</span>
       </span>
     </label>`;
@@ -2585,8 +2500,8 @@ function renderConceptCheckboxes() {
           onchange="onNanoCbChange(${si}, ${ni})" ${nanoDone ? '' : 'checked'}
           style="accent-color:var(--accent);width:13px;height:13px;flex-shrink:0;cursor:pointer;">
         <span style="font-size:12px;color:var(--text2);display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
-          🔹 ${nc}
-          ${nanoDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">✔ Done</span>' : ''}
+          ?? ${nc}
+          ${nanoDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">? Done</span>' : ''}
         </span>
       </label>`;
     }).join('');
@@ -2599,7 +2514,7 @@ function renderConceptCheckboxes() {
           style="accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;cursor:pointer;">
         <span style="font-size:13px;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
           <strong style="color:var(--muted);">${si + 1}.</strong>${st.name}
-          ${stDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">✔ Done</span>' : ''}
+          ${stDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">? Done</span>' : ''}
           ${nanos.length ? `<span style="color:var(--muted);font-size:11px;">(${nanos.length} nano${nanos.length > 1 ? 's' : ''})</span>` : ''}
         </span>
       </label>
@@ -2646,7 +2561,7 @@ function updateSelectAll() {
 function logStep(scopeLabel, stepName, stepIcon, status, msg) {
   const key = (scopeLabel + '__' + stepName).replace(/[^a-zA-Z0-9_]/g, '_');
   const elId = 'log_' + key;
-  const icons = { running: '⏳', done: '✅', skipped: '—', error: '⚠️' };
+  const icons = { running: '?', done: '?', skipped: '—', error: '?' };
   const labels = { running: 'Processing…', done: 'Done', skipped: 'Skipped', error: 'Error' };
   const displayIcon = icons[status] || stepIcon;
   const displayMsg = msg || labels[status] || status;
@@ -2758,12 +2673,12 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   async function runStep(stepId, stepName, stepIcon, shouldRun, fn, timeoutMs) {
     if (!shouldRun) return undefined;
     if (cp.completedSteps.has(stepId)) {
-      logStep(scopeLabel, stepName, stepIcon, 'skipped', 'Already done ✓');
+      logStep(scopeLabel, stepName, stepIcon, 'skipped', 'Already done ?');
       return undefined;
     }
     logStep(scopeLabel, stepName, stepIcon, 'running');
     const safeKey = encodeURIComponent(conceptKey);
-    const retryBtn = `<button onclick="retryAgent(decodeURIComponent('${safeKey}'))" style="margin-left:8px;padding:2px 8px;border-radius:4px;border:1px solid #e74c3c;background:transparent;color:#e74c3c;cursor:pointer;font-size:11px;vertical-align:middle">↻ Retry this concept</button>`;
+    const retryBtn = `<button onclick="retryAgent(decodeURIComponent('${safeKey}'))" style="margin-left:8px;padding:2px 8px;border-radius:4px;border:1px solid #e74c3c;background:transparent;color:#e74c3c;cursor:pointer;font-size:11px;vertical-align:middle">? Retry this concept</button>`;
     const limitMs = timeoutMs || 180000;
     const limitLabel = limitMs >= 60000 ? (Math.round(limitMs / 60000) + ' min') : (limitMs / 1000 + ' sec');
     let timeoutId;
@@ -2865,7 +2780,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
                         ' — ' + combo.cognitiveLevel + ' · ' + combo.difficultyLevel +
                         ' (' + rtcSubType + ')';
 
-      await runStep(stepId, stepLabel, '🎭', true, async () => {
+      await runStep(stepId, stepLabel, '??', true, async () => {
         // Fill base prompt — {{chapterType}} resolves to rtcSubType (Prose/Poetry/Drama)
         const basePrompt = fillPlaceholders(masterPrompt, name, item, '')
           .replace(/\{\{cognitiveLevel\}\}/gi, combo.cognitiveLevel)
@@ -2950,38 +2865,38 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
         prevResults.push(result);
         const fileName = fp('RTC_' + rtcIdx + '.txt');
         saveFile(fileName, result);
-        logStep(scopeLabel, stepLabel, '🎭', 'done', '16 marks · 5 sub-questions');
+        logStep(scopeLabel, stepLabel, '??', 'done', '16 marks · 5 sub-questions');
       });
     }
     return 0;
   }
 
   // COMMERCE GLOSSARY — runs at chapter level before Terms (Commerce ICSE only)
-  await runStep('commerce_glossary', 'Glossary', '📖', isCommerce && isChapter && !singleStepMode, async () => {
+  await runStep('commerce_glossary', 'Glossary', '??', isCommerce && isChapter && !singleStepMode, async () => {
     const result = stripMarkdownFormatting(await callClaude(buildGlossaryPrompt(name, baseMasterPrompt), 40000));
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
-    logStep(scopeLabel, 'Glossary', '📖', 'done');
+    logStep(scopeLabel, 'Glossary', '??', 'done');
   });
 
   // PREREQ — runs in full mode (chapter only) OR in prereqOnly mode (chapter only)
-  await runStep('prereq', 'Pre-requisites', '🧠', isChapter && !isEnglish && !isCommerce && (!singleStepMode || prereqOnly), async () => {
+  await runStep('prereq', 'Pre-requisites', '??', isChapter && !isEnglish && !isCommerce && (!singleStepMode || prereqOnly), async () => {
     const result = await callClaude(buildPrereqPrompt(name, baseMasterPrompt), 40000);
     saveFile(ch + '/' + ch + '/' + ch + '_Prerequisites.json', result);
-    logStep(scopeLabel, 'Pre-requisites', '🧠', 'done', countLines(result) + ' lines');
+    logStep(scopeLabel, 'Pre-requisites', '??', 'done', countLines(result) + ' lines');
   });
 
   // TERMS — skipped for English, single-step modes, and GeoHistCivICSE subtopic Case B
-  await runStep('terms', 'Terms and Definition', '📚', !singleStepMode && !isEnglish && !isGeoSubtopicCaseB, async () => {
+  await runStep('terms', 'Terms and Definition', '??', !singleStepMode && !isEnglish && !isGeoSubtopicCaseB, async () => {
     const result = stripMarkdownFormatting(await callClaude(buildTermsPrompt(name, item, baseMasterPrompt), 40000));
     saveFile(fp('Terms.txt'), result);
-    logStep(scopeLabel, 'Terms and Definition', '📚', 'done');
+    logStep(scopeLabel, 'Terms and Definition', '??', 'done');
   });
 
   // LEARNING OUTCOMES — capture for PLT; skipped in single-step modes and GeoHistCivICSE subtopic Case B
-  const loRes = await runStep('lo', 'Learning Outcomes', '🎯', !singleStepMode && !isGeoSubtopicCaseB, async () => {
+  const loRes = await runStep('lo', 'Learning Outcomes', '??', !singleStepMode && !isGeoSubtopicCaseB, async () => {
     const result = stripMarkdownFormatting(await callClaude(buildLOPrompt(name, item, baseMasterPrompt), 40000));
     saveFile(fp('LO.txt'), result);
-    logStep(scopeLabel, 'Learning Outcomes', '🎯', 'done');
+    logStep(scopeLabel, 'Learning Outcomes', '??', 'done');
     return result;
   });
   if (loRes !== undefined) { loResult = loRes; cp.loResult = loResult; }
@@ -2990,26 +2905,26 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // In PLT-only mode, also require that there is actually an LO available for this concept
   const pltHasLO = !pltOnly || !!loResult;
   const doPLT = pltHasLO && !isEnglish && !isGeoSubtopicCaseB && !questionsOnly && !prereqOnly && !glossaryOnly && (isNano || pltOnly || (!singleStepMode && (isChapter || item.level === 'subtopic')));
-  await runStep('plt', 'PLT', '📈', doPLT, async () => {
+  await runStep('plt', 'PLT', '??', doPLT, async () => {
     const loLines = (loResult || '').split('\n').filter(l => /LO\d+|^\s*\d+[\.\)]/i.test(l.trim()));
     const loCount = loLines.length || 10;
     const result = stripMarkdownFormatting(await callClaude(buildPLTPrompt(name, item, baseMasterPrompt, loResult), 40000));
     saveFile(fp('PLT.txt'), result);
-    logStep(scopeLabel, 'PLT', '📈', 'done', loCount + ' LOs covered');
+    logStep(scopeLabel, 'PLT', '??', 'done', loCount + ' LOs covered');
   });
 
   // GLOSSARY — runs in full mode (chapter only) OR in glossaryOnly mode (chapter only)
   const hasGlossarySection = !!extractSection(baseMasterPrompt, 'GLOSSARY_CREATION_PROMPT');
-  await runStep('glossary', 'Glossary', '📖', isChapter && !isEnglish && !isCommerce && hasGlossarySection && (!singleStepMode || glossaryOnly), async () => {
+  await runStep('glossary', 'Glossary', '??', isChapter && !isEnglish && !isCommerce && hasGlossarySection && (!singleStepMode || glossaryOnly), async () => {
     const result = stripMarkdownFormatting(await callClaude(buildGlossaryPrompt(name, baseMasterPrompt), 40000));
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
-    logStep(scopeLabel, 'Glossary', '📖', 'done');
+    logStep(scopeLabel, 'Glossary', '??', 'done');
   });
 
   // OBJECTIVE — skipped for GeoHistCivICSE subtopic Case B only
   const isEnglishCBSE = state.subject === 'English' && state.curriculum === 'CBSE';
   const doObjectiveHere = doObjective && !isGeoSubtopicCaseB;
-  const objQ = await runStep('objective', 'Objective Questions', '❓', doObjectiveHere, async () => {
+  const objQ = await runStep('objective', 'Objective Questions', '?', doObjectiveHere, async () => {
     const includeRA = !isNano;
     const result = isCommerce
       ? await callClaude(buildCommerceObjectivePrompt(name, item, masterPrompt, loResult), 40000)
@@ -3033,7 +2948,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     }
     saveFile(fp('Objective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
-    logStep(scopeLabel, 'Objective Questions', '❓', 'done', qCount + ' questions');
+    logStep(scopeLabel, 'Objective Questions', '?', 'done', qCount + ' questions');
     return qCount;
   });
   if (objQ !== undefined) { addedQ += objQ; cp.totalQ += objQ; }
@@ -3041,7 +2956,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // SUBJECTIVE — skipped for GeoHistCivICSE nanos; Case B subtopic uses aggregated nano LOs
   const doSubjectiveHere = doSubjective && !isGeoNano && !isCommerce;
   const shouldRunSubj = isGeoSubtopicCaseB ? doSubjective : doSubjectiveHere;
-  const subjQ = await runStep('subjective', 'Subjective Questions', '✍️', shouldRunSubj, async () => {
+  const subjQ = await runStep('subjective', 'Subjective Questions', '??', shouldRunSubj, async () => {
     let subjLoText = loResult;
     if (isGeoSubtopicCaseB) {
       const nanoLOs = (item.nanoConcepts || []).map(nc => {
@@ -3108,64 +3023,58 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       saveFile(fp('Subjective.json'), JSON.stringify(normalized, null, 2));
     }
     const qCount = normalized.length;
-    logStep(scopeLabel, 'Subjective Questions', '✍️', 'done', qCount + ' questions');
+    logStep(scopeLabel, 'Subjective Questions', '??', 'done', qCount + ' questions');
     return qCount;
   }, 600000); // 10-minute timeout — subjective is the heaviest step under parallel load
   if (subjQ !== undefined) { addedQ += subjQ; cp.totalQ += subjQ; }
 
-  // REASON-ASSERTION DESCRIPTIVE — Mathematics CBSE, Chemistry CBSE, Physics CBSE, Biology ICSE and Social CBSE
+  // REASON-ASSERTION DESCRIPTIVE — Mathematics CBSE only
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
-  const isChemCBSE = state.subject === 'Chemistry' && state.curriculum === 'CBSE';
-  const isPhysCBSE = state.subject === 'Physics' && state.curriculum === 'CBSE';
-  const isBioICSE  = state.subject === 'Biology' && state.curriculum === 'ICSE';
-  const isSocialCBSE = state.subject === 'Social' && state.curriculum === 'CBSE';
-  const hasRADInput = !!(state.radMetadata && state.radMetadata.trim());
-  const doRAD = (isMathCBSE || isChemCBSE || isPhysCBSE || isBioICSE || isSocialCBSE) && (hasRADInput || isRADOnly);
-  const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '⚖️',
-    doRAD || ((isMathCBSE || isChemCBSE || isPhysCBSE || isBioICSE || isSocialCBSE) && isRADOnly), async () => {
-    const radLoText = (state.radLOText || state.globalLOText || '').trim() || loResult;
-    const rawResult = await callClaude(buildRADescPrompt(name, item, masterPrompt, radLoText), 16000, undefined, '[');
+  const doRAD = isMathCBSE && !isMetaSkip(state.radMetadata);
+  const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '??',
+    doRAD || (isMathCBSE && isRADOnly), async () => {
+    const rawResult = await callClaude(buildRADescPrompt(name, item, masterPrompt, loResult), 40000, undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('ReasonAssertion.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
-    logStep(scopeLabel, 'Reason-Assertion Descriptive', '⚖️', 'done', qCount + ' questions');
+    logStep(scopeLabel, 'Reason-Assertion Descriptive', '??', 'done', qCount + ' questions');
     return qCount;
-  }, 600000);
+  });
   if (raQ !== undefined) { addedQ += raQ; cp.totalQ += raQ; }
 
   // MTF SCQ — Biology ICSE only
-  const isBioICSE_MTF = state.subject === 'Biology' && state.curriculum === 'ICSE';
+  const isBioICSE = state.subject === 'Biology' && state.curriculum === 'ICSE';
   const mtfLO = (state.mtfLOText || '').trim() || loResult || '';
-  const mtfScqQ = await runStep('mtf_scq', 'MTF SCQ', '🔗',
-    isBioICSE_MTF && isMTFScqOnly, async () => {
+  const mtfScqQ = await runStep('mtf_scq', 'MTF SCQ', '??',
+    isBioICSE && isMTFScqOnly, async () => {
     const rawResult = await callClaude(buildMTFObjectivePrompt(name, item, mtfLO), 40000, undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('MTF_SCQ.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
-    logStep(scopeLabel, 'MTF SCQ', '🔗', 'done', qCount + ' questions');
+    logStep(scopeLabel, 'MTF SCQ', '??', 'done', qCount + ' questions');
     return qCount;
   });
   if (mtfScqQ !== undefined) { addedQ += mtfScqQ; cp.totalQ += mtfScqQ; }
 
   // MTF Subjective — Biology ICSE only
-  const mtfSubQ = await runStep('mtf_sub', 'MTF Subjective', '🔗',
-    isBioICSE_MTF && isMTFSubOnly, async () => {
+  const mtfSubQ = await runStep('mtf_sub', 'MTF Subjective', '??',
+    isBioICSE && isMTFSubOnly, async () => {
     const rawResult = await callClaude(buildMTFSubjectivePrompt(name, item, mtfLO), 40000, undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('MTF_Subjective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
-    logStep(scopeLabel, 'MTF Subjective', '🔗', 'done', qCount + ' questions');
+    logStep(scopeLabel, 'MTF Subjective', '??', 'done', qCount + ' questions');
     return qCount;
   });
   if (mtfSubQ !== undefined) { addedQ += mtfSubQ; cp.totalQ += mtfSubQ; }
 
-  const mtfMultiQ = await runStep('mtf_multi', 'MTF Multistatement SCQ', '🔗',
-    isBioICSE_MTF && isMTFMultiOnly, async () => {
+  const mtfMultiQ = await runStep('mtf_multi', 'MTF Multistatement SCQ', '??',
+    isBioICSE && isMTFMultiOnly, async () => {
     const rawResult = await callClaude(buildMTFMultiStatementPrompt(name, item, mtfLO), 40000, undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('MTF_MultiStatement.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
-    logStep(scopeLabel, 'MTF Multistatement SCQ', '🔗', 'done', qCount + ' questions');
+    logStep(scopeLabel, 'MTF Multistatement SCQ', '??', 'done', qCount + ' questions');
     return qCount;
   });
   if (mtfMultiQ !== undefined) { addedQ += mtfMultiQ; cp.totalQ += mtfMultiQ; }
@@ -3308,24 +3217,27 @@ async function startGeneration() {
   _genCtx = { masterPrompt, isEnglish, ch };
 
   document.getElementById('generationSubtitle').textContent =
-    totalConcepts + ' concepts · ' + numWorkers + ' workers · running in ordered batches';
+    totalConcepts + ' concepts · ' + numWorkers + ' workers · each worker picks next concept when free';
 
+  // Shared queue index — atomic in JS since it's single-threaded
+  let queueIdx = 0;
   let doneCount = 0, failCount = 0, totalQ = 0;
 
-  const updateAgentBar = (activeCount, queuedCount) => {
+  function updateAgentBar() {
+    const handled = doneCount + failCount;
+    const active = Math.min(numWorkers, Math.max(0, totalConcepts - handled));
+    const queued = Math.max(0, totalConcepts - handled - active);
     document.getElementById('agentStatusBar').textContent =
-      '⚙️ ' + activeCount + ' active  |  ⏳ ' + queuedCount + ' queued  |  ✅ ' + doneCount + ' done  |  ⚠️ ' + failCount + ' failed';
-  };
+      '? ' + active + ' active  |  ?? ' + queued + ' queued  |  ? ' + doneCount + ' done  |  ? ' + failCount + ' failed';
+  }
+  updateAgentBar();
 
-  for (let start = 0; start < totalConcepts; start += numWorkers) {
-    const batch = scopeItems.slice(start, start + numWorkers);
-    const batchNumber = Math.floor(start / numWorkers) + 1;
-    const totalBatches = Math.ceil(totalConcepts / numWorkers);
-    document.getElementById('generationSubtitle').textContent =
-      'Batch ' + batchNumber + ' of ' + totalBatches + ' · ' + batch.length + ' concepts running in parallel';
-    updateAgentBar(batch.length, Math.max(0, totalConcepts - start - batch.length));
-
-    await Promise.allSettled(batch.map(async (item) => {
+  // Each worker loops: grab next item from queue ? process it fully ? repeat
+  async function runWorker() {
+    while (true) {
+      const idx = queueIdx++;          // claim next slot
+      if (idx >= totalConcepts) break; // queue exhausted
+      const item = scopeItems[idx];
       try {
         const q = await runConceptAgent(item, masterPrompt, isEnglish, ch, null);
         doneCount++;
@@ -3333,9 +3245,12 @@ async function startGeneration() {
       } catch (_) {
         failCount++;
       }
-      updateAgentBar(batch.length, Math.max(0, totalConcepts - doneCount - failCount - batch.length));
-    }));
+      updateAgentBar();
+    }
   }
+
+  // Launch numWorkers workers; when one finishes a concept it immediately takes the next
+  await Promise.allSettled(Array.from({ length: numWorkers }, runWorker));
 
   document.getElementById('genStats').style.display = 'flex';
   document.getElementById('statTotal').textContent = totalQ;
@@ -3345,10 +3260,10 @@ async function startGeneration() {
 
   if (failCount > 0) {
     document.getElementById('agentStatusBar').textContent =
-      '✅ ' + doneCount + ' done  |  ⚠️ ' + failCount + ' failed — use ↻ Retry buttons above';
+      '? ' + doneCount + ' done  |  ? ' + failCount + ' failed — use ? Retry buttons above';
   } else {
     document.getElementById('agentStatusBar').textContent =
-      '✅ All ' + doneCount + ' concepts completed successfully!';
+      '? All ' + doneCount + ' concepts completed successfully!';
   }
 
   const hasAnyFiles = Object.keys(state.generatedFiles).length > 0;
@@ -3377,10 +3292,6 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
   const doObjective   = !isEnglishCBSEGrammar && (state.questionsType === 'both' || state.questionsType === 'objective' || isRADOnly) && !isMetaSkip(state.objMetadata);
   const doSubjective  = (state.questionsType === 'both' || state.questionsType === 'subjective') && !isMetaSkip(state.subjMetadata);
   const isMathCBSE    = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
-  const isChemCBSE    = state.subject === 'Chemistry' && state.curriculum === 'CBSE';
-  const isPhysCBSE    = state.subject === 'Physics' && state.curriculum === 'CBSE';
-  const isBioICSE     = state.subject === 'Biology' && state.curriculum === 'ICSE';
-  const isSocialCBSE   = state.subject === 'Social' && state.curriculum === 'CBSE';
   const isRTCMode     = state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType === 'RTC';
   const isGeoHistCivICSE = ['Geography', 'History', 'Civics'].includes(state.subject) && state.curriculum === 'ICSE';
   const hasPrereqSection = !!extractSection(masterPrompt, 'PRE_REQUISITE_CREATION_PROMPT');
@@ -3414,7 +3325,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
 
     // LO
     if (!singleStepMode && !isGeoSubtopicCaseB)
-      expected.push({ path: fp('LO.txt'), label: scopeLabel + ' • Learning Outcomes', item });
+      expected.push({ path: fp('LO.txt'), label: scopeLabel + ' ? Learning Outcomes', item });
 
     // PLT
     const pltHasLO = !pltOnly || !!(getLOForConcept(item.name));
@@ -3429,7 +3340,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
     // Objective
     const doObjFinal = doObjective && !isGeoSubtopicCaseB;
     if (doObjFinal)
-      expected.push({ path: fp('Objective.json'), label: scopeLabel + ' • Objective Questions', item });
+      expected.push({ path: fp('Objective.json'), label: scopeLabel + ' ? Objective Questions', item });
 
     if (state.subject === 'Biology' && state.curriculum === 'ICSE' && state.genMode === 'questions') {
       if (state.questionsType === 'mtfScq')
@@ -3454,16 +3365,16 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
                           state.generatedFiles[laPath]  !== undefined;
         if (!anyExists) {
           // Use VSA as the representative expected path so the missing-check has a single anchor to retry against
-          expected.push({ path: vsaPath, label: scopeLabel + ' • Subjective Questions (VSA/SA/LA)', item });
+          expected.push({ path: vsaPath, label: scopeLabel + ' ? Subjective Questions (VSA/SA/LA)', item });
         }
       } else {
-        expected.push({ path: fp('Subjective.json'), label: scopeLabel + ' • Subjective Questions', item });
+        expected.push({ path: fp('Subjective.json'), label: scopeLabel + ' ? Subjective Questions', item });
       }
     }
 
     // RAD
-    if ((isMathCBSE || isChemCBSE || isPhysCBSE || isBioICSE || isSocialCBSE) && (!isMetaSkip(state.radMetadata) || isRADOnly))
-      expected.push({ path: fp('ReasonAssertion.json'), label: scopeLabel + ' • Reason-Assertion', item });
+    if (isMathCBSE && (!isMetaSkip(state.radMetadata) || isRADOnly))
+      expected.push({ path: fp('ReasonAssertion.json'), label: scopeLabel + ' ? Reason-Assertion', item });
 
     // RTC
     if (isRTCMode) {
@@ -3502,7 +3413,7 @@ async function checkMissingFiles(scopeItems, masterPrompt, isEnglish, ch) {
     const listHtml = missing.map(e => `<li style="margin:4px 0;font-size:13px;color:var(--text2);">${e.label}</li>`).join('');
 
     box.innerHTML = `
-      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">⚠️ ${missing.length} file${missing.length !== 1 ? 's' : ''} not generated</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">?? ${missing.length} file${missing.length !== 1 ? 's' : ''} not generated</div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:14px;">The following files were expected but could not be generated. Would you like to retry generating only these missing files?</div>
       <ul style="margin:0 0 20px 18px;padding:0;">${listHtml}</ul>
       <div style="display:flex;gap:12px;justify-content:flex-end;">
@@ -4487,362 +4398,8 @@ function parseRADMetadata() {
   return specs.length > 0 ? specs : [{ cognitiveLevel: 'Understanding', difficultyLevel: 'Medium' }];
 }
 
-const BIOLOGY_ICSE_RAD_PROMPT = `BIOLOGY_ICSE_RAD_prompt:
-"You are an experienced Biology teacher who has a good record with creation of question banks which aligns with the new bloom’s taxonomy. Understand the information given below and perform the assigned task.
-
-Your task is to generate Reason-Assertion questions for the following information.
-
-META DATA INPUT SPECIFICATIONS
-
-[Subject]: {{Subject}}
-[Curriculum]: ICSE
-[Textbook]: Frank
-[Grade]: {{GradeNumber}}
-[Chapter Name]: {{ChapterName}}
-[Subtopic Name]: {{SubtopicName}}
-[Subconcepts]: {{Subconcepts}}
-[Learning Outcomes]: {{LearningOutcomes}}
-[Script]: {{Script}}
-[Number of Application Medium Questions]: RA:2
-[Number of Application Hard Questions]: RA:2
-
-Your understanding of cognitive and difficulty level:
-1. Application Medium: Questions where students apply concepts or formulas to routine real-world problems which are not from the textbook examples. Requires step-by-step use of knowledge in familiar contexts.
-2. Application Hard: Questions requiring application of concepts to new or unfamiliar real-world situations which are not from the textbook examples. Involves higher-order problem-solving, reasoning, or case-based scenarios.
-
-RA question rules:
-
-An RA question is a Reason - Assertion type question in which:
-1. A statement (Assertion, A) is given.
-2. A second statement (Reason, R) is provided, which may or may not correctly explain the Assertion.
-3. The student has to judge the truth of both statements and whether the Reason is the correct explanation of the Assertion.
-4. No consecutive RA question must have the same option letter as the correct option - if A is the correct answer for one RA question, then B for the next RA, then C for the next RA, and then D for the next RA, then A again, etc.
-
-The standard question format:
-Two statements are given, one labelled as Assertion (A) and the other as Reason (R)
-Assertion (A): A declarative statement claimed to be true
-Reason (R): A statement proposed as explanation or cause for the assertion
-Answer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation
-
-The standard options are:
-A. Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).
-B. Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).
-C. Assertion (A) is true, but Reason (R) is false.
-D. Assertion (A) is false, but Reason (R) is true.
-
-[Question Ending Format Rule]:
-Rotate the question ending format across all RA questions using these three variations in order:
- Question 1: Answer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.
-Question 2: Choose the appropriate option given below and justify your answer with a one-line explanation.
-Question 3: Choose the appropriate option given below and answer with a 1-2 liner explanation.
-Question 4: AI-generated variation (similar in structure and clarity to the above formats).
-Question 5: AI-generated variation.
-Question 6: AI-generated variation.
-Question 7: Repeat from format 1, and so on.
-
-- No two consecutive questions should have the same ending format.
-
-Content Boundaries:
-1. All questions and solutions must be in simple language understandable by [Grade] students.
-2. Generate questions, options and solutions STRICTLY based on the content present in the [Script] following NCERT [Grade] [Subject] [Textbook] ONLY.
-3. Use ONLY the terminology, language style, notations and expressions as found in the CBSE [Textbook] [Grade] [Subject] and [Script] attached.
-4. Cover all important concepts from the provided [Subtopic Name] and [Subconcepts] if provided.
-5. Wherever a chemical name appears, always include its chemical formula or symbol in brackets right next to it.
-6. Activity-based questions should focus on testing key learning points and main takeaways from the activity.
-7. Generate a combination of both numeric and theoretical questions based on the [Script] provided.
-8. Never use the terms 'according to the textbook/text', 'from the NCERT', 'from the figure/table/activity references' within the question text. Use their conceptual names instead, if any.
-
-Rules to be followed:
-1. Use clear and simple language appropriate for [Grade] CBSE students.
-2. Use concepts, terminology, textbook language, and notations which are used in the script: [Script].
-3. Avoid duplications or repetitions at any point.
-4. Complexity of calculations, and solvables must align with [Grade] level as per NCERT - no less, no more.
-5. Use only BRITISH ENGLISH SPELLINGS only throughout the generation.
-6. Use Indian metrics in measurements (kg, metres, kilometres, centimetres).
-7. All Mathematical and Chemical equations, symbols other than text, must be in latex format, and enclosed within \\(...\\).
-
-[LaTeX Formatting rules]
-All mathematical and chemical equations, all units, numbers, symbols, formulas, bonds, functional groups, hybridization states, and mechanism notations must be in inline LaTeX format using double backslashes \\(...\\). Use \\text{} for ALL chemical content to ensure upright (non-italic) text with manual subscripts/superscripts. Never use \\ce{} or display math $$.
-
-Generate the output in following JSON code block format:
-
-[
-  {
-    \"cognitiveLevel\": \"Application\",
-    \"difficultyLevel\": \"Medium\",
-    \"questionType\": \"VSA\",
-    \"question_type_tag\": \"Reason-Assertion Description\",
-    \"question\": \"Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\\n\\n<b>Assertion (A):</b> The number 45 has exactly 6 factors.\\n<b>Reason (R):</b> 45 = 3² × 5, and the number of factors is (2+1)(1+1) = 6.\\n\\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\\n\\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\\n(C) Assertion (A) is true, but Reason (R) is false.\\n(D) Assertion (A) is false, but Reason (R) is true.\",
-    \"solution\": \"Option (A) is correct.\\nCarbon forms covalent bonds by sharing valence electrons, and these shared electrons count toward both atoms' outermost shells, enabling both to achieve the stable noble gas configuration.\"
-  }
-]\"`;
-
-const CHEMISTRY_CBSE_RAD_PROMPT = `CHEMISTRY_CBSE_RAD_prompt:
-"You are an experienced Chemistry teacher who has a good record with creation of question banks which aligns with the new bloom’s taxonomy. Understand the information given below and perform the assigned task.
-
-Your task is to generate Reason-Assertion questions for the following information.
-
-[META DATA INPUT SPECIFICATIONS]
-
-[Subject]: {{Subject}}
-[Curriculum]: ICSE
-[Textbook]: Selina (Concise series)
-[Grade]: {{GradeNumber}}
-[Chapter Name]: {{ChapterName}}
-[Subtopic Name]: {{SubtopicName}}
-[Subconcepts]: {{Subconcepts}}
-[Learning Outcomes]: {{LearningOutcomes}}
-[Script]: {{Script}}
-[Number of Application Medium Questions]: RA:2
-[Number of Application Hard Questions]: RA:2
-
-Your understanding of cognitive and difficulty level:
-1. Application Medium: Questions where students apply concepts or formulas to routine real-world problems which are not from the textbook examples. Requires step-by-step use of knowledge in familiar contexts.
-2. Application Hard: Questions requiring application of concepts to new or unfamiliar real-world situations which are not from the textbook examples. Involves higher-order problem-solving, reasoning, or case-based scenarios.
-
-[RA question rules]:
-
-An RA question is a Reason - Assertion type question in which:
-1. A statement (Assertion, A) is given.
-2. A second statement (Reason, R) is provided, which may or may not correctly explain the Assertion.
-3. The student has to judge the truth of both statements and whether the Reason is the correct explanation of the Assertion.
-4. No consecutive RA question must have the same option letter as the correct option - if A is the correct answer for one RA question, then B for the next RA, then C for the next RA, and then D for the next RA, then A again, etc.
-
-[Standard question format]:
-Two statements are given, one labelled as Assertion (A) and the other as Reason (R)
-Assertion (A): A declarative statement claimed to be true
-Reason (R): A statement proposed as explanation or cause for the assertion
-Answer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation
-
-The standard options are:
-A. Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).
-B. Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).
-C. Assertion (A) is true, but Reason (R) is false.
-D. Assertion (A) is false, but Reason (R) is true.
-
-[Question Ending Format Rule]:
-Rotate the question ending format across all RA questions using these three variations in order:
-Question 1: Answer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.
-Question 2: Choose the appropriate option given below and justify your answer with a one-line explanation.
-Question 3: Choose the appropriate option given below and answer with a 1-2 liner explanation.
-Question 4: AI-generated variation (similar in structure and clarity to the above formats).
-Question 5: AI-generated variation.
-Question 6: AI-generated variation.
-Question 7: Repeat from format 1, and so on.
-- No two consecutive questions should have the same ending format.
-
-[Solution rules for numerical based questions]:
-1. Solution must include detailed step-by-step calculations in this flow: Standard Formula(e), Formula(e) conversion, then substitution, calculation, and then final answer.
-2. First mention the standard formula, then convert it into required format, wherever applicable.
-3. Correct answer, and the final answer in solution must match, indicating that the calculations are without any mistakes.
-
-How to Vary the Correct Answer:
-To ensure the correct option differs across questions, use these patterns:
-1. Answer (A) - Both true, R explains A.
-2. Answer (B) - Both true, but R does not explain A.
-3. Answer (C) - A true, R false.
-4. Answer (D) - A false, R true.
-
-[Content Boundaries]:
-1. All questions and solutions must be in simple language understandable by [Grade] students.
-2. Generate questions, options and solutions STRICTLY based on the content present in the [Script] following NCERT [Grade] [Subject] [Textbook] ONLY.
-3. Use ONLY the terminology, language style, notations and expressions as found in the CBSE [Textbook] [Grade] [Subject] and [Script] attached.
-4. Cover all important concepts from the provided [Subtopic Name] and [Subconcepts] if provided.
-5. Wherever a chemical name appears, always include its chemical formula or symbol in brackets right next to it.
-6. Activity-based questions should focus on testing key learning points and main takeaways from the activity.
-7. Generate a combination of both numeric and theoretical questions based on the [Script] provided.
-8. Never use the terms 'according to the textbook/text', 'from the NCERT', 'from the figure/table/activity references' within the question text. Use their conceptual names instead, if any.
-
-Core Content:
-9. Include state symbols (s), (l), (g), (aq) in all chemical equations.
-10. If a question or answer refers to any chemical equation or reaction, generate the equation/reaction as well instead of just text explanation.
-11. Avoid generating asterisks (*), or hash (#), or em dash (—) at any point.
-12. For structure based questions, instead of asking the students to draw a structure, only ask for the equation of the structure.
-13. Use the calculation formulas, methods that are used in the script: [Script].
-14. Provide the values of constants in the question that student requires to solve that question, for example: \\(\\log_2 8 = 3\\)
-
-Do NOT introduce:
-• Concepts beyond the NCERT curriculum
-• Advanced scientific terminology not in the textbook
-• Examples or case studies not mentioned in NCERT materials
-• College-level or research-based concepts
-
-Rules to be followed:
-1. Use clear and simple language appropriate for [Grade] CBSE students.
-2. Use concepts, terminology, textbook language, and notations which are used in the script: [Script].
-3. Avoid duplications or repetitions at any point.
-4. Complexity of calculations, and solvables must align with [Grade] level as per NCERT - no less, no more.
-5. Use only BRITISH ENGLISH SPELLINGS only throughout the generation.
-6. Use Indian metrics in measurements (kg, metres, kilometres, centimetres).
-7. All Mathematical and Chemical equations, symbols other than text, must be in latex format, and enclosed within \\(...\\). For example: \\(sqrt{2})\\. Use \\text{} for ALL alphabetic latex content to ensure upright (non-italic) text with manual subscripts/superscripts, for example: \\(\\text{NAD}^+\\). NEVER use \\ce{} or display math $$.
-
-[LaTeX Formatting rules]
-All mathematical and chemical equations, all units, numbers, symbols, formulas, bonds, functional groups, hybridization states, and mechanism notations must be in inline LaTeX format using double backslashes \\(...\\). Use \\text{} for ALL chemical content to ensure upright (non-italic) text with manual subscripts/superscripts. Never use \\ce{} or display math $$.
-
-Generate the output in following JSON code block format:
-
-[
-  {
-    \"cognitiveLevel\": \"Application\",
-    \"difficultyLevel\": \"Medium\",
-    \"questionType\": \"VSA\",
-    \"question_type_tag\": \"Reason-Assertion Description\",
-    \"question\": \"Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\\n\\n<b>Assertion (A):</b> ...\\n<b>Reason (R):</b> ...\\n\\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\\n\\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\\n(C) Assertion (A) is true, but Reason (R) is false.\\n(D) Assertion (A) is false, but Reason (R) is true.\",
-    \"solution\": \"Option (A) is correct.\\n<one-line justification>\"
-  }
-]\"`;
-
-const SOCIAL_CBSE_RAD_PROMPT = [
-  'SOCIAL_CBSE_RAD_prompt:',
-  '"You are an experienced Social teacher who has a good record with creation of question banks which aligns with the new bloom\'s taxonomy. Understand the information given below and perform the assigned task.',
-  '',
-  'Your task is to generate Reason-Assertion questions for the following information.',
-  '',
-  'META DATA INPUT SPECIFICATIONS',
-  '[Subject]: {{Subject}}',
-  '[Curriculum]: CBSE',
-  '[Textbook]: NCERT',
-  '[Grade]: {{GradeNumber}}',
-  '[Chapter Name]: {{ChapterName}}',
-  '[Subtopic Name]: {{SubtopicName}}',
-  '[Subconcepts]: {{Subconcepts}}',
-  '[Learning Outcomes]: {{LearningOutcomes}}',
-  '[Script]: [Attached]',
-  '[Number of Application Medium Questions]: RA:4',
-  '[Number of Application Hard Questions]: RA:4',
-  '',
-  'Question rules:',
-  '1. Use Application Medium and Application Hard only.',
-  '2. Frame each item as Assertion (A) and Reason (R).',
-  '3. The correct option must rotate across A, B, C, D in order.',
-  '4. Use simple language, British spellings, and only NCERT-level content from the given script.',
-  '5. If a chemical name appears, include its formula or symbol in brackets.',
-  '',
-  'Question ending formats:',
-  'Question 1: Answer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.',
-  'Question 2: Choose the appropriate option given below and justify your answer with a one-line explanation.',
-  'Question 3: Choose the appropriate option given below and answer with a 1-2 liner explanation.',
-  'Question 4: AI-generated variation similar to the above formats.',
-  'Question 5: AI-generated variation.',
-  'Question 6: AI-generated variation.',
-  'Question 7: Repeat from format 1, and so on.',
-  'No two consecutive questions should have the same ending format.',
-  '',
-  'Numerical questions:',
-  '1. Show the standard formula first.',
-  '2. Convert into the required form.',
-  '3. Substitute values and calculate step by step.',
-  '4. End with the final answer.',
-  '',
-  'Option rules:',
-  'A. Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).',
-  'B. Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).',
-  'C. Assertion (A) is true, but Reason (R) is false.',
-  'D. Assertion (A) is false, but Reason (R) is true.',
-  '',
-  'Output format:',
-  '[',
-  '  {',
-  '    "cognitiveLevel": "Application",',
-  '    "difficultyLevel": "Medium",',
-  '    "questionType": "VSA",',
-  '    "question_type_tag": "Reason-Assertion Description",',
-  '    "question": "Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\\n\\n<b>Assertion (A):</b> ...\\n<b>Reason (R):</b> ...\\n\\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\\n\\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\\n(C) Assertion (A) is true, but Reason (R) is false.\\n(D) Assertion (A) is false, but Reason (R) is true.",',
-  '    "solution": "Option (A) is correct.\\n<one-line justification>",',
-  '    "marks": "1"',
-  '  }',
-  ']"',
-].join('\n');
-
-const PHYSICS_CBSE_RAD_PROMPT = `PHYSICS_CBSE_RAD_prompt:
-"You are an experienced Physics teacher who has a good record with creation of question banks which aligns with the new bloom’s taxonomy. Understand the information given below and perform the assigned task.
-
-Your task is to generate Reason-Assertion questions for the following information.
-
-[META DATA INPUT SPECIFICATIONS]
-
-[Subject]: {{Subject}}
-[Curriculum]: CBSE
-[Textbook]: NCERT
-[Grade]: {{GradeNumber}}
-[Chapter Name]: {{ChapterName}}
-[Subtopic Name]: {{SubtopicName}}
-[Subconcepts]: {{Subconcepts}}
-[Learning Outcomes]: {{LearningOutcomes}}
-[Script]: {{Script}}
-[Number of Application Medium Questions]: RA:2
-[Number of Application Hard Questions]: RA:2
-
-Your understanding of cognitive and difficulty level:
-1. Application Medium: Questions where students apply concepts or formulas to routine real-world problems which are not from the textbook examples. Requires step-by-step use of knowledge in familiar contexts.
-2. Application Hard: Questions requiring application of concepts to new or unfamiliar real-world situations which are not from the textbook examples. Involves higher-order problem-solving, reasoning, or case-based scenarios.
-
-[RA question rules]:
-An RA question is a Reason - Assertion type question in which:
-1. A statement (Assertion, A) is given.
-2. A second statement (Reason, R) is provided, which may or may not correctly explain the Assertion.
-3. The student has to judge the truth of both statements and whether the Reason is the correct explanation of the Assertion.
-4. No consecutive RA question must have the same option letter as the correct option - if A is the correct answer for one RA question, then B for the next RA, then C for the next RA, and then D for the next RA, then A again, etc.
-
-The standard options are:
-A. Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).
-B. Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).
-C. Assertion (A) is true, but Reason (R) is false.
-D. Assertion (A) is false, but Reason (R) is true.
-
-Question ending formats:
-Question 1: Answer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.
-Question 2: Choose the appropriate option given below and justify your answer with a one-line explanation.
-Question 3: Choose the appropriate option given below and answer with a 1-2 liner explanation.
-Question 4: AI-generated variation similar to the above formats.
-Question 5: AI-generated variation.
-Question 6: AI-generated variation.
-Question 7: Repeat from format 1, and so on.
-- No two consecutive questions should have the same ending format.
-
-Solution rules for numerical based questions:
-1. Solution must include detailed step-by-step calculations in this flow: Standard Formula(e), Formula(e) conversion, then substitution, calculation, and then final answer.
-2. First mention the standard formula, then convert it into required format, wherever applicable.
-3. Correct answer, and the final answer in solution must match, indicating that the calculations are without any mistakes.
-
-How to vary the correct answer:
-1. Answer (A) - Both true, R explains A.
-2. Answer (B) - Both true, but R does not explain A.
-3. Answer (C) - A true, R false.
-4. Answer (D) - A false, R true.
-
-Content boundaries:
-1. All questions and solutions must be in simple language understandable by [Grade] students.
-2. Generate questions, options and solutions strictly based on the content present in the [Script] following NCERT [Grade] Physics [Textbook] only.
-3. Use only the terminology, language style, notations and expressions as found in the CBSE [Textbook] [Grade] Physics and [Script] attached.
-4. Cover all important concepts from the provided [Subtopic Name] and [Subconcepts] if provided.
-5. Never use the terms according to the textbook/text, from the NCERT, from the figure/table/activity references within the question text.
-6. Do not generate asterisks, hash, or em dash at any point.
-7. Use only British English spellings.
-8. All mathematical and chemical equations, symbols other than text, must be in latex format and enclosed within \\(...\\).
-
-Generate the output in following JSON code block format:
-[
-  {
-    "cognitiveLevel": "Application",
-    "difficultyLevel": "Medium",
-    "questionType": "VSA",
-    "question_type_tag": "Reason-Assertion Description",
-    "question": "Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\\n\\n<b>Assertion (A):</b> ...\\n<b>Reason (R):</b> ...\\n\\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\\n\\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\\n(C) Assertion (A) is true, but Reason (R) is false.\\n(D) Assertion (A) is false, but Reason (R) is true.",
-    "solution": "Option (A) is correct.\\n<one-line justification>"
-  }
-]\"`;
-
 function buildRADescPrompt(conceptName, item, masterPrompt, loText) {
-  const raw = (state.subject === 'Biology' && state.curriculum === 'ICSE')
-    ? BIOLOGY_ICSE_RAD_PROMPT
-    : (state.subject === 'Chemistry' && state.curriculum === 'CBSE')
-      ? CHEMISTRY_CBSE_RAD_PROMPT
-      : (state.subject === 'Physics' && state.curriculum === 'CBSE')
-        ? PHYSICS_CBSE_RAD_PROMPT
-    : (state.subject === 'Social' && state.curriculum === 'CBSE')
-      ? SOCIAL_CBSE_RAD_PROMPT
-      : (extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || masterPrompt);
+  const raw = extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || masterPrompt;
   let section = applyPromptCountEdits(fillPlaceholders(raw, conceptName, item, loText));
   // Strip [Number of ...] lines — METADATA INPUT below is sole source of truth
   section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
@@ -4854,13 +4411,14 @@ function buildRADescPrompt(conceptName, item, masterPrompt, loText) {
   const specsText = radSpecs.map((s, i) => `RAD ${i+1}: cognitiveLevel="${s.cognitiveLevel}" difficultyLevel="${s.difficultyLevel}"`).join('\n');
 
   const radExample = `{
-    "cognitiveLevel": "Application",
-    "difficultyLevel": "Medium",
-    "questionType": "VSA",
-    "question_type_tag": "Reason-Assertion Description",
-    "question": "Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\\n\\n<b>Assertion (A):</b>Carbon shares its valence electrons with other atoms of carbon or with atoms of other elements.\\n<b>Reason (R):</b> The shared electrons belong to the outermost shells of both the atoms and lead to both atoms attaining the noble gas configuration.\\n\\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\\n\\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\\n(C) Assertion (A) is true, but Reason (R) is false.\\n(D) Assertion (A) is false, but Reason (R) is true.",
-    "solution": "Option (B) is correct.\\n Carbon forms covalent bonds by sharing valence electrons, and these shared electrons count toward both atoms' outermost shells, enabling both to achieve the stable noble gas configuration."
-  }`;
+  "cognitiveLevel": "<Factual|Understanding|Application>",
+  "difficultyLevel": "<Easy|Medium|Hard>",
+  "questionType": "VSA",
+  "question_type_tag": "Reason-Assertion Description",
+  "question": "Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\\n\\n<b>Assertion (A):</b> <assertion statement>.\\n<b>Reason (R):</b> <reason statement>.\\n\\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\\n\\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\\n(C) Assertion (A) is true, but Reason (R) is false.\\n(D) Assertion (A) is false, but Reason (R) is true.",
+  "solution": "Option (<correct letter>) is correct.\\n<one-line justification explaining why the chosen option is correct>",
+  "marks": "1"
+}`;
 
   const formatSpec = `
 
@@ -5170,10 +4728,10 @@ function renderDownloadPage() {
     const ext = name.split('.').pop();
     const color = ext === 'json' ? 'var(--warn)' : 'var(--success)';
     return `<div class="dl-card">
-      <div class="dl-name" style="color:${color}">📄 ${name}</div>
+      <div class="dl-name" style="color:${color}">?? ${name}</div>
       <div class="dl-size">${path.replace(name,'').slice(0,-1)}</div>
       <div class="dl-size">${sizeStr}</div>
-      <button class="btn btn-sm btn-secondary" style="margin-top:4px" onclick="downloadFile('${path}')">⬇️ Download</button>
+      <button class="btn btn-sm btn-secondary" style="margin-top:4px" onclick="downloadFile('${path}')">? Download</button>
     </div>`;
   }).join('');
 }
@@ -5198,9 +4756,9 @@ function renderTree(node, depth) {
     if (v === null) {
       const ext = k.split('.').pop();
       const cls = ext === 'json' ? 'ft-json' : 'ft-txt';
-      html += `${pad}<span class="${cls}">📄 ${k}</span>\n`;
+      html += `${pad}<span class="${cls}">?? ${k}</span>\n`;
     } else {
-      html += `${pad}<span class="ft-folder">📁 ${k}/</span>\n`;
+      html += `${pad}<span class="ft-folder">?? ${k}/</span>\n`;
       html += renderTree(v, depth+1);
     }
   });
@@ -5282,45 +4840,31 @@ async function downloadAll() {
       </div>`;
     document.querySelector('#page-5 .btn-row').after(prompt);
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '📦 Download All as ZIP'; }
+    if (btn) { btn.disabled = false; btn.textContent = '? Download All as ZIP'; }
   }
 }
 
 function onGenModeChange(mode) {
   state.genMode = mode;
   document.getElementById('questionsModePanel').style.display = mode === 'questions' ? '' : 'none';
+  document.getElementById('loInputPanel').style.display = (mode === 'questions' || mode === 'plt') ? '' : 'none';
   document.getElementById('prereqGlossaryPanel').style.display = (mode === 'prereq' || mode === 'glossary') ? '' : 'none';
   updateRADOptionVisibility();
-  updateSharedLOPanelVisibility();
-  updateRADQuestionPanelVisibility();
 }
 
 function updateRADOptionVisibility() {
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
   const isBioICSE  = state.subject === 'Biology'     && state.curriculum === 'ICSE';
-  const isChemCBSE = state.subject === 'Chemistry'   && state.curriculum === 'CBSE';
-  const isPhysCBSE = state.subject === 'Physics'     && state.curriculum === 'CBSE';
-  const isSocialCBSE = state.subject === 'Social'    && state.curriculum === 'CBSE';
   const opt = document.getElementById('radOnlyOption');
-  if (opt) opt.style.display = (isMathCBSE || isBioICSE || isChemCBSE || isPhysCBSE || isSocialCBSE) ? 'flex' : 'none';
+  if (opt) opt.style.display = isMathCBSE ? 'flex' : 'none';
   const mtfScqOpt = document.getElementById('mtfScqOnlyOption');
   const mtfSubOpt = document.getElementById('mtfSubOnlyOption');
   const mtfMultiOpt = document.getElementById('mtfMultiOnlyOption');
   if (mtfScqOpt) mtfScqOpt.style.display = isBioICSE ? 'flex' : 'none';
   if (mtfSubOpt) mtfSubOpt.style.display = isBioICSE ? 'flex' : 'none';
   if (mtfMultiOpt) mtfMultiOpt.style.display = isBioICSE ? 'flex' : 'none';
-  if (isSocialCBSE) {
-    state.genMode = 'questions';
-    state.questionsType = 'rad';
-    const qTypeRad = document.querySelector('input[name="qType"][value="rad"]');
-    if (qTypeRad) qTypeRad.checked = true;
-    if (opt) opt.style.display = 'flex';
-    if (mtfScqOpt) mtfScqOpt.style.display = 'none';
-    if (mtfSubOpt) mtfSubOpt.style.display = 'none';
-    if (mtfMultiOpt) mtfMultiOpt.style.display = 'none';
-  }
   // Reset questionsType if the selected option is no longer valid
-  if (!(isMathCBSE || isBioICSE || isChemCBSE || isPhysCBSE || isSocialCBSE) && state.questionsType === 'rad') {
+  if (!isMathCBSE && state.questionsType === 'rad') {
     state.questionsType = 'both';
     const bothRadio = document.querySelector('input[name="qType"][value="both"]');
     if (bothRadio) bothRadio.checked = true;
@@ -5331,7 +4875,6 @@ function updateRADOptionVisibility() {
     if (bothRadio) bothRadio.checked = true;
   }
   updateMTFPanelVisibility();
-  updateRADQuestionPanelVisibility();
 }
 
 function updateMTFPanelVisibility() {
@@ -5341,49 +4884,17 @@ function updateMTFPanelVisibility() {
   panel.style.display = isMTF ? '' : 'none';
 }
 
-function setQuestionsType(type) {
-  state.questionsType = type;
-  updateMTFPanelVisibility();
-  updateSharedLOPanelVisibility();
-  updateRADQuestionPanelVisibility();
-}
-
-function updateSharedLOPanelVisibility() {
-  const panel = document.getElementById('loInputPanel');
-  if (!panel) return;
-  panel.style.display = (state.genMode === 'plt' || (state.genMode === 'questions' && state.questionsType !== 'rad')) ? '' : 'none';
-}
-
-function updateRADQuestionPanelVisibility() {
-  const panel = document.getElementById('radPanel');
-  if (!panel) return;
-  const eligible = (state.subject === 'Mathematics' && state.curriculum === 'CBSE')
-    || (state.subject === 'Biology' && state.curriculum === 'ICSE')
-    || (state.subject === 'Chemistry' && state.curriculum === 'CBSE')
-    || (state.subject === 'Physics' && state.curriculum === 'CBSE')
-    || (state.subject === 'Social' && state.curriculum === 'CBSE');
-  const show = state.genMode === 'questions' && state.questionsType === 'rad' && eligible;
-  panel.style.display = show ? '' : 'none';
-  updateSharedLOPanelVisibility();
-  if (!show) return;
-  const metaEl = document.getElementById('radQuestionsMetadataTextarea');
-  if (metaEl) metaEl.value = state.radMetadata || '';
-  const loEl = document.getElementById('radQuestionsLOTextarea');
-  if (loEl) loEl.value = state.radLOText || state.globalLOText || '';
-}
-
-function loadLOsFromFolder(files, prefix = 'lo') {
+function loadLOsFromFolder(files) {
   if (!files || !files.length) return;
   state.providedLOs = {};
   const loFiles = Array.from(files).filter(f => f.name.endsWith('_LO.txt'));
-  const statusEl = document.getElementById(prefix + 'FolderStatus');
-  const preview = document.getElementById(prefix + 'FolderPreview');
   if (!loFiles.length) {
-    if (statusEl) statusEl.textContent = 'No *_LO.txt files found in selected folder.';
+    document.getElementById('loFolderStatus').textContent = 'No *_LO.txt files found in selected folder.';
     return;
   }
   let loaded = 0;
-  if (preview) preview.innerHTML = '';
+  const preview = document.getElementById('loFolderPreview');
+  preview.innerHTML = '';
   loFiles.forEach(file => {
     // Derive concept name from filename: "ConceptName_LO.txt" ? "ConceptName"
     const conceptName = file.name.replace(/_LO\.txt$/i, '').replace(/_/g, ' ');
@@ -5391,10 +4902,10 @@ function loadLOsFromFolder(files, prefix = 'lo') {
     reader.onload = (ev) => {
       state.providedLOs[conceptName] = ev.target.result;
       loaded++;
-      if (preview) preview.innerHTML += `<div>? ${conceptName}</div>`;
+      preview.innerHTML += `<div>? ${conceptName}</div>`;
       if (loaded === loFiles.length) {
         const isPLTOnly = state.genMode === 'plt';
-        if (statusEl) statusEl.textContent =
+        document.getElementById('loFolderStatus').textContent =
           isPLTOnly
             ? `${loaded} LO file${loaded > 1 ? 's' : ''} loaded — PLT will be generated for each`
             : `${loaded} LO file${loaded > 1 ? 's' : ''} loaded`;
@@ -5443,7 +4954,6 @@ function startOver() {
   state.questionsType = 'both';
   state.providedLOs = {};
   state.globalLOText = '';
-  state.radLOText = '';
   state.textbookImages = [];
   state.textbookPdfs = [];
   state.textbookText = '';
