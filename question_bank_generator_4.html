@@ -1021,6 +1021,17 @@
                     placeholder="Paste learning outcomes here for RAD generation..."
                     oninput="state.radLOText=this.value"
                     style="width:100%;min-height:110px;padding:12px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;line-height:1.7;outline:none;transition:border-color .2s"></textarea>
+                  <div style="font-size:12px;color:var(--muted);margin:10px 0 8px;">
+                    Option 2 - Upload folder containing <code>*_LO.txt</code> files:
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <label style="padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:var(--card);font-size:12px;cursor:pointer;color:var(--text);">
+                      📂 Choose LO Folder
+                      <input type="file" id="radLoFolderInput" webkitdirectory multiple accept=".txt" style="display:none" onchange="loadLOsFromFolder(this.files, 'radLo')">
+                    </label>
+                    <span id="radLoFolderStatus" style="font-size:12px;color:var(--muted);">No folder selected</span>
+                  </div>
+                  <div id="radLoFolderPreview" style="margin-top:8px;font-size:11px;color:var(--muted);max-height:80px;overflow-y:auto;"></div>
                 </div>
               </div>
             </div>
@@ -5361,17 +5372,18 @@ function updateRADQuestionPanelVisibility() {
   if (loEl) loEl.value = state.radLOText || state.globalLOText || '';
 }
 
-function loadLOsFromFolder(files) {
+function loadLOsFromFolder(files, prefix = 'lo') {
   if (!files || !files.length) return;
   state.providedLOs = {};
   const loFiles = Array.from(files).filter(f => f.name.endsWith('_LO.txt'));
+  const statusEl = document.getElementById(prefix + 'FolderStatus');
+  const preview = document.getElementById(prefix + 'FolderPreview');
   if (!loFiles.length) {
-    document.getElementById('loFolderStatus').textContent = 'No *_LO.txt files found in selected folder.';
+    if (statusEl) statusEl.textContent = 'No *_LO.txt files found in selected folder.';
     return;
   }
   let loaded = 0;
-  const preview = document.getElementById('loFolderPreview');
-  preview.innerHTML = '';
+  if (preview) preview.innerHTML = '';
   loFiles.forEach(file => {
     // Derive concept name from filename: "ConceptName_LO.txt" ? "ConceptName"
     const conceptName = file.name.replace(/_LO\.txt$/i, '').replace(/_/g, ' ');
@@ -5379,10 +5391,10 @@ function loadLOsFromFolder(files) {
     reader.onload = (ev) => {
       state.providedLOs[conceptName] = ev.target.result;
       loaded++;
-      preview.innerHTML += `<div>? ${conceptName}</div>`;
+      if (preview) preview.innerHTML += `<div>? ${conceptName}</div>`;
       if (loaded === loFiles.length) {
         const isPLTOnly = state.genMode === 'plt';
-        document.getElementById('loFolderStatus').textContent =
+        if (statusEl) statusEl.textContent =
           isPLTOnly
             ? `${loaded} LO file${loaded > 1 ? 's' : ''} loaded — PLT will be generated for each`
             : `${loaded} LO file${loaded > 1 ? 's' : ''} loaded`;
