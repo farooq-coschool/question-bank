@@ -980,26 +980,49 @@
             <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;">Generate:</div>
             <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px;">
               <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="qType" value="both" checked onchange="state.questionsType='both'" style="accent-color:var(--accent)"> Both (Objective + Subjective)
+                <input type="radio" name="qType" value="both" checked onchange="setQuestionsType('both')" style="accent-color:var(--accent)"> Both (Objective + Subjective)
               </label>
               <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="qType" value="objective" onchange="state.questionsType='objective'" style="accent-color:var(--accent)"> Objective Only
+                <input type="radio" name="qType" value="objective" onchange="setQuestionsType('objective')" style="accent-color:var(--accent)"> Objective Only
               </label>
               <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="qType" value="subjective" onchange="state.questionsType='subjective'" style="accent-color:var(--accent)"> Subjective Only
+                <input type="radio" name="qType" value="subjective" onchange="setQuestionsType('subjective')" style="accent-color:var(--accent)"> Subjective Only
               </label>
               <label id="radOnlyOption" style="display:none;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="qType" value="rad" onchange="state.questionsType='rad'" style="accent-color:var(--accent)"> RAD Only
+                <input type="radio" name="qType" value="rad" onchange="setQuestionsType('rad')" style="accent-color:var(--accent)"> RAD Only
               </label>
               <label id="mtfScqOnlyOption" style="display:none;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="qType" value="mtfScq" onchange="state.questionsType='mtfScq';updateMTFPanelVisibility()" style="accent-color:var(--accent)"> MTF SCQ Only
+                <input type="radio" name="qType" value="mtfScq" onchange="setQuestionsType('mtfScq')" style="accent-color:var(--accent)"> MTF SCQ Only
               </label>
               <label id="mtfSubOnlyOption" style="display:none;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="qType" value="mtfSub" onchange="state.questionsType='mtfSub';updateMTFPanelVisibility()" style="accent-color:var(--accent)"> MTF Subjective Only
+                <input type="radio" name="qType" value="mtfSub" onchange="setQuestionsType('mtfSub')" style="accent-color:var(--accent)"> MTF Subjective Only
               </label>
               <label id="mtfMultiOnlyOption" style="display:none;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="radio" name="qType" value="mtfMulti" onchange="state.questionsType='mtfMulti';updateMTFPanelVisibility()" style="accent-color:var(--accent)"> Multistatement SCQ Only
+                <input type="radio" name="qType" value="mtfMulti" onchange="setQuestionsType('mtfMulti')" style="accent-color:var(--accent)"> Multistatement SCQ Only
               </label>
+            </div>
+
+            <div id="radPanel" style="display:none;margin-top:12px;padding:14px 16px;border-top:1px solid var(--border);background:var(--surface2);border-radius:8px;">
+              <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px;">⚖️ RAD Input</div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">Add the RAD count metadata and the learning outcomes to use for Reason-Assertion generation.</div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">Example: Number of Application Medium Questions: RA:2</div>
+              <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">Example: Number of Application Hard Questions: RA:2</div>
+              <div style="display:grid;grid-template-columns:1fr;gap:12px;">
+                <div>
+                  <label style="display:block;margin-bottom:6px;">RAD Metadata</label>
+                  <textarea id="radQuestionsMetadataTextarea"
+                    placeholder="Number of Application Medium Questions: RA:2&#10;Number of Application Hard Questions: RA:2"
+                    oninput="state.radMetadata=this.value"
+                    style="width:100%;min-height:86px;padding:12px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;line-height:1.7;outline:none;transition:border-color .2s"></textarea>
+                </div>
+                <div>
+                  <label style="display:block;margin-bottom:6px;">Learning Outcomes</label>
+                  <textarea id="radQuestionsLOTextarea"
+                    placeholder="Paste learning outcomes here for RAD generation..."
+                    oninput="state.radLOText=this.value"
+                    style="width:100%;min-height:110px;padding:12px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;line-height:1.7;outline:none;transition:border-color .2s"></textarea>
+                </div>
+              </div>
             </div>
 
             <!-- MTF panel — shown only when MTF SCQ Only or MTF Subjective Only is selected -->
@@ -1449,6 +1472,7 @@ const state = {
   objMetadata: '',   // user-editable objective metadata text (empty = skip)
   subjMetadata: '',  // user-editable subjective metadata text (empty = skip)
   radMetadata: '',   // user-editable RAD metadata text — Math CBSE / Chemistry CBSE / Physics CBSE / Biology ICSE / Social CBSE only (empty = skip)
+  radLOText: '',     // user-editable LO text for RAD-only generation
   mtfLOText: '',     // LO textarea for MTF mode — Biology ICSE only
   mtfMetadata: '',   // notepad for MTF counts — Biology ICSE only (each line = one MTF question spec)
   generatedFiles: {},
@@ -2436,13 +2460,25 @@ function page3Next() {
     counts: state.counts
   };
 
-  // Reset generation mode to Full for each new chapter so prior PLT/Questions-Only selections don't carry over
-  state.genMode = 'full';
-  state.questionsType = 'both';
+  const socialRadOnly = state.subject === 'Social' && state.curriculum === 'CBSE';
+
+  // Reset generation mode for each new chapter, but force Social CBSE into RAD-only mode.
+  state.genMode = socialRadOnly ? 'questions' : 'full';
+  state.questionsType = socialRadOnly ? 'rad' : 'both';
   const fullRadio = document.querySelector('input[name="genMode"][value="full"]');
-  if (fullRadio) { fullRadio.checked = true; onGenModeChange('full'); }
-  const bothQType = document.querySelector('input[name="qType"][value="both"]');
-  if (bothQType) bothQType.checked = true;
+  const questionsRadio = document.querySelector('input[name="genMode"][value="questions"]');
+  if (socialRadOnly) {
+    if (questionsRadio) questionsRadio.checked = true;
+    const radRadio = document.querySelector('input[name="qType"][value="rad"]');
+    if (radRadio) radRadio.checked = true;
+    onGenModeChange('questions');
+    setQuestionsType('rad');
+  } else {
+    if (fullRadio) fullRadio.checked = true;
+    onGenModeChange('full');
+    const bothQType = document.querySelector('input[name="qType"][value="both"]');
+    if (bothQType) bothQType.checked = true;
+  }
 
   enableNav(4);
   goToPage(4);
@@ -2466,6 +2502,7 @@ function getPromptKey() {
   if (state.subject === 'English' && state.curriculum === 'CBSE') return 'ENGLISH_CBSE';
   if (state.subject === 'English' && state.chapterType === 'RTC') return 'ENGLISH_ICSE_RTC';
   if (state.subject === 'English') return 'ENGLISH_ICSE';
+  if (state.subject === 'Social' && state.curriculum === 'CBSE') return 'CIVICS_ICSE';
   if (state.subject === 'Biology' && state.curriculum === 'ICSE' && (state.grade === '06' || state.grade === '07')) return 'BIOLOGY_ICSE_67';
   return `${state.subject.toUpperCase()}_${state.curriculum}`;
 }
@@ -3065,16 +3102,18 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const isPhysCBSE = state.subject === 'Physics' && state.curriculum === 'CBSE';
   const isBioICSE  = state.subject === 'Biology' && state.curriculum === 'ICSE';
   const isSocialCBSE = state.subject === 'Social' && state.curriculum === 'CBSE';
-  const doRAD = (isMathCBSE || isChemCBSE || isPhysCBSE || isBioICSE || isSocialCBSE) && !isMetaSkip(state.radMetadata);
+  const hasRADInput = !!(state.radMetadata && state.radMetadata.trim());
+  const doRAD = (isMathCBSE || isChemCBSE || isPhysCBSE || isBioICSE || isSocialCBSE) && (hasRADInput || isRADOnly);
   const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '⚖️',
     doRAD || ((isMathCBSE || isChemCBSE || isPhysCBSE || isBioICSE || isSocialCBSE) && isRADOnly), async () => {
-    const rawResult = await callClaude(buildRADescPrompt(name, item, masterPrompt, loResult), 40000, undefined, '[');
+    const radLoText = (state.radLOText || state.globalLOText || '').trim() || loResult;
+    const rawResult = await callClaude(buildRADescPrompt(name, item, masterPrompt, radLoText), 40000, undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('ReasonAssertion.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
     logStep(scopeLabel, 'Reason-Assertion Descriptive', '⚖️', 'done', qCount + ' questions');
     return qCount;
-  });
+  }, 600000);
   if (raQ !== undefined) { addedQ += raQ; cp.totalQ += raQ; }
 
   // MTF SCQ — Biology ICSE only
@@ -5239,9 +5278,10 @@ async function downloadAll() {
 function onGenModeChange(mode) {
   state.genMode = mode;
   document.getElementById('questionsModePanel').style.display = mode === 'questions' ? '' : 'none';
-  document.getElementById('loInputPanel').style.display = (mode === 'questions' || mode === 'plt') ? '' : 'none';
   document.getElementById('prereqGlossaryPanel').style.display = (mode === 'prereq' || mode === 'glossary') ? '' : 'none';
   updateRADOptionVisibility();
+  updateSharedLOPanelVisibility();
+  updateRADQuestionPanelVisibility();
 }
 
 function updateRADOptionVisibility() {
@@ -5258,6 +5298,16 @@ function updateRADOptionVisibility() {
   if (mtfScqOpt) mtfScqOpt.style.display = isBioICSE ? 'flex' : 'none';
   if (mtfSubOpt) mtfSubOpt.style.display = isBioICSE ? 'flex' : 'none';
   if (mtfMultiOpt) mtfMultiOpt.style.display = isBioICSE ? 'flex' : 'none';
+  if (isSocialCBSE) {
+    state.genMode = 'questions';
+    state.questionsType = 'rad';
+    const qTypeRad = document.querySelector('input[name="qType"][value="rad"]');
+    if (qTypeRad) qTypeRad.checked = true;
+    if (opt) opt.style.display = 'flex';
+    if (mtfScqOpt) mtfScqOpt.style.display = 'none';
+    if (mtfSubOpt) mtfSubOpt.style.display = 'none';
+    if (mtfMultiOpt) mtfMultiOpt.style.display = 'none';
+  }
   // Reset questionsType if the selected option is no longer valid
   if (!(isMathCBSE || isBioICSE || isChemCBSE || isPhysCBSE || isSocialCBSE) && state.questionsType === 'rad') {
     state.questionsType = 'both';
@@ -5270,6 +5320,7 @@ function updateRADOptionVisibility() {
     if (bothRadio) bothRadio.checked = true;
   }
   updateMTFPanelVisibility();
+  updateRADQuestionPanelVisibility();
 }
 
 function updateMTFPanelVisibility() {
@@ -5277,6 +5328,37 @@ function updateMTFPanelVisibility() {
   if (!panel) return;
   const isMTF = state.questionsType === 'mtfScq' || state.questionsType === 'mtfSub' || state.questionsType === 'mtfMulti';
   panel.style.display = isMTF ? '' : 'none';
+}
+
+function setQuestionsType(type) {
+  state.questionsType = type;
+  updateMTFPanelVisibility();
+  updateSharedLOPanelVisibility();
+  updateRADQuestionPanelVisibility();
+}
+
+function updateSharedLOPanelVisibility() {
+  const panel = document.getElementById('loInputPanel');
+  if (!panel) return;
+  panel.style.display = (state.genMode === 'plt' || (state.genMode === 'questions' && state.questionsType !== 'rad')) ? '' : 'none';
+}
+
+function updateRADQuestionPanelVisibility() {
+  const panel = document.getElementById('radPanel');
+  if (!panel) return;
+  const eligible = (state.subject === 'Mathematics' && state.curriculum === 'CBSE')
+    || (state.subject === 'Biology' && state.curriculum === 'ICSE')
+    || (state.subject === 'Chemistry' && state.curriculum === 'CBSE')
+    || (state.subject === 'Physics' && state.curriculum === 'CBSE')
+    || (state.subject === 'Social' && state.curriculum === 'CBSE');
+  const show = state.genMode === 'questions' && state.questionsType === 'rad' && eligible;
+  panel.style.display = show ? '' : 'none';
+  updateSharedLOPanelVisibility();
+  if (!show) return;
+  const metaEl = document.getElementById('radQuestionsMetadataTextarea');
+  if (metaEl) metaEl.value = state.radMetadata || '';
+  const loEl = document.getElementById('radQuestionsLOTextarea');
+  if (loEl) loEl.value = state.radLOText || state.globalLOText || '';
 }
 
 function loadLOsFromFolder(files) {
@@ -5349,6 +5431,7 @@ function startOver() {
   state.questionsType = 'both';
   state.providedLOs = {};
   state.globalLOText = '';
+  state.radLOText = '';
   state.textbookImages = [];
   state.textbookPdfs = [];
   state.textbookText = '';
