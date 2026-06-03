@@ -1832,55 +1832,76 @@ MANDATORY QUALITY RULES — apply to every item you generate:
     messages,
   };
 
-  let resp;
-  try {
-    resp = await fetch('/api/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-subject': state.subject || '',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify(body),
-    });
-  } catch (netErr) {
-    throw new Error(
-      'Network error: ' + netErr.message +
-      '\n\nPossible causes:\n' +
-      '• No internet connection\n' +
-      '• Browser blocked the request (try Chrome/Edge)\n' +
-      '• CORS/extension interference — disable ad-blockers\n' +
-      '• File opened via file:// — try serving via a local server'
-    );
+  const maxAttempts = Math.max(1, opts.attempts || 3);
+  const retryDelayMs = opts.retryDelayMs || 1200;
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  const retryableStatuses = new Set([408, 409, 425, 429, 500, 502, 503, 504, 529]);
+
+  async function postMessages(requestBody) {
+    let lastErr = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      let resp;
+      try {
+        resp = await fetch('/api/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-subject': state.subject || '',
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify(requestBody),
+        });
+      } catch (netErr) {
+        lastErr = new Error(
+          'Network error: ' + netErr.message +
+          '\n\nPossible causes:\n' +
+          '- No internet connection\n' +
+          '- Browser blocked the request (try Chrome/Edge)\n' +
+          '- CORS/extension interference - disable ad-blockers\n' +
+          '- File opened via file:// - try serving via a local server'
+        );
+      }
+
+      if (resp && resp.ok) return resp;
+
+      if (resp) {
+        let errMsg = `API Error ${resp.status}`;
+        try {
+          const err = await resp.json();
+          errMsg = err.error?.message || errMsg;
+        } catch (_) {}
+        lastErr = new Error(errMsg);
+        lastErr.status = resp.status;
+        lastErr.isSizeError = /maximum size|too large|request.*too large|exceeds.*limit/i.test(errMsg);
+        if (lastErr.isSizeError || !retryableStatuses.has(resp.status) || attempt === maxAttempts) {
+          throw lastErr;
+        }
+      } else if (attempt === maxAttempts) {
+        throw lastErr || new Error('Network error: request failed');
+      }
+
+      await sleep((retryDelayMs * attempt) + Math.floor(Math.random() * 400));
+    }
+    throw lastErr || new Error('API request failed');
   }
 
-  if (!resp.ok) {
-    let errMsg = `API Error ${resp.status}`;
-    try {
-      const err = await resp.json();
-      errMsg = err.error?.message || errMsg;
-    } catch (_) {}
+  let resp;
+  try {
+    resp = await postMessages(body);
+  } catch (apiErr) {
+    const errMsg = apiErr.message || 'API error';
+    const isSizeError = apiErr.isSizeError || /maximum size|too large|request.*too large|exceeds.*limit/i.test(errMsg);
     // If request is too large (PDF too big), retry once without the PDF attachment
-    const isSizeError = /maximum size|too large|request.*too large|exceeds.*limit/i.test(errMsg);
     if (isSizeError && !skipTextbookSource && (state.textbookPdfBase64 || (state.textbookPdfs && state.textbookPdfs.length) || (state.textbookImages && state.textbookImages.length))) {
-      console.warn('[callClaude] Request too large — retrying without PDF/image attachment');
+      console.warn('[callClaude] Request too large - retrying without PDF/image attachment');
       const textOnlyContent = content.filter(c => c.type === 'text');
       const retryBody = { ...body, messages: [{ role: 'user', content: textOnlyContent }, ...(prefill ? [{ role: 'assistant', content: prefill }] : [])] };
-      const retryResp = await fetch('/api/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-subject': state.subject || '', 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify(retryBody),
-      });
-      if (!retryResp.ok) {
-        let retryErr = errMsg;
-        try { const e2 = await retryResp.json(); retryErr = e2.error?.message || retryErr; } catch (_) {}
-        throw new Error(retryErr + ' (retried without PDF — still failed)');
-      }
+      const retryResp = await postMessages(retryBody);
       const retryData = await retryResp.json();
-      if (retryData.stop_reason === 'max_tokens') throw new Error('Response truncated (max_tokens reached) — reduce load or retry');
+      if (retryData.stop_reason === 'max_tokens') throw new Error('Response truncated (max_tokens reached) - reduce load or retry');
       return retryData.content?.[0]?.text || '';
     }
-    throw new Error(errMsg);
+    throw apiErr;
   }
   const data = await resp.json();
   if (data.stop_reason === 'max_tokens') {
@@ -1906,41 +1927,54 @@ async function callClaudeWithImage(userText, imageBase64, imageMimeType, maxToke
     }]
   };
 
-  let resp;
-  try {
-    resp = await fetch('/api/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-subject': state.subject || '',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify(body),
-    });
-  } catch (netErr) {
-    throw new Error(
-      'Network error: ' + netErr.message +
-      '\n\nPossible causes:\n' +
-      '• No internet connection\n' +
-      '• Image too large — try a smaller image (< 5 MB)\n' +
-      '• Browser blocked the request (try Chrome/Edge)\n' +
-      '• CORS/extension interference — disable ad-blockers\n' +
-      '• File opened via file:// — try serving via a local server'
-    );
-  }
-
-  if (!resp.ok) {
-    let errMsg = `API Error ${resp.status}`;
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  const retryableStatuses = new Set([408, 409, 425, 429, 500, 502, 503, 504, 529]);
+  let lastErr = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    let resp;
     try {
-      const err = await resp.json();
-      errMsg = err.error?.message || errMsg;
-    } catch (_) {}
-    throw new Error(errMsg);
-  }
-  const data = await resp.json();
-  return data.content?.[0]?.text || '';
-}
+      resp = await fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-subject': state.subject || '',
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (netErr) {
+      lastErr = new Error(
+        'Network error: ' + netErr.message +
+        '\n\nPossible causes:\n' +
+        '- No internet connection\n' +
+        '- Image too large - try a smaller image (< 5 MB)\n' +
+        '- Browser blocked the request (try Chrome/Edge)\n' +
+        '- CORS/extension interference - disable ad-blockers\n' +
+        '- File opened via file:// - try serving via a local server'
+      );
+    }
 
+    if (resp && resp.ok) {
+      const data = await resp.json();
+      return data.content?.[0]?.text || '';
+    }
+
+    if (resp) {
+      let errMsg = `API Error ${resp.status}`;
+      try {
+        const err = await resp.json();
+        errMsg = err.error?.message || errMsg;
+      } catch (_) {}
+      lastErr = new Error(errMsg);
+      if (!retryableStatuses.has(resp.status) || attempt === 3) throw lastErr;
+    } else if (attempt === 3) {
+      throw lastErr || new Error('Network error: request failed');
+    }
+
+    await sleep((1200 * attempt) + Math.floor(Math.random() * 400));
+  }
+  throw lastErr || new Error('API request failed');
+}
 async function page2Analyze() {
   const name = document.getElementById('chapterName').value.trim();
   const textFallback = document.getElementById('chapterStructure').value.trim();
@@ -3028,12 +3062,13 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     const radSpecs = parseRADMetadata();
     const radTotal = radSpecs.length;
     const useRadLightSource = !!(radLoText && radLoText.trim().length > 40);
-    const radCallOptions = useRadLightSource ? { skipTextbookSource: true } : undefined;
+    const radCallOptions = { attempts: 4, retryDelayMs: 1600 };
+    if (useRadLightSource) radCallOptions.skipTextbookSource = true;
 
     async function generateRADChunk(chunkSpecs, startIndex, allowSplitFallback = true) {
       const radPrompt = buildRADescPrompt(name, item, masterPrompt, radLoText, chunkSpecs, startIndex);
       const expectedCount = chunkSpecs.length;
-      const radMaxTokens = Math.min(6000, Math.max(1800, expectedCount * 900 + 1200));
+      const radMaxTokens = Math.min(14000, Math.max(6000, expectedCount * 3500 + 2500));
       let rawResult = await callClaude(radPrompt, radMaxTokens, MODELS.RAD, '[', radCallOptions);
       let parsed = parseJSON('[' + (rawResult || ''));
       let qCount = Array.isArray(parsed) ? parsed.length : 0;
@@ -3042,6 +3077,10 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
         rawResult = await callClaude(retryPrompt, radMaxTokens, MODELS.RAD, '[', radCallOptions);
         parsed = parseJSON('[' + (rawResult || ''));
         qCount = Array.isArray(parsed) ? parsed.length : 0;
+      }
+      if (Array.isArray(parsed) && qCount > expectedCount) {
+        parsed = parsed.slice(0, expectedCount);
+        qCount = expectedCount;
       }
       if (qCount !== expectedCount && allowSplitFallback && expectedCount > 1) {
         const singleResults = [];
