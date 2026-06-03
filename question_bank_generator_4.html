@@ -3030,7 +3030,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     const useRadLightSource = !!(radLoText && radLoText.trim().length > 40);
     const radCallOptions = useRadLightSource ? { skipTextbookSource: true } : undefined;
 
-    async function generateRADChunk(chunkSpecs, startIndex) {
+    async function generateRADChunk(chunkSpecs, startIndex, allowSplitFallback = true) {
       const radPrompt = buildRADescPrompt(name, item, masterPrompt, radLoText, chunkSpecs, startIndex);
       const expectedCount = chunkSpecs.length;
       const radMaxTokens = Math.min(6000, Math.max(1800, expectedCount * 900 + 1200));
@@ -3042,6 +3042,14 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
         rawResult = await callClaude(retryPrompt, radMaxTokens, MODELS.RAD, '[', radCallOptions);
         parsed = parseJSON('[' + (rawResult || ''));
         qCount = Array.isArray(parsed) ? parsed.length : 0;
+      }
+      if (qCount !== expectedCount && allowSplitFallback && expectedCount > 1) {
+        const singleResults = [];
+        for (let j = 0; j < chunkSpecs.length; j++) {
+          const oneResult = await generateRADChunk([chunkSpecs[j]], startIndex + j, false);
+          singleResults.push(...oneResult);
+        }
+        return singleResults;
       }
       if (qCount !== expectedCount) {
         throw new Error('RAD chunk returned ' + qCount + ' questions, expected ' + expectedCount + '. Click Retry.');
