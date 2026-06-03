@@ -3068,7 +3068,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     async function generateRADChunk(chunkSpecs, startIndex, allowSplitFallback = true) {
       const radPrompt = buildRADescPrompt(name, item, masterPrompt, radLoText, chunkSpecs, startIndex);
       const expectedCount = chunkSpecs.length;
-      const radMaxTokens = Math.min(14000, Math.max(6000, expectedCount * 3500 + 2500));
+      const radMaxTokens = 8192;
       let rawResult = await callClaude(radPrompt, radMaxTokens, MODELS.RAD, '[', radCallOptions);
       let parsed = parseJSON('[' + (rawResult || ''));
       let qCount = Array.isArray(parsed) ? parsed.length : 0;
@@ -3090,6 +3090,16 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
         }
         return singleResults;
       }
+      if (qCount !== expectedCount && expectedCount === 1) {
+        const emergencyPrompt = radPrompt + '\n\nFINAL REPAIR ATTEMPT: Return a JSON array with exactly ONE valid Reason-Assertion Descriptive question object for RAD ' + (startIndex + 1) + '. Do not include markdown. Do not include any text outside the array. If unsure, create one grade-appropriate item strictly from the supplied learning outcomes and concept context.';
+        rawResult = await callClaude(emergencyPrompt, 8192, MODELS.RAD, '[', { ...radCallOptions, attempts: 5, retryDelayMs: 2200 });
+        parsed = parseJSON('[' + (rawResult || ''));
+        qCount = Array.isArray(parsed) ? parsed.length : 0;
+        if (Array.isArray(parsed) && qCount > 1) {
+          parsed = parsed.slice(0, 1);
+          qCount = 1;
+        }
+      }
       if (qCount !== expectedCount) {
         throw new Error('RAD chunk returned ' + qCount + ' questions, expected ' + expectedCount + '. Click Retry.');
       }
@@ -3097,10 +3107,10 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     }
 
     let parsed;
-    if (radTotal > 2) {
+    if (radTotal > 1) {
       parsed = [];
-      for (let i = 0; i < radSpecs.length; i += 2) {
-        const chunk = radSpecs.slice(i, i + 2);
+      for (let i = 0; i < radSpecs.length; i += 1) {
+        const chunk = radSpecs.slice(i, i + 1);
         const chunkResult = await generateRADChunk(chunk, i);
         parsed.push(...chunkResult);
       }
@@ -3369,14 +3379,22 @@ async function startGeneration() {
       'All ' + doneCount + ' concepts completed successfully!';
   }
 
+  const remainingMissing = await repairMissingFilesSilently(scopeItems, masterPrompt, isEnglish, ch, 3);
+
+  document.getElementById('statFiles').textContent = Object.keys(state.generatedFiles).length;
   const hasAnyFiles = Object.keys(state.generatedFiles).length > 0;
-  if (doneCount > 0 || hasAnyFiles) {
+  if (hasAnyFiles || remainingMissing.length === 0) {
     enableNav(5);
     setTimeout(async () => {
       goToPage(5);
       renderDownloadPage();
-      await checkMissingFiles(scopeItems, masterPrompt, isEnglish, ch);
+      if (remainingMissing.length > 0) await checkMissingFiles(scopeItems, masterPrompt, isEnglish, ch);
     }, 1200);
+  } else {
+    document.getElementById('startGenBtn').style.display = '';
+    document.getElementById('genError').style.display = 'flex';
+    document.getElementById('genErrorMsg').textContent = 'Generation could not create the required files after automatic retries. Please reduce workers to 3 or 5 and retry this concept.';
+    document.getElementById('agentStatusBar').textContent = 'Still missing: ' + remainingMissing.length + ' file(s) after automatic repair attempts.';
   }
 }
 // ============================================================
@@ -3498,6 +3516,70 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
   return expected.filter(e => { if (seen.has(e.path)) return false; seen.add(e.path); return true; });
 }
 
+function expectedStepId(entry) {
+  const label = (entry && entry.label || '').toLowerCase();
+  const path = (entry && entry.path || '').toLowerCase();
+  if (path.includes('reasonassertion') || label.includes('reason-assertion')) return 'reason_assertion';
+  if (path.includes('objective') || label.includes('objective')) return 'objective';
+  if (path.includes('subjective') || label.includes('subjective')) return 'subjective';
+  if (path.includes('mtf_scq')) return 'mtf_scq';
+  if (path.includes('mtf_multistatement')) return 'mtf_multi';
+  if (path.includes('mtf_subjective')) return 'mtf_sub';
+  if (path.includes('prerequisite')) return 'prereq';
+  if (path.includes('terms')) return 'terms';
+  if (path.includes('lo.txt')) return 'lo';
+  if (path.includes('plt')) return 'plt';
+  if (path.includes('glossary')) return 'glossary';
+  return '';
+}
+
+function resetCheckpointForExpected(entry) {
+  if (!entry || !entry.item) return;
+  const key = makeConceptKey(entry.item);
+  const checkpoint = agentCheckpoints[key];
+  if (!checkpoint || !checkpoint.cp || !checkpoint.cp.completedSteps) return;
+  const stepId = expectedStepId(entry);
+  if (stepId) checkpoint.cp.completedSteps.delete(stepId);
+}
+
+async function repairMissingFilesSilently(scopeItems, masterPrompt, isEnglish, ch, maxRounds) {
+  let expected = computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch);
+  let missing = expected.filter(e => state.generatedFiles[e.path] === undefined);
+  const rounds = Math.max(0, maxRounds || 0);
+  for (let round = 1; round <= rounds && missing.length > 0; round++) {
+    missing.forEach(resetCheckpointForExpected);
+    const missingItems = [];
+    const seenKeys = new Set();
+    for (const e of missing) {
+      const key = makeConceptKey(e.item);
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+        missingItems.push(e.item);
+      }
+    }
+    if (missingItems.length === 0) break;
+    const retryConcurrency = Math.min(parseInt(document.getElementById('concurrencySelect').value, 10) || 10, missingItems.length);
+    const bar = document.getElementById('agentStatusBar');
+    if (bar) bar.textContent = 'Auto-repairing missing files, round ' + round + ' of ' + rounds + '...';
+    await runConceptAgentsConcurrent(
+      missingItems,
+      retryConcurrency,
+      (item) => {
+        const cp = agentCheckpoints[makeConceptKey(item)];
+        return runConceptAgent(item, masterPrompt, isEnglish, ch, cp ? cp.cp : null);
+      },
+      ({ active, queued, done, failed }) => {
+        const liveBar = document.getElementById('agentStatusBar');
+        if (liveBar) liveBar.textContent =
+          'Auto-repair round ' + round + ': ' + active + ' active  |  ' + queued + ' queued  |  ' + done + ' done  |  ' + failed + ' failed';
+      }
+    );
+    expected = computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch);
+    missing = expected.filter(e => state.generatedFiles[e.path] === undefined);
+    document.getElementById('statFiles').textContent = Object.keys(state.generatedFiles).length;
+  }
+  return missing;
+}
 async function checkMissingFiles(scopeItems, masterPrompt, isEnglish, ch) {
   const expected = computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch);
   const missing = expected.filter(e => state.generatedFiles[e.path] === undefined);
@@ -3538,6 +3620,7 @@ async function checkMissingFiles(scopeItems, masterPrompt, isEnglish, ch) {
       const missingItems = [];
       const seenKeys = new Set();
       for (const e of missing) {
+        resetCheckpointForExpected(e);
         const key = makeConceptKey(e.item);
         if (!seenKeys.has(key)) { seenKeys.add(key); missingItems.push(e.item); }
       }
