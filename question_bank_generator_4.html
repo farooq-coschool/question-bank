@@ -835,7 +835,7 @@
           <span style="color:var(--muted)">Your text is passed directly to the AI — describe counts, difficulty, topics, or any instructions you need.</span>
         </div>
 
-        <div style="margin-bottom:16px">
+        <div id="objectiveMetadataBlock" style="margin-bottom:16px">
           <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">&#127919; Objective Questions (SCQ + RA)</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Leave empty to skip Objective generation (count = 0).</div>
           <div style="position:relative">
@@ -849,7 +849,7 @@
           </div>
         </div>
 
-        <div style="margin-bottom:4px">
+        <div id="subjectiveMetadataBlock" style="margin-bottom:4px">
           <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">&#9997;&#65039; Subjective Questions (VSA / SA / LA)</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Leave empty to skip Subjective generation (count = 0).</div>
           <div style="position:relative">
@@ -1465,6 +1465,19 @@ const SUBJECTS = [
 function isRADSupportedSubject() {
   return (state.curriculum === 'CBSE' && ['Mathematics', 'Chemistry', 'Physics', 'Social'].includes(state.subject)) ||
          (state.curriculum === 'ICSE' && state.subject === 'Biology');
+}
+
+function isSocialCBSERADOnlySubject() {
+  return state.subject === 'Social' && state.curriculum === 'CBSE';
+}
+
+const OBJECTIVE_META_TYPES = ['SCQ', 'RA'];
+const COMMERCE_OBJECTIVE_META_TYPES = ['SCQ', 'RA', 'MSQ', 'TF', 'T/F', 'FIB', 'MTF', 'OA', 'CS', 'DIA', 'CALC', 'DEF', 'DIFF', 'LIST', 'APPLY', 'EVAL'];
+const SUBJECTIVE_META_TYPES = ['VSA', 'SA', 'LA', 'FIB', 'PASSAGE BASED FIB', 'MTF', 'T/F', 'DIFFERENTIATE', 'DISTINGUISH', 'LOCATION', 'NAME THE FOLLOWING', 'CHOOSE ODD ONE OUT', 'ARRANGE IN CORRECT ORDER'];
+const RAD_META_TYPES = ['RA', 'RAD'];
+
+function getObjectiveMetaTypes() {
+  return state.subject === 'Commerce' ? COMMERCE_OBJECTIVE_META_TYPES : OBJECTIVE_META_TYPES;
 }
 
 const DEFAULT_COUNTS = {
@@ -2259,62 +2272,27 @@ function renderCountsTable() {
   const subjCounts = extractCounts(subjSection);
   const raCounts   = extractCounts(raSection);
 
-  // Build friendly default text from prompt counts
-  const toFriendlyText = (entries) => entries.map(({label, value}) => `${label}: ${value}`).join('\n');
-
-  const defaultObj  = toFriendlyText([...objCounts, ...raCounts]);
-
-  const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
-  const isRADPage3Defaults = isRADSupportedSubject();
-  const extractQTypeTotals = (src) => {
-    const totals = { VSA: 0, SA: 0, LA: 0 };
-    ['VSA', 'SA', 'LA'].forEach(t => {
-      [...src.matchAll(new RegExp('\\b' + t + '[:\\-]\\s*(\\d+)', 'g'))].forEach(mx => {
-        totals[t] += parseInt(mx[1], 10);
-      });
-    });
-    return totals;
-  };
-  let defaultSubj = toFriendlyText(subjCounts);
-  if (isMathCBSE) {
-    const mathSubjRaw = extractSection(masterPrompt, 'SUBJECTIVE_CREATION_PROMPT') || '';
-    const allLines = (mathSubjRaw.match(/\[Number of [^\]]+\]:\s*[^\n\r]+/g) || []).join('\n');
-    const totals = extractQTypeTotals(allLines);
-    const parts = Object.entries(totals).filter(([, v]) => v > 0).map(([k, v]) => `${k}: ${v}`);
-    defaultSubj = parts.length ? parts.join('\n') : 'VSA: 8\nSA: 10\nLA: 10';
-  }
-
-  // Populate notepads only if the user hasn't typed anything yet
   const objEl  = document.getElementById('objMetadataTextarea');
   const subjEl = document.getElementById('subjMetadataTextarea');
   const radEl  = document.getElementById('radMetadataTextarea');
+  const isSocialRADOnly = isSocialCBSERADOnlySubject();
 
-  if (objEl && !state.objMetadata) {
-    objEl.value = defaultObj;
-    state.objMetadata = defaultObj;
-  }
-  if (subjEl && !state.subjMetadata) {
-    subjEl.value = defaultSubj;
-    state.subjMetadata = defaultSubj;
-  } else if (subjEl && state.subjMetadata) {
-    subjEl.value = state.subjMetadata;
+  const objWrap = document.getElementById('objectiveMetadataBlock');
+  const subjWrap = document.getElementById('subjectiveMetadataBlock');
+  if (objWrap) objWrap.style.display = isSocialRADOnly ? 'none' : '';
+  if (subjWrap) subjWrap.style.display = isSocialRADOnly ? 'none' : '';
+
+  if (isSocialRADOnly) {
+    state.objMetadata = '';
+    state.subjMetadata = '';
+    if (objEl) objEl.value = '';
+    if (subjEl) subjEl.value = '';
+  } else {
+    if (objEl) objEl.value = state.objMetadata || '';
+    if (subjEl) subjEl.value = state.subjMetadata || '';
   }
 
-  // RAD textarea: default count for supported RAD subjects.
-  if (radEl) {
-    if (!state.radMetadata && isRADPage3Defaults) {
-      const raRaw = extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || '';
-      const raCountLines = raRaw.match(/\[Number of [^\]]+\]:\s*[^\n\r]+/g) || [];
-      const defaultRad = raCountLines.map(l => {
-        const m = l.match(/\[Number of ([^\]]+)\]:\s*(.+)/);
-        return m ? `${m[1].trim()}: ${m[2].trim()}` : '';
-      }).filter(Boolean).join('\n') || '5';
-      radEl.value = defaultRad;
-      state.radMetadata = defaultRad;
-    } else {
-      radEl.value = state.radMetadata || '';
-    }
-  }
+  if (radEl) radEl.value = state.radMetadata || '';
 }
 
 function switchCountsTab(tab, el) {
@@ -2417,6 +2395,11 @@ function page3Next() {
     errEl.style.display = 'block';
     return;
   }
+  if (isSocialCBSERADOnlySubject() && !metadataHasAnyQuestionType(state.radMetadata, RAD_META_TYPES)) {
+    errEl.textContent = 'For Social CBSE, please enter RAD metadata on Page 3, for example: Application Medium Questions: RA:4.';
+    errEl.style.display = 'block';
+    return;
+  }
 
   errEl.style.display = 'none';
   state.textbook = document.getElementById('textbookSelect').value;
@@ -2436,13 +2419,14 @@ function page3Next() {
     counts: state.counts
   };
 
-  // Reset generation mode to Full for each new chapter so prior PLT/Questions-Only selections don't carry over
-  state.genMode = 'full';
-  state.questionsType = 'both';
-  const fullRadio = document.querySelector('input[name="genMode"][value="full"]');
-  if (fullRadio) { fullRadio.checked = true; onGenModeChange('full'); }
-  const bothQType = document.querySelector('input[name="qType"][value="both"]');
-  if (bothQType) bothQType.checked = true;
+  // Reset generation mode for each new chapter. Social CBSE has only RAD, so force Questions/RAD.
+  const socialRADOnly = isSocialCBSERADOnlySubject();
+  state.genMode = socialRADOnly ? 'questions' : 'full';
+  state.questionsType = socialRADOnly ? 'rad' : 'both';
+  const modeRadio = document.querySelector('input[name="genMode"][value="' + state.genMode + '"]');
+  if (modeRadio) { modeRadio.checked = true; onGenModeChange(state.genMode); }
+  const qTypeRadio = document.querySelector('input[name="qType"][value="' + state.questionsType + '"]');
+  if (qTypeRadio) qTypeRadio.checked = true;
 
   enableNav(4);
   goToPage(4);
@@ -2769,10 +2753,12 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const isMTFMultiOnly = questionsOnly && state.questionsType === 'mtfMulti';
   const isMTFMode    = isMTFScqOnly || isMTFSubOnly || isMTFMultiOnly;
   const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
-  const objMetaEmpty  = isMetaSkip(state.objMetadata);
-  const subjMetaEmpty = isMetaSkip(state.subjMetadata);
-  const doObjective  = !isEnglishCBSEGrammar && (!singleStepMode || (questionsOnly && state.questionsType !== 'subjective' && !isRADOnly && !isMTFMode)) && !objMetaEmpty;
-  const doSubjective = (!singleStepMode || (questionsOnly && state.questionsType !== 'objective' && !isRADOnly && !isMTFMode)) && !subjMetaEmpty;
+  const isSocialRADOnly = isSocialCBSERADOnlySubject();
+  const objectiveMetaTypes = getObjectiveMetaTypes();
+  const hasObjectiveMeta = metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes);
+  const hasSubjectiveMeta = metadataHasAnyQuestionType(state.subjMetadata, SUBJECTIVE_META_TYPES);
+  const doObjective  = !isSocialRADOnly && !isEnglishCBSEGrammar && (!singleStepMode || (questionsOnly && state.questionsType !== 'subjective' && !isRADOnly && !isMTFMode)) && hasObjectiveMeta;
+  const doSubjective = !isSocialRADOnly && (!singleStepMode || (questionsOnly && state.questionsType !== 'objective' && !isRADOnly && !isMTFMode)) && hasSubjectiveMeta;
 
   // Geo / History / Civics ICSE special logic
   const isGeoHistCivICSE = ['Geography', 'History', 'Civics'].includes(state.subject) && state.curriculum === 'ICSE';
@@ -2983,11 +2969,13 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const isEnglishCBSE = state.subject === 'English' && state.curriculum === 'CBSE';
   const doObjectiveHere = doObjective && !isGeoSubtopicCaseB;
   const objQ = await runStep('objective', 'Objective Questions', '\uD83C\uDFAF', doObjectiveHere, async () => {
-    const includeRA = !isNano;
+    const objectiveTypeCounts = parseQuestionTypeCounts(state.objMetadata, objectiveMetaTypes);
+    const includeRA = (objectiveTypeCounts.RA || 0) > 0;
     const result = isCommerce
       ? await callClaude(buildCommerceObjectivePrompt(name, item, masterPrompt, loResult), 40000)
       : await callClaude(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 40000);
     let parsed = parseJSON(result);
+    assertGeneratedQuestionCounts(parsed, state.objMetadata, objectiveMetaTypes, 'Objective');
     // Rotate correct answer position round-robin across all SCQ questions (pos 0,1,2,3,0,1,…)
     if (Array.isArray(parsed)) {
       let rotIdx = 0;
@@ -3038,6 +3026,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     // Claude continues from the '[' prefill, so prepend it back before parsing.
     const result = '[' + (rawResult || '');
     const parsed = parseJSON(result);
+    assertGeneratedQuestionCounts(parsed, state.subjMetadata, SUBJECTIVE_META_TYPES, 'Subjective');
     if (!Array.isArray(parsed) || parsed.length === 0) {
       const preview = (rawResult || '').substring(0, 500);
       throw new Error('Subjective returned 0 questions — raw response preview: ' + preview + ' — click Retry');
@@ -3102,10 +3091,10 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const isPhysCBSERAD = state.subject === 'Physics' && state.curriculum === 'CBSE';
   const isBioICSERAD  = state.subject === 'Biology' && state.curriculum === 'ICSE';
   const isSocialCBSERAD = state.subject === 'Social' && state.curriculum === 'CBSE';
-  const hasRADInput = !!(state.radMetadata && state.radMetadata.trim());
-  const doRAD = (isMathCBSERAD || isChemCBSERAD || isPhysCBSERAD || isBioICSERAD || isSocialCBSERAD) && (hasRADInput || isRADOnly);
+  const hasRADInput = metadataHasAnyQuestionType(state.radMetadata, RAD_META_TYPES);
+  const doRAD = (isMathCBSERAD || isChemCBSERAD || isPhysCBSERAD || isBioICSERAD || isSocialCBSERAD) && hasRADInput;
   const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '\u2696\uFE0F',
-    doRAD || ((isMathCBSERAD || isChemCBSERAD || isPhysCBSERAD || isBioICSERAD || isSocialCBSERAD) && isRADOnly), async () => {
+    doRAD, async () => {
     const radLoText = (state.radLOText || state.globalLOText || '').trim() || loResult;
     const radSpecs = parseRADMetadata();
     const radTotal = radSpecs.length;
@@ -3450,8 +3439,10 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
   const singleStepMode = questionsOnly || pltOnly || prereqOnly || glossaryOnly;
   const isRADOnly     = state.questionsType === 'rad';
   const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
-  const doObjective   = !isEnglishCBSEGrammar && (state.questionsType === 'both' || state.questionsType === 'objective' || isRADOnly) && !isMetaSkip(state.objMetadata);
-  const doSubjective  = (state.questionsType === 'both' || state.questionsType === 'subjective') && !isMetaSkip(state.subjMetadata);
+  const socialRADOnly = isSocialCBSERADOnlySubject();
+  const objectiveMetaTypes = getObjectiveMetaTypes();
+  const doObjective   = !socialRADOnly && !isEnglishCBSEGrammar && (state.questionsType === 'both' || state.questionsType === 'objective') && metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes);
+  const doSubjective  = !socialRADOnly && (state.questionsType === 'both' || state.questionsType === 'subjective') && metadataHasAnyQuestionType(state.subjMetadata, SUBJECTIVE_META_TYPES);
   const isRADExpected = isRADSupportedSubject();
   const isRTCMode     = state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType === 'RTC';
   const isGeoHistCivICSE = ['Geography', 'History', 'Civics'].includes(state.subject) && state.curriculum === 'ICSE';
@@ -3537,7 +3528,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
     }
 
     // RAD
-    if (isRADExpected && (!isMetaSkip(state.radMetadata) || isRADOnly))
+    if (isRADExpected && metadataHasAnyQuestionType(state.radMetadata, RAD_META_TYPES))
       expected.push({ path: fp('ReasonAssertion.json'), label: scopeLabel + ' - Reason-Assertion', item });
 
     // RTC
@@ -4047,9 +4038,11 @@ Topic/Concept Name: ${conceptName}
 Textbook: ${state.textbook}
 ${extraFields}${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}${countsText ? countsText + '\n' : ''}${chapterScopeNote(item)}
 
-?? STRICT COUNT COMPLIANCE (NON-NEGOTIABLE): The question count instructions in the METADATA INPUT above are the ONLY source of truth. You MUST generate EXACTLY the numbers specified — no more, no less, none skipped. If the METADATA INPUT says "4 SCQ and 2 RA" or "SCQ: 4; RA: 2" you must output exactly 4 SCQs and exactly 2 RAs. Ignore ANY count values that appeared earlier in this prompt — the METADATA INPUT counts completely override everything that came before.
+?? STRICT COUNT COMPLIANCE (NON-NEGOTIABLE): The question count instructions in the METADATA INPUT above are the ONLY source of truth. You MUST generate EXACTLY the numbers specified, no more, no less, none skipped. Ignore ANY count values that appeared earlier in this prompt.
 
-?? QUESTION TYPE RESTRICTION: Generate ONLY SCQ (Single Correct Question) and RA (Reason-Assertion) question types as specified in the prompt. Do NOT generate open-ended, descriptive, short-answer, "wh-" type (What/Why/How/Who/Which/Where/When), fill-in-the-blank, or any other format that is not SCQ or RA.
+?? USER METADATA TYPE LOCK: Generate ONLY the question types explicitly listed with non-zero counts in METADATA INPUT. If METADATA INPUT lists only "SCQ: 4", generate exactly 4 SCQ and 0 RA. If it lists "RA: 2", generate exactly 2 RA and 0 SCQ. Do not generate any absent type.
+
+?? QUESTION TYPE RESTRICTION: For Objective generation, generate only SCQ and/or RA when those exact types are requested in METADATA INPUT. Do NOT generate open-ended, descriptive, short-answer, wh-type, fill-in-the-blank, or any other format unless that exact type is explicitly requested with a non-zero count.
 
 ?? FINAL OUTPUT FORMAT — This section completely overrides and replaces any output format, JSON structure, field names, or schema mentioned anywhere in the prompt above. Ignore all prior format instructions entirely.
 
@@ -4086,8 +4079,11 @@ LATEX RULES (MANDATORY — apply inside every "question" and every "options" str
 
 function buildCommerceObjectivePrompt(conceptName, item, masterPrompt, loText) {
   const rawSection = extractSection(masterPrompt, 'OBJECTIVE_CREATION_PROMPT') || masterPrompt;
-  const section = applyPromptCountEdits(fillPlaceholders(rawSection, conceptName, item, loText));
+  let section = applyPromptCountEdits(fillPlaceholders(rawSection, conceptName, item, loText));
   const countsText = (state.objMetadata || '').trim();
+  if (countsText) {
+    section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
+  }
   const nanoList = item && item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
   const metaBlock = `
 
@@ -4107,7 +4103,9 @@ CONTENT BASIS:
 - Prefer terminology, examples, and situations that are explicitly present in the supplied content.
 - Do not introduce unrelated business concepts, generic filler, or off-topic distractors.
 
-?? STRICT COUNT COMPLIANCE: If counts are specified in METADATA INPUT above, generate EXACTLY those numbers.
+?? STRICT COUNT COMPLIANCE: The question count instructions in METADATA INPUT above are the ONLY source of truth. Generate EXACTLY the numbers specified, no more, no less. Ignore any count values that appeared earlier in this prompt.
+
+?? USER METADATA TYPE LOCK: Generate ONLY the question types explicitly listed with non-zero counts in METADATA INPUT. If METADATA INPUT lists only "MSQ: 2", generate exactly 2 MSQ and 0 of every other type. If it lists "SCQ: 4; FIB: 1", generate exactly 4 SCQ and 1 FIB only. Do not generate any absent type.
 
 Return ONLY a valid JSON array. No markdown code fences, no explanation, no text outside the array.
 Each element must have: cognitiveLevel, difficultyLevel, questionType, question, options, answers, solution
@@ -4491,7 +4489,9 @@ Topic/Concept Name: ${conceptName}
 Textbook: ${state.textbook}
 ${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}${countsText ? countsText + '\n' : ''}${chapterScopeNote(item)}
 
-?? STRICT COUNT COMPLIANCE (NON-NEGOTIABLE): The counts in the METADATA INPUT above are the ABSOLUTE source of truth. You MUST generate EXACTLY the number of each question type specified — no more, no less, zero exceptions. Count your output before returning it. If the METADATA INPUT says "VSA: 3, SA: 4, LA: 2" you MUST output exactly 3 VSA questions, exactly 4 SA questions, and exactly 2 LA questions — nothing else. Any count values appearing anywhere else in this prompt are completely overridden by the METADATA INPUT. Do NOT invent extra questions, do NOT merge types, do NOT skip any type that has a non-zero count.
+?? STRICT COUNT COMPLIANCE (NON-NEGOTIABLE): The counts in the METADATA INPUT above are the ABSOLUTE source of truth. You MUST generate EXACTLY the number of each question type specified, no more, no less, zero exceptions. Any count values appearing anywhere else in this prompt are completely overridden by the METADATA INPUT.
+
+?? USER METADATA TYPE LOCK: Generate ONLY the question types explicitly listed with non-zero counts in METADATA INPUT. If METADATA INPUT lists only "VSA: 3", generate exactly 3 VSA and 0 SA/LA. If it lists only "SA: 2; LA: 1", generate exactly 2 SA and 1 LA and 0 VSA. Do not generate any absent type, format, or tag.
 
 ?? FINAL OUTPUT FORMAT — This section completely overrides and replaces any output format, JSON structure, field names, or schema mentioned anywhere in the prompt above. Ignore all prior format instructions entirely.
 
@@ -4643,7 +4643,7 @@ function parseRADMetadata() {
     };
     for (let i = 0; i < count; i++) specs.push(entry);
   }
-  return specs.length > 0 ? specs : [{ cognitiveLevel: 'Understanding', difficultyLevel: 'Medium' }];
+  return specs;
 }
 
 function buildSocialCBSERADPrompt() {
@@ -5044,6 +5044,92 @@ function isMetaSkip(text) {
   return nums.length === 0 || nums.every(n => n === 0);
 }
 
+function normalizeMetaType(type) {
+  return String(type || '')
+    .replace(/[\[\]()]/g, ' ')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase()
+    .replace(/^BASIC\s+/, '')
+    .replace(/^(VSA|SA|LA)\s+FIB$/, 'FIB')
+    .replace(/^FIB\s+(VSA|SA|LA)$/, 'FIB')
+    .replace(/^TF$/, 'T/F');
+}
+
+function escapeRegExpLiteral(value) {
+  return String(value).replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+function parseQuestionTypeCounts(text, allowedTypes) {
+  const allowed = new Set((allowedTypes || []).map(normalizeMetaType));
+  const counts = {};
+  if (!text || !text.trim()) return counts;
+  const add = (type, count) => {
+    const key = normalizeMetaType(type);
+    const n = parseInt(count, 10);
+    if (!allowed.has(key) || !Number.isFinite(n) || n <= 0) return;
+    counts[key] = (counts[key] || 0) + n;
+  };
+
+  const pairRe = /([A-Za-z][A-Za-z0-9 /_-]*?)\s*[:;]\s*(\d+)/g;
+  let m;
+  while ((m = pairRe.exec(text)) !== null) add(m[1], m[2]);
+
+  for (const type of allowed) {
+    const flexible = escapeRegExpLiteral(type).replace(/\\\s\+/g, '[\\s_-]+').replace(/\s+/g, '[\\s_-]+');
+    const wordRe = new RegExp('\\b(\\d+)\\s+' + flexible + '\\b', 'gi');
+    let wm;
+    while ((wm = wordRe.exec(text)) !== null) {
+      const prevChar = text[Math.max(0, wm.index - 1)];
+      if (prevChar === ':' || prevChar === ';') continue;
+      add(type, wm[1]);
+    }
+  }
+  return counts;
+}
+
+function metadataHasAnyQuestionType(text, allowedTypes) {
+  return Object.values(parseQuestionTypeCounts(text, allowedTypes)).some(n => n > 0);
+}
+
+function generatedQuestionTypeKeys(q) {
+  const keys = new Set();
+  const qt = normalizeMetaType(q && q.questionType);
+  const tag = normalizeMetaType(q && q.question_type_tag);
+  if (qt) keys.add(qt);
+  if (tag) keys.add(tag);
+  if (tag.includes('REASON ASSERTION')) keys.add('RA');
+  if (tag.includes('FIB')) keys.add('FIB');
+  if (tag.includes('MATCH')) keys.add('MTF');
+  if (tag.includes('DIFFERENTIATE')) keys.add('DIFFERENTIATE');
+  if (tag.includes('DISTINGUISH')) keys.add('DISTINGUISH');
+  if (tag.includes('LOCATION')) keys.add('LOCATION');
+  if (tag.includes('NAME THE FOLLOWING')) keys.add('NAME THE FOLLOWING');
+  if (tag.includes('CHOOSE ODD ONE OUT')) keys.add('CHOOSE ODD ONE OUT');
+  if (tag.includes('ARRANGE IN CORRECT ORDER')) keys.add('ARRANGE IN CORRECT ORDER');
+  return keys;
+}
+
+function assertGeneratedQuestionCounts(items, metadataText, allowedTypes, label) {
+  const expected = parseQuestionTypeCounts(metadataText, allowedTypes);
+  const expectedKeys = Object.keys(expected);
+  if (!expectedKeys.length) throw new Error(label + ' metadata has no explicit supported question type/count. Click Retry after updating Page 3 metadata.');
+  if (!Array.isArray(items)) throw new Error(label + ' did not return a JSON array. Click Retry.');
+  const actual = Object.fromEntries(expectedKeys.map(k => [k, 0]));
+  const unexpected = [];
+  items.forEach((q, idx) => {
+    const keys = generatedQuestionTypeKeys(q);
+    const matched = expectedKeys.filter(k => keys.has(k));
+    if (!matched.length) unexpected.push((q && q.questionType) || (q && q.question_type_tag) || ('item ' + (idx + 1)));
+    matched.forEach(k => actual[k]++);
+  });
+  const mismatches = expectedKeys.filter(k => actual[k] !== expected[k]).map(k => k + ': expected ' + expected[k] + ', got ' + actual[k]);
+  if (unexpected.length || mismatches.length) {
+    throw new Error(label + ' output does not match Page 3 metadata. ' + mismatches.concat(unexpected.length ? ['unexpected types: ' + unexpected.join(', ')] : []).join('; ') + '. Click Retry.');
+  }
+}
+
 function parseJSON(text) {
   if (!text) return [];
   // Strategy 1: direct parse if starts with [
@@ -5228,9 +5314,19 @@ function onGenModeChange(mode) {
 
 function updateRADOptionVisibility() {
   const isRADSupported = isRADSupportedSubject();
+  const isSocialRADOnly = isSocialCBSERADOnlySubject();
   const isBioICSE  = state.subject === 'Biology'     && state.curriculum === 'ICSE';
   const opt = document.getElementById('radOnlyOption');
   if (opt) opt.style.display = isRADSupported ? 'flex' : 'none';
+  ['both', 'objective', 'subjective'].forEach(v => {
+    const radio = document.querySelector('input[name="qType"][value="' + v + '"]');
+    if (radio && radio.parentElement) radio.parentElement.style.display = isSocialRADOnly ? 'none' : 'flex';
+  });
+  if (isSocialRADOnly) {
+    state.questionsType = 'rad';
+    const radRadio = document.querySelector('input[name="qType"][value="rad"]');
+    if (radRadio) radRadio.checked = true;
+  }
   const mtfScqOpt = document.getElementById('mtfScqOnlyOption');
   const mtfSubOpt = document.getElementById('mtfSubOnlyOption');
   const mtfMultiOpt = document.getElementById('mtfMultiOnlyOption');
