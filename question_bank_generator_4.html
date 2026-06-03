@@ -659,7 +659,7 @@
         <div class="form-group" style="margin-bottom:16px">
           <label>Chapter Structure Image <span class="req">*</span></label>
           <div class="img-upload-area" id="imgUploadArea" onclick="triggerImageUpload()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
-            <div class="img-upload-icon">???</div>
+            <div class="img-upload-icon">&#128247;</div>
             <div class="img-upload-text">Click to upload image or drag & drop here</div>
             <div class="img-upload-sub">Supports JPG, PNG, WEBP, GIF — screenshots, photos of textbooks, PDFs printed as images</div>
             <input type="file" id="structureImageInput" accept="image/*" style="display:none" onchange="handleImageSelect(event)">
@@ -670,7 +670,7 @@
               <div style="flex:1">
                 <div id="imgFileName" style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px"></div>
                 <div id="imgFileSize" style="font-size:12px;color:var(--text2);margin-bottom:10px"></div>
-                <button class="btn btn-secondary btn-sm" onclick="removeImage()">? Remove</button>
+                <button class="btn btn-secondary btn-sm" onclick="removeImage()">&#128465;&#65039; Remove</button>
               </div>
             </div>
           </div>
@@ -678,7 +678,7 @@
 
         <!-- FALLBACK TEXT INPUT -->
         <details style="margin-bottom:16px">
-          <summary style="font-size:13px;color:var(--text2);cursor:pointer;user-select:none;padding:8px 0">?? Or paste text structure instead (fallback)</summary>
+          <summary style="font-size:13px;color:var(--text2);cursor:pointer;user-select:none;padding:8px 0">&#128221; Or paste text structure instead (fallback)</summary>
           <div style="margin-top:8px">
             <textarea id="chapterStructure" style="min-height:100px;margin-top:0" placeholder="Paste your chapter outline here if you don't have an image...&#10;&#10;Example:&#10;Chapter: Cell — The Unit of Life&#10;  1. Cell Membrane&#10;     - Fluid Mosaic Model&#10;     - Selective Permeability&#10;  2. Nucleus&#10;     - Nuclear Membrane"></textarea>
           </div>
@@ -687,31 +687,31 @@
         <div id="structureError" class="error-msg" style="display:none">Please upload an image or paste a text structure of the chapter.</div>
 
         <div class="btn-row">
-          <button class="btn btn-primary btn-lg" onclick="page2Analyze()">?? Analyse Structure ?</button>
-          <button class="btn btn-secondary" onclick="goToPage(1)">? Back</button>
+          <button class="btn btn-primary btn-lg" onclick="page2Analyze()">&#128269; Analyse Structure &#8594;</button>
+          <button class="btn btn-secondary" onclick="goToPage(1)">&#8592; Back</button>
         </div>
       </div>
 
       <!-- TEXTBOOK UPLOAD (PDF or Images) -->
       <div class="card">
-        <div class="card-title">?? Upload Textbook</div>
+        <div class="card-title">&#128218; Upload Textbook</div>
         <div class="card-sub">Upload the textbook as a PDF or as one or more images. Claude reads all pages directly as the primary knowledge source.</div>
         <div class="form-group">
           <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:500;">
-              <input type="radio" name="tbUploadMode" value="pdf" checked onchange="onTbModeChange('pdf')" style="accent-color:var(--accent)"> ?? PDF
+              <input type="radio" name="tbUploadMode" value="pdf" checked onchange="onTbModeChange('pdf')" style="accent-color:var(--accent)"> &#128196; PDF
             </label>
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:500;">
-              <input type="radio" name="tbUploadMode" value="images" onchange="onTbModeChange('images')" style="accent-color:var(--accent)"> ??? Images (JPG / PNG)
+              <input type="radio" name="tbUploadMode" value="images" onchange="onTbModeChange('images')" style="accent-color:var(--accent)"> &#128444;&#65039; Images (JPG / PNG)
             </label>
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;font-weight:500;">
-              <input type="radio" name="tbUploadMode" value="text" onchange="onTbModeChange('text')" style="accent-color:var(--accent)"> ?? Text (paste / type)
+              <input type="radio" name="tbUploadMode" value="text" onchange="onTbModeChange('text')" style="accent-color:var(--accent)"> &#128221; Text (paste / type)
             </label>
           </div>
           <!-- PDF mode -->
           <div id="tbPdfArea">
             <div class="img-upload-area" id="pdfUploadArea" onclick="document.getElementById('textbookPdfInput').click()" style="cursor:pointer">
-              <div class="img-upload-icon">??</div>
+              <div class="img-upload-icon">&#128196;</div>
               <div class="img-upload-text" id="pdfUploadText">Click to upload textbook PDF(s)</div>
               <div class="img-upload-sub">Select one or more PDFs — up to 100 MB each</div>
               <input type="file" id="textbookPdfInput" accept="application/pdf" multiple style="display:none" onchange="loadTextbookPdfs(this.files)">
@@ -721,7 +721,7 @@
           <!-- Image mode -->
           <div id="tbImagesArea" style="display:none">
             <div class="img-upload-area" onclick="document.getElementById('textbookImagesInput').click()" style="cursor:pointer">
-              <div class="img-upload-icon">???</div>
+              <div class="img-upload-icon">&#128247;</div>
               <div class="img-upload-text" id="tbImagesUploadText">Click to upload images</div>
               <div class="img-upload-sub">JPG / PNG — select multiple pages (max 5 MB each)</div>
               <input type="file" id="textbookImagesInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple style="display:none" onchange="loadTextbookImages(this.files)">
@@ -748,7 +748,7 @@
 
       <!-- STRUCTURE PREVIEW (shown after AI analysis) -->
       <div class="card" id="structurePreviewCard" style="display:none">
-        <div class="card-title">?? Parsed Structure</div>
+        <div class="card-title">&#128450;&#65039; Parsed Structure</div>
         <div class="card-sub">Review the structure and set PLT availability per subtopic, then confirm to proceed.</div>
         <div class="struct-preview" id="structurePreview"></div>
         <div id="structureParseStatus" style="margin-top:12px;font-size:13px;color:var(--text2)"></div>
@@ -757,7 +757,7 @@
           <div id="pltTogglesList"></div>
         </div>
         <div class="btn-row">
-          <button class="btn btn-success btn-lg" onclick="confirmStructure()">? Confirm & Continue ?</button>
+          <button class="btn btn-success btn-lg" onclick="confirmStructure()">&#10003; Confirm & Continue &#8594;</button>
           <button class="btn btn-secondary" onclick="document.getElementById('structurePreviewCard').style.display='none'">Re-enter Structure</button>
         </div>
       </div>
@@ -2052,12 +2052,12 @@ Rules:
 }
 
 function renderStructurePreview(parsed) {
-  let html = `<span class="struct-ch">?? ${parsed.chapter}</span>`;
+  let html = `<span class="struct-ch">\uD83D\uDCD8 ${parsed.chapter}</span>`;
   (parsed.subtopics || []).forEach(st => {
-    html += `\n<span class="struct-st">  +- ?? ${st.name}</span>`;
+    html += `\n<span class="struct-st">  +- \uD83D\uDCCC ${st.name}</span>`;
     (st.nanoConcepts || []).forEach((nc, i, arr) => {
       const prefix = i === arr.length - 1 ? '+-' : '+-';
-      html += `\n<span class="struct-nc">      ${prefix} ?? ${nc}</span>`;
+      html += `\n<span class="struct-nc">      ${prefix} \uD83D\uDD39 ${nc}</span>`;
     });
   });
   document.getElementById('structurePreview').innerHTML = html;
@@ -2159,7 +2159,7 @@ function setupPage3() {
   if (pdfEl) {
     if (state.textbookPdfName) {
       pdfEl.style.display = 'block';
-      pdfEl.innerHTML = `?? Textbook PDF loaded: <strong>${state.textbookPdfName}</strong> — Claude will read it as the primary knowledge source.`;
+      pdfEl.innerHTML = `&#128196; Textbook PDF loaded: <strong>${state.textbookPdfName}</strong> — Claude will read it as the primary knowledge source.`;
     } else {
       pdfEl.style.display = 'none';
     }
@@ -2361,7 +2361,7 @@ async function handleTextbookPdfUpload(event) {
     }
     state.textbookContent = fullText.trim();
     state.textbookFileName = file.name;
-    statusEl.innerHTML = `<span style="color:#059669">? Loaded: <b>${file.name}</b> (${pdf.numPages} pages, ${state.textbookContent.length.toLocaleString()} chars)</span>`;
+    statusEl.innerHTML = `<span style="color:#059669">&#10003; Loaded: <b>${file.name}</b> (${pdf.numPages} pages, ${state.textbookContent.length.toLocaleString()} chars)</span>`;
   } catch (e) {
     errEl.textContent = 'Failed to parse PDF: ' + e.message;
     errEl.style.display = 'block';
