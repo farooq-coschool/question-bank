@@ -21,7 +21,7 @@ import pytesseract
 
 ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 
-_SOCIAL_KEY = os.environ.get('SOCIAL_KEY', '')
+_SOCIAL_KEY = os.environ.get('SOCIAL_KEY', '') or os.environ.get('social_key', '') or os.environ.get('SOCIAL_API_KEY', '')
 API_KEYS = {
     'Biology':     os.environ.get('BIOLOGY_KEY',     ''),
     'Physics':     os.environ.get('PHYSICS_KEY',     ''),
@@ -138,15 +138,19 @@ def messages():
 
     req = urllib.request.Request(ANTHROPIC_URL, data=body, headers=fwd_headers, method='POST')
     try:
-        with urllib.request.urlopen(req) as r:
+        with urllib.request.urlopen(req, timeout=600) as r:
             data = r.read()
             status = r.status
     except urllib.error.HTTPError as e:
         data = e.read()
         status = e.code
+    except urllib.error.URLError as e:
+        traceback.print_exc()
+        reason = getattr(e, 'reason', e)
+        return jsonify({'error': {'message': f"Anthropic connection failed for {subject or 'unknown subject'}: {reason}"}}), 502
     except Exception as e:
         traceback.print_exc()
-        return jsonify({'error': {'message': f'{type(e).__name__}: {e}'}}), 502
+        return jsonify({'error': {'message': f"Anthropic proxy failed for {subject or 'unknown subject'}: {type(e).__name__}: {e}"}}), 502
 
     resp = Response(data, status=status, mimetype='application/json')
     resp.headers['Access-Control-Allow-Origin'] = '*'

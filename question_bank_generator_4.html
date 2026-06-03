@@ -1636,6 +1636,7 @@ const MODELS = {
   VISION:      'claude-sonnet-4-5',
   GENERATION:  'claude-opus-4-5',
   SUBJECTIVE:  'claude-opus-4-5',
+  RAD:         'claude-sonnet-4-5',
 };
 
 function triggerImageUpload() {
@@ -3024,12 +3025,13 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     const radLoText = (state.radLOText || state.globalLOText || '').trim() || loResult;
     const radTotal = parseRADMetadata().length;
     const radPrompt = buildRADescPrompt(name, item, masterPrompt, radLoText);
-    let rawResult = await callClaude(radPrompt, 16000, undefined, '[');
+    const radMaxTokens = Math.min(12000, Math.max(2500, radTotal * 900 + 1200));
+    let rawResult = await callClaude(radPrompt, radMaxTokens, MODELS.RAD, '[');
     let parsed = parseJSON('[' + (rawResult || ''));
     let qCount = Array.isArray(parsed) ? parsed.length : 0;
     if (qCount !== radTotal) {
       const retryPrompt = radPrompt + '\n\nIMPORTANT RETRY FEEDBACK: Your previous output contained ' + qCount + ' questions, but exactly ' + radTotal + ' are required. Regenerate the entire JSON array with exactly ' + radTotal + ' questions only. Do not add any extra text.';
-      rawResult = await callClaude(retryPrompt, 16000, undefined, '[');
+      rawResult = await callClaude(retryPrompt, radMaxTokens, MODELS.RAD, '[');
       parsed = parseJSON('[' + (rawResult || ''));
       qCount = Array.isArray(parsed) ? parsed.length : 0;
     }
@@ -4398,8 +4400,29 @@ function parseRADMetadata() {
   return specs.length > 0 ? specs : [{ cognitiveLevel: 'Understanding', difficultyLevel: 'Medium' }];
 }
 
+function buildGenericRADBasePrompt() {
+  return `## REASON_ASSERTION_CREATION_PROMPT
+You are an experienced CBSE/ICSE subject teacher creating Reason-Assertion Descriptive questions aligned with Bloom's taxonomy.
+
+Task: Generate Reason-Assertion questions only for the supplied subject, grade, chapter, concept, learning outcomes, and attached textbook/script content.
+
+RA question rules:
+1. Each question has an Assertion (A) and a Reason (R).
+2. The student must judge truth of both statements and whether R explains A.
+3. Rotate correct options across questions in this order: A, B, C, D, A, B, C, D.
+4. Vary the truth relationship, not just the answer letter.
+5. Use clear grade-appropriate British English and stay strictly within the supplied content.
+6. Do not mention textbook, NCERT, figure, activity, or table references in the question.
+7. For Social Science, use historically/geographically/civically accurate statements from the supplied content only.
+
+Standard options:
+(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).
+(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).
+(C) Assertion (A) is true, but Reason (R) is false.
+(D) Assertion (A) is false, but Reason (R) is true.`;
+}
 function buildRADescPrompt(conceptName, item, masterPrompt, loText) {
-  const raw = extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || masterPrompt;
+  const raw = extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || buildGenericRADBasePrompt();
   let section = applyPromptCountEdits(fillPlaceholders(raw, conceptName, item, loText));
   // Strip [Number of ...] lines — METADATA INPUT below is sole source of truth
   section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
