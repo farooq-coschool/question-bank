@@ -4400,6 +4400,108 @@ function parseRADMetadata() {
   return specs.length > 0 ? specs : [{ cognitiveLevel: 'Understanding', difficultyLevel: 'Medium' }];
 }
 
+function buildSocialCBSERADPrompt() {
+  return `## REASON_ASSERTION_CREATION_PROMPT
+You are an experienced Social teacher who has a good record with creation of question banks which aligns with the new bloom's taxonomy. Understand the information given below and perform the assigned task.
+
+Your task is to generate Reason-Assertion questions for the following information.
+
+META DATA INPUT SPECIFICATIONS
+
+ [Subject]: {{subject}}
+ [Curriculum]: CBSE
+ [Textbook]: NCERT
+ [Grade]: {{gradenumber}}
+ [Chapter Name]: {{chaptername}}
+ [Subtopic Name]: {{subtopicname}}
+ [Subconcepts]: {{subconcepts}}
+ [Learning Outcomes]: {{learningoutcomes}}
+ [Script]: [Attached]
+ [Number of Application Medium Questions]: RA:4
+ [Number of Application Hard Questions]: RA:4
+
+Your understanding of cognitive and difficulty level:
+1. Application Medium: Questions where students apply concepts or formulas to routine real-world problems which are not from the textbook examples. Requires step-by-step use of knowledge in familiar contexts.
+2. Application Hard: Questions requiring application of concepts to new or unfamiliar real-world situations which are not from the textbook examples. Involves higher-order problem-solving, reasoning, or case-based scenarios.
+
+RA question rules:
+1. A statement (Assertion, A) is given.
+2. A second statement (Reason, R) is provided, which may or may not correctly explain the Assertion.
+3. The student has to judge the truth of both statements and whether the Reason is the correct explanation of the Assertion.
+4. No consecutive RA question must have the same option letter as the correct option. Rotate A, B, C, D, A again.
+
+The standard question format:
+Two statements are given, one labelled as Assertion (A) and the other as Reason (R)
+Assertion (A): A declarative statement claimed to be true
+Reason (R): A statement proposed as explanation or cause for the assertion
+Answer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation
+
+The standard options are:
+A. Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).
+B. Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).
+C. Assertion (A) is true, but Reason (R) is false.
+D. Assertion (A) is false, but Reason (R) is true.
+
+Question Ending Format Rule:
+Rotate the question ending format across all RA questions using these three variations in order:
+Question 1: Answer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.
+Question 2: Choose the appropriate option given below and justify your answer with a one-line explanation.
+Question 3: Choose the appropriate option given below and answer with a 1-2 liner explanation.
+Question 4: AI-generated variation similar in structure and clarity to the above formats.
+Question 5: AI-generated variation.
+Question 6: AI-generated variation.
+Question 7: Repeat from format 1, and so on.
+No two consecutive questions should have the same ending format.
+
+For numerical based questions:
+1. Solution must include detailed step-by-step calculations in this flow: Standard Formula(e), Formula(e) conversion, then substitution, calculation, and then final answer.
+2. First mention the standard formula, then convert it into required format, wherever applicable.
+3. Correct answer, and the final answer in solution must match, indicating that the calculations are without any mistakes.
+
+How to Vary the Correct Answer:
+1. For Answer (A) - Both true, R explains A: Write a sound cause-effect relationship.
+2. For Answer (B) - Both true, but R does not explain A: Write two true statements about related but independent aspects.
+3. For Answer (C) - A true, R false: Write a correct assertion with an incorrect or misconceived reason.
+4. For Answer (D) - A false, R true: Write an incorrect assertion with a true reason.
+
+Content Boundaries:
+1. All questions and solutions must be in simple language understandable by [Grade] students.
+2. Generate questions, options and solutions strictly based on the content present in the [Script] following NCERT [Grade] [Subject] [Textbook] only.
+3. Use only the terminology, language style, notations and expressions as found in the CBSE [Textbook] [Grade] [Subject] and [Script] attached.
+4. Cover all important concepts from the provided [Subtopic Name] and [Subconcepts] if provided.
+5. Activity-based questions should focus on testing key learning points and main takeaways from the activity.
+6. Generate a combination of both numerical and theoretical questions based on the [Script] provided where the content supports it.
+7. Never use the terms 'according to the textbook/text', 'from the NCERT', 'from the figure/table/activity references' within the question text and solution text. Use conceptual names instead.
+8. Avoid generating asterisks, hash, or em dash at any point.
+9. Use the calculation formulas and methods that are used in the script.
+
+Do NOT introduce:
+- Concepts beyond the NCERT curriculum
+- Advanced terminology not in the textbook
+- Examples or case studies not mentioned in NCERT materials
+- College-level or research-based concepts
+
+Rules to be followed:
+1. Use clear and simple language appropriate for [Grade] CBSE students.
+2. Use concepts, terminology, textbook language, and notations which are used in the script: [Script].
+3. Avoid duplications or repetitions at any point.
+4. Complexity of calculations, and solvables must align with [Grade] level as per NCERT, no less and no more.
+5. Use only British English spellings throughout the generation.
+6. Use Indian metrics in measurements: kg, metres, kilometres, centimetres.
+7. All mathematical equations, symbols other than text, formulas, units, dates used as calculations, and notation must be in inline LaTeX format enclosed within \\(...\\). Use \\text{} for all alphabetic LaTeX content to ensure upright non-italic text. Never use \\ce{} or display math $$.
+
+Allowed question_type_tag: "Reason-Assertion Description"
+
+Generate the output in JSON array format only. Each object must use:
+{
+  "cognitiveLevel": "Application",
+  "difficultyLevel": "Medium",
+  "questionType": "VSA",
+  "question_type_tag": "Reason-Assertion Description",
+  "question": "Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\n\n<b>Assertion (A):</b> <assertion>.\n<b>Reason (R):</b> <reason>.\n\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\n\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\n(C) Assertion (A) is true, but Reason (R) is false.\n(D) Assertion (A) is false, but Reason (R) is true.",
+  "solution": "Option (<letter>) is correct.\n<one-line justification>"
+}`;
+}
 function buildGenericRADBasePrompt() {
   return `## REASON_ASSERTION_CREATION_PROMPT
 You are an experienced CBSE/ICSE subject teacher creating Reason-Assertion Descriptive questions aligned with Bloom's taxonomy.
@@ -4422,7 +4524,9 @@ Standard options:
 (D) Assertion (A) is false, but Reason (R) is true.`;
 }
 function buildRADescPrompt(conceptName, item, masterPrompt, loText) {
-  const raw = extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || buildGenericRADBasePrompt();
+  const raw = (state.subject === 'Social' && state.curriculum === 'CBSE')
+    ? buildSocialCBSERADPrompt()
+    : (extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || buildGenericRADBasePrompt());
   let section = applyPromptCountEdits(fillPlaceholders(raw, conceptName, item, loText));
   // Strip [Number of ...] lines — METADATA INPUT below is sole source of truth
   section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
