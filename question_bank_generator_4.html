@@ -888,7 +888,7 @@
 
         <div id="radSection" style="display:none;margin-top:16px;margin-bottom:4px">
           <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">?? Reason-Assertion Descriptive (RAD)</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Leave empty to skip RAD generation (count = 0). Math CBSE only.</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Leave empty to skip RAD generation (count = 0). Supported for Math, Chemistry, Physics, Social CBSE and Biology ICSE.</div>
           <div style="position:relative">
             <div style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;border-radius:10px;background:repeating-linear-gradient(transparent,transparent 27px,rgba(99,102,241,0.08) 28px);z-index:0"></div>
             <textarea id="radMetadataTextarea"
@@ -1444,7 +1444,7 @@ const state = {
   promptCounts: {},
   objMetadata: '',   // user-editable objective metadata text (empty = skip)
   subjMetadata: '',  // user-editable subjective metadata text (empty = skip)
-  radMetadata: '',   // user-editable RAD metadata text — Math CBSE only (empty = skip)
+  radMetadata: '',   // user-editable RAD metadata text for supported RAD subjects (empty = skip)
   mtfLOText: '',     // LO textarea for MTF mode — Biology ICSE only
   mtfMetadata: '',   // notepad for MTF counts — Biology ICSE only (each line = one MTF question spec)
   generatedFiles: {},
@@ -1462,9 +1462,10 @@ const state = {
 // ============================================================
 const SUBJECTS = [
   { id:'Biology',  icon:'🧬', label:'Biology',        icse:true,  cbse:false },
-  { id:'Chemistry',icon:'⚗️',  label:'Chemistry',      icse:true,  cbse:false },
-  { id:'Physics',  icon:'⚡',  label:'Physics',        icse:true,  cbse:false },
+  { id:'Chemistry',icon:'⚗️',  label:'Chemistry',      icse:true,  cbse:true  },
+  { id:'Physics',  icon:'⚡',  label:'Physics',        icse:true,  cbse:true  },
   { id:'Mathematics',icon:'📐',label:'Mathematics',   icse:true,  cbse:true  },
+  { id:'Social',  icon:'\uD83C\uDFDB\uFE0F', label:'Social',         icse:false, cbse:true  },
   { id:'Civics',   icon:'🏛️', label:'Civics',         icse:true,  cbse:false },
   { id:'Geography',icon:'🌍',  label:'Geography',      icse:true,  cbse:false },
   { id:'History',  icon:'📜',  label:'History',        icse:true,  cbse:false },
@@ -1474,6 +1475,11 @@ const SUBJECTS = [
   { id:'Business Studies',icon:'💼',label:'Business Studies',icse:false,cbse:false,soon:true},
   { id:'Accountancy',icon:'🧾',label:'Accountancy',   icse:false, cbse:false, soon:true },
 ];
+
+function isRADSupportedSubject() {
+  return (state.curriculum === 'CBSE' && ['Mathematics', 'Chemistry', 'Physics', 'Social'].includes(state.subject)) ||
+         (state.curriculum === 'ICSE' && state.subject === 'Biology');
+}
 
 const DEFAULT_COUNTS = {
   Biology_ICSE: {
@@ -2103,10 +2109,10 @@ function setupPage3() {
   const key = `${state.subject}_${state.curriculum}`;
 
   const isEnglish = state.subject === 'English';
-  const isMathCBSEPage3 = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
+  const isRADPage3 = isRADSupportedSubject();
   document.getElementById('englishFields').style.display = isEnglish ? 'block' : 'none';
   document.getElementById('grammarFieldWrap').style.display = 'none';
-  document.getElementById('radSection').style.display = isMathCBSEPage3 ? 'block' : 'none';
+  document.getElementById('radSection').style.display = isRADPage3 ? 'block' : 'none';
   // Restore RTC pill selection + count input visibility
   if (isEnglish && state.chapterType) {
     document.querySelectorAll('#englishFields .pill').forEach(p => {
@@ -2235,6 +2241,7 @@ function renderCountsTable() {
   const defaultObj  = toFriendlyText([...objCounts, ...raCounts]);
 
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
+  const isRADPage3Defaults = isRADSupportedSubject();
   const extractQTypeTotals = (src) => {
     const totals = { VSA: 0, SA: 0, LA: 0 };
     ['VSA', 'SA', 'LA'].forEach(t => {
@@ -2269,9 +2276,9 @@ function renderCountsTable() {
     subjEl.value = state.subjMetadata;
   }
 
-  // RAD textarea — Math CBSE only: default count from REASON_ASSERTION_CREATION_PROMPT
+  // RAD textarea: default count for supported RAD subjects.
   if (radEl) {
-    if (!state.radMetadata && isMathCBSE) {
+    if (!state.radMetadata && isRADPage3Defaults) {
       const raRaw = extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || '';
       const raCountLines = raRaw.match(/\[Number of [^\]]+\]:\s*[^\n\r]+/g) || [];
       const defaultRad = raCountLines.map(l => {
@@ -3308,7 +3315,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
   const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
   const doObjective   = !isEnglishCBSEGrammar && (state.questionsType === 'both' || state.questionsType === 'objective' || isRADOnly) && !isMetaSkip(state.objMetadata);
   const doSubjective  = (state.questionsType === 'both' || state.questionsType === 'subjective') && !isMetaSkip(state.subjMetadata);
-  const isMathCBSE    = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
+  const isRADExpected = isRADSupportedSubject();
   const isRTCMode     = state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType === 'RTC';
   const isGeoHistCivICSE = ['Geography', 'History', 'Civics'].includes(state.subject) && state.curriculum === 'ICSE';
   const hasPrereqSection = !!extractSection(masterPrompt, 'PRE_REQUISITE_CREATION_PROMPT');
@@ -3390,7 +3397,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
     }
 
     // RAD
-    if (isMathCBSE && (!isMetaSkip(state.radMetadata) || isRADOnly))
+    if (isRADExpected && (!isMetaSkip(state.radMetadata) || isRADOnly))
       expected.push({ path: fp('ReasonAssertion.json'), label: scopeLabel + ' ? Reason-Assertion', item });
 
     // RTC
@@ -4870,10 +4877,10 @@ function onGenModeChange(mode) {
 }
 
 function updateRADOptionVisibility() {
-  const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
+  const isRADSupported = isRADSupportedSubject();
   const isBioICSE  = state.subject === 'Biology'     && state.curriculum === 'ICSE';
   const opt = document.getElementById('radOnlyOption');
-  if (opt) opt.style.display = isMathCBSE ? 'flex' : 'none';
+  if (opt) opt.style.display = isRADSupported ? 'flex' : 'none';
   const mtfScqOpt = document.getElementById('mtfScqOnlyOption');
   const mtfSubOpt = document.getElementById('mtfSubOnlyOption');
   const mtfMultiOpt = document.getElementById('mtfMultiOnlyOption');
@@ -4881,7 +4888,7 @@ function updateRADOptionVisibility() {
   if (mtfSubOpt) mtfSubOpt.style.display = isBioICSE ? 'flex' : 'none';
   if (mtfMultiOpt) mtfMultiOpt.style.display = isBioICSE ? 'flex' : 'none';
   // Reset questionsType if the selected option is no longer valid
-  if (!isMathCBSE && state.questionsType === 'rad') {
+  if (!isRADSupported && state.questionsType === 'rad') {
     state.questionsType = 'both';
     const bothRadio = document.querySelector('input[name="qType"][value="both"]');
     if (bothRadio) bothRadio.checked = true;
