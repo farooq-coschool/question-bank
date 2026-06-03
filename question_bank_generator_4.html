@@ -3162,6 +3162,56 @@ function buildScopeItems() {
   return items;
 }
 
+async function runConceptAgentsConcurrent(scopeItems, concurrency, runItem, onUpdate) {
+  const totalConcepts = scopeItems.length;
+  const numWorkers = Math.min(Math.max(parseInt(concurrency, 10) || 1, 1), totalConcepts || 1);
+  let queueIdx = 0;
+  let activeCount = 0;
+  let doneCount = 0;
+  let failCount = 0;
+  let totalQ = 0;
+
+  const publish = () => {
+    if (typeof onUpdate === 'function') {
+      onUpdate({
+        total: totalConcepts,
+        workers: numWorkers,
+        active: activeCount,
+        queued: Math.max(0, totalConcepts - queueIdx),
+        done: doneCount,
+        failed: failCount,
+        totalQ,
+      });
+    }
+  };
+
+  async function runWorker(workerIndex) {
+    while (true) {
+      const idx = queueIdx++;
+      if (idx >= totalConcepts) break;
+      const item = scopeItems[idx];
+      activeCount++;
+      publish();
+      try {
+        const q = await runItem(item, idx, workerIndex);
+        doneCount++;
+        totalQ += (q || 0);
+      } catch (err) {
+        failCount++;
+        console.warn('[concept-worker] failed', item && item.name, err);
+      } finally {
+        activeCount--;
+        publish();
+      }
+    }
+  }
+
+  publish();
+  await Promise.allSettled(Array.from({ length: numWorkers }, (_, i) => runWorker(i)));
+  publish();
+  return { total: totalConcepts, workers: numWorkers, done: doneCount, failed: failCount, totalQ };
+}
+
 async function startGeneration() {
   if (!state.subject) { alert('Please select a subject first.'); return; }
   const checkedConcepts = document.querySelectorAll('.concept-cb:checked');
@@ -3179,24 +3229,20 @@ async function startGeneration() {
   const ch = state.chapterName;
   const concurrency = parseInt(document.getElementById('concurrencySelect').value, 10) || 10;
 
-  // Only reset files on a fresh run; preserve them in "generate more" mode
   if (state.generatedConceptKeys.size === 0) state.generatedFiles = {};
   Object.keys(agentCheckpoints).forEach(k => delete agentCheckpoints[k]);
 
   const pltOnlyMode = state.genMode === 'plt';
   const hasPerConceptLOs = Object.keys(state.providedLOs).length > 0;
 
-  // PLT Only + folder-uploaded LOs: build scope from the LO files themselves,
-  // not from the concept checkboxes. One PLT per uploaded LO file.
   let scopeItems;
   if (pltOnlyMode && hasPerConceptLOs) {
-    const structureScope = buildScopeItems(); // use checked items to determine level/subtopicName context
-    const levelMap = {}; // name ? { level, subtopicName }
+    const structureScope = buildScopeItems();
+    const levelMap = {};
     for (const item of structureScope) {
       levelMap[item.name.toLowerCase()] = { level: item.level, subtopicName: item.subtopicName };
     }
     scopeItems = Object.keys(state.providedLOs).map(loName => {
-      // Try to find the matching scope item to get correct level/subtopicName
       const ctx = levelMap[loName.toLowerCase()];
       return {
         level: (ctx && ctx.level) || 'subtopic',
@@ -3208,7 +3254,6 @@ async function startGeneration() {
     });
   } else {
     scopeItems = buildScopeItems();
-    // In PLT Only mode with global LO: require at least some LO text
     if (pltOnlyMode && !state.globalLOText) {
       alert('Please paste Learning Outcomes in the text area or upload LO files before generating PLT.');
       document.getElementById('startGenBtn').style.display = '';
@@ -3216,7 +3261,6 @@ async function startGeneration() {
     }
   }
 
-  // Record which concept keys are being generated now
   scopeItems.forEach(item => {
     state.generatedConceptKeys.add(makeConceptKey(item));
   });
@@ -3226,37 +3270,20 @@ async function startGeneration() {
   _genCtx = { masterPrompt, isEnglish, ch };
 
   document.getElementById('generationSubtitle').textContent =
-    totalConcepts + ' concepts · ' + numWorkers + ' workers · running in an ordered worker pool';
+    totalConcepts + ' concepts - ' + numWorkers + ' workers - dispatching concurrent concept API calls';
 
-  let doneCount = 0, failCount = 0, totalQ = 0;
-  let queueIdx = 0;
-
-  const updateAgentBar = () => {
-    const handled = doneCount + failCount;
-    const active = Math.min(numWorkers, Math.max(0, totalConcepts - handled));
-    const queued = Math.max(0, totalConcepts - handled - active);
-    document.getElementById('agentStatusBar').textContent =
-      '⚙️ ' + active + ' active  |  ⏳ ' + queued + ' queued  |  ✅ ' + doneCount + ' done  |  ⚠️ ' + failCount + ' failed';
-  };
-  updateAgentBar();
-
-  async function runWorker() {
-    while (true) {
-      const idx = queueIdx++;
-      if (idx >= totalConcepts) break;
-      const item = scopeItems[idx];
-      try {
-        const q = await runConceptAgent(item, masterPrompt, isEnglish, ch, null);
-        doneCount++;
-        totalQ += (q || 0);
-      } catch (_) {
-        failCount++;
-      }
-      updateAgentBar();
+  const poolResult = await runConceptAgentsConcurrent(
+    scopeItems,
+    concurrency,
+    (item) => runConceptAgent(item, masterPrompt, isEnglish, ch, null),
+    ({ active, queued, done, failed }) => {
+      document.getElementById('agentStatusBar').textContent =
+        active + ' active  |  ' + queued + ' queued  |  ' + done + ' done  |  ' + failed + ' failed';
     }
-  }
-
-  await Promise.allSettled(Array.from({ length: numWorkers }, runWorker));
+  );
+  const doneCount = poolResult.done;
+  const failCount = poolResult.failed;
+  const totalQ = poolResult.totalQ;
 
   document.getElementById('genStats').style.display = 'flex';
   document.getElementById('statTotal').textContent = totalQ;
@@ -3282,7 +3309,6 @@ async function startGeneration() {
     }, 1200);
   }
 }
-
 // ============================================================
 // MISSING FILES CHECK
 // ============================================================
@@ -3446,13 +3472,21 @@ async function checkMissingFiles(scopeItems, masterPrompt, isEnglish, ch) {
         if (!seenKeys.has(key)) { seenKeys.add(key); missingItems.push(e.item); }
       }
 
-      // Run agents for missing items only
-      for (const item of missingItems) {
-        try {
+      // Run missing concept agents concurrently using the selected worker count.
+      const retryConcurrency = parseInt(document.getElementById('concurrencySelect').value, 10) || 10;
+      await runConceptAgentsConcurrent(
+        missingItems,
+        retryConcurrency,
+        (item) => {
           const cp = agentCheckpoints[makeConceptKey(item)];
-          await runConceptAgent(item, masterPrompt, isEnglish, ch, cp ? cp.cp : null);
-        } catch (_) {}
-      }
+          return runConceptAgent(item, masterPrompt, isEnglish, ch, cp ? cp.cp : null);
+        },
+        ({ active, queued, done, failed }) => {
+          const bar = document.getElementById('agentStatusBar');
+          if (bar) bar.textContent =
+            'Retrying missing: ' + active + ' active  |  ' + queued + ' queued  |  ' + done + ' done  |  ' + failed + ' failed';
+        }
+      );
 
       // Update file count
       document.getElementById('statFiles').textContent = Object.keys(state.generatedFiles).length;
