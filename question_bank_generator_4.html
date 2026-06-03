@@ -3028,16 +3028,33 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   }, 600000); // 10-minute timeout — subjective is the heaviest step under parallel load
   if (subjQ !== undefined) { addedQ += subjQ; cp.totalQ += subjQ; }
 
-  // REASON-ASSERTION DESCRIPTIVE — Mathematics CBSE only
-  const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
-  const doRAD = isMathCBSE && !isMetaSkip(state.radMetadata);
-  const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '??',
-    doRAD || (isMathCBSE && isRADOnly), async () => {
-    const rawResult = await callClaude(buildRADescPrompt(name, item, masterPrompt, loResult), 40000, undefined, '[');
-    const parsed = parseJSON('[' + (rawResult || ''));
+  // REASON-ASSERTION DESCRIPTIVE ??? Mathematics / Chemistry / Physics CBSE, Biology ICSE, Social CBSE
+  const isMathCBSERAD = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
+  const isChemCBSERAD = state.subject === 'Chemistry' && state.curriculum === 'CBSE';
+  const isPhysCBSERAD = state.subject === 'Physics' && state.curriculum === 'CBSE';
+  const isBioICSERAD  = state.subject === 'Biology' && state.curriculum === 'ICSE';
+  const isSocialCBSERAD = state.subject === 'Social' && state.curriculum === 'CBSE';
+  const hasRADInput = !!(state.radMetadata && state.radMetadata.trim());
+  const doRAD = (isMathCBSERAD || isChemCBSERAD || isPhysCBSERAD || isBioICSERAD || isSocialCBSERAD) && (hasRADInput || isRADOnly);
+  const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '??????',
+    doRAD || ((isMathCBSERAD || isChemCBSERAD || isPhysCBSERAD || isBioICSERAD || isSocialCBSERAD) && isRADOnly), async () => {
+    const radLoText = (state.radLOText || state.globalLOText || '').trim() || loResult;
+    const radTotal = parseRADMetadata().length;
+    const radPrompt = buildRADescPrompt(name, item, masterPrompt, radLoText);
+    let rawResult = await callClaude(radPrompt, 16000, undefined, '[');
+    let parsed = parseJSON('[' + (rawResult || ''));
+    let qCount = Array.isArray(parsed) ? parsed.length : 0;
+    if (qCount !== radTotal) {
+      const retryPrompt = radPrompt + '\n\nIMPORTANT RETRY FEEDBACK: Your previous output contained ' + qCount + ' questions, but exactly ' + radTotal + ' are required. Regenerate the entire JSON array with exactly ' + radTotal + ' questions only. Do not add any extra text.';
+      rawResult = await callClaude(retryPrompt, 16000, undefined, '[');
+      parsed = parseJSON('[' + (rawResult || ''));
+      qCount = Array.isArray(parsed) ? parsed.length : 0;
+    }
+    if (qCount !== radTotal) {
+      throw new Error('RAD returned ' + qCount + ' questions, expected ' + radTotal + '. Click Retry.');
+    }
     saveFile(fp('ReasonAssertion.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
-    const qCount = Array.isArray(parsed) ? parsed.length : 0;
-    logStep(scopeLabel, 'Reason-Assertion Descriptive', '??', 'done', qCount + ' questions');
+    logStep(scopeLabel, 'Reason-Assertion Descriptive', '??????', 'done', qCount + ' questions');
     return qCount;
   });
   if (raQ !== undefined) { addedQ += raQ; cp.totalQ += raQ; }
@@ -3138,8 +3155,11 @@ function buildScopeItems() {
         }
         items.push({ level: 'subtopic', name: st.name, includePLT: st.includePLT, nanoConcepts: st.nanoConcepts || [] });
       } else {
-        // Standard: subtopic item covers all its nanos internally
+        // Standard: include the subtopic item and each selected nano as its own work item
         items.push({ level: 'subtopic', name: st.name, includePLT: st.includePLT, nanoConcepts: selectedNanos });
+        for (const nc of selectedNanos) {
+          items.push({ level: 'nano', name: nc, subtopicName: st.name });
+        }
       }
     }
 
@@ -3217,26 +3237,24 @@ async function startGeneration() {
   _genCtx = { masterPrompt, isEnglish, ch };
 
   document.getElementById('generationSubtitle').textContent =
-    totalConcepts + ' concepts · ' + numWorkers + ' workers · each worker picks next concept when free';
+    totalConcepts + ' concepts · ' + numWorkers + ' workers · running in an ordered worker pool';
 
-  // Shared queue index — atomic in JS since it's single-threaded
-  let queueIdx = 0;
   let doneCount = 0, failCount = 0, totalQ = 0;
+  let queueIdx = 0;
 
-  function updateAgentBar() {
+  const updateAgentBar = () => {
     const handled = doneCount + failCount;
     const active = Math.min(numWorkers, Math.max(0, totalConcepts - handled));
     const queued = Math.max(0, totalConcepts - handled - active);
     document.getElementById('agentStatusBar').textContent =
-      '? ' + active + ' active  |  ?? ' + queued + ' queued  |  ? ' + doneCount + ' done  |  ? ' + failCount + ' failed';
-  }
+      '⚙️ ' + active + ' active  |  ⏳ ' + queued + ' queued  |  ✅ ' + doneCount + ' done  |  ⚠️ ' + failCount + ' failed';
+  };
   updateAgentBar();
 
-  // Each worker loops: grab next item from queue ? process it fully ? repeat
   async function runWorker() {
     while (true) {
-      const idx = queueIdx++;          // claim next slot
-      if (idx >= totalConcepts) break; // queue exhausted
+      const idx = queueIdx++;
+      if (idx >= totalConcepts) break;
       const item = scopeItems[idx];
       try {
         const q = await runConceptAgent(item, masterPrompt, isEnglish, ch, null);
@@ -3249,7 +3267,6 @@ async function startGeneration() {
     }
   }
 
-  // Launch numWorkers workers; when one finishes a concept it immediately takes the next
   await Promise.allSettled(Array.from({ length: numWorkers }, runWorker));
 
   document.getElementById('genStats').style.display = 'flex';
