@@ -3106,17 +3106,10 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       return parsed;
     }
 
-    let parsed;
-    if (radTotal > 1) {
-      parsed = [];
-      for (let i = 0; i < radSpecs.length; i += 1) {
-        const chunk = radSpecs.slice(i, i + 1);
-        const chunkResult = await generateRADChunk(chunk, i);
-        parsed.push(...chunkResult);
-      }
-    } else {
-      parsed = await generateRADChunk(radSpecs, 0);
-    }
+    // Main path: one concept = one API call for the full user-requested RAD count.
+    // If the model returns a short/invalid array, generateRADChunk automatically splits
+    // into one-question repair calls so the file can still complete instead of skipping.
+    let parsed = await generateRADChunk(radSpecs, 0);
 
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
     if (qCount !== radTotal) {
