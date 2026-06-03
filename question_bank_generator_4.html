@@ -3027,7 +3027,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     const radLoText = (state.radLOText || state.globalLOText || '').trim() || loResult;
     const radSpecs = parseRADMetadata();
     const radTotal = radSpecs.length;
-    const useRadLightSource = isSocialCBSERAD && !!(radLoText && radLoText.trim().length > 40);
+    const useRadLightSource = !!(radLoText && radLoText.trim().length > 40);
     const radCallOptions = useRadLightSource ? { skipTextbookSource: true } : undefined;
 
     async function generateRADChunk(chunkSpecs, startIndex) {
@@ -3050,7 +3050,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     }
 
     let parsed;
-    if (isSocialCBSERAD && radTotal > 2) {
+    if (radTotal > 2) {
       parsed = [];
       for (let i = 0; i < radSpecs.length; i += 2) {
         const chunk = radSpecs.slice(i, i + 2);
