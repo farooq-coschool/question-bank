@@ -542,10 +542,10 @@
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="logo">
-    <div class="logo-icon">📚</div>
+    <div class="logo-icon">&#128218;</div>
     <div>
       <div class="logo-text">Question Bank Generator</div>
-      <div class="logo-sub">Coschool · AI-Powered Content</div>
+      <div class="logo-sub">Coschool &middot; AI-Powered Content</div>
     </div>
   </div>
 </div>
@@ -596,31 +596,7 @@
         </div>
 
         <label style="margin-bottom:10px;display:block">Subject <span class="req">*</span></label>
-        <div class="subject-grid" id="subjectGrid"><div class="subject-card"><div class="subject-icon">🧬</div>
-      <div class="subject-name">Biology</div>
-      <div class="subject-tag">ICSE</div></div><div class="subject-card"><div class="subject-icon">⚗️</div>
-      <div class="subject-name">Chemistry</div>
-      <div class="subject-tag">ICSE</div></div><div class="subject-card"><div class="subject-icon">⚡</div>
-      <div class="subject-name">Physics</div>
-      <div class="subject-tag">ICSE</div></div><div class="subject-card"><div class="subject-icon">📐</div>
-      <div class="subject-name">Mathematics</div>
-      <div class="subject-tag">ICSE</div></div><div class="subject-card"><div class="subject-icon">🏛️</div>
-      <div class="subject-name">Civics</div>
-      <div class="subject-tag">ICSE</div></div><div class="subject-card"><div class="subject-icon">🌍</div>
-      <div class="subject-name">Geography</div>
-      <div class="subject-tag">ICSE</div></div><div class="subject-card"><div class="subject-icon">📜</div>
-      <div class="subject-name">History</div>
-      <div class="subject-tag">ICSE</div></div><div class="subject-card"><div class="subject-icon">📘</div>
-      <div class="subject-name">English</div>
-      <div class="subject-tag">ICSE</div></div><div class="subject-card disabled"><div class="subject-icon">💼</div>
-      <div class="subject-name">Commerce</div>
-      <div class="subject-tag">Soon</div></div><div class="subject-card"><div class="subject-icon">📈</div>
-      <div class="subject-name">Economics</div>
-      <div class="subject-tag">ICSE</div></div><div class="subject-card disabled"><div class="subject-icon">💼</div>
-      <div class="subject-name">Business Studies</div>
-      <div class="subject-tag">Soon</div></div><div class="subject-card disabled"><div class="subject-icon">🧾</div>
-      <div class="subject-name">Accountancy</div>
-      <div class="subject-tag">Soon</div></div></div>
+        <div class="subject-grid" id="subjectGrid"></div>
         <div id="subjectError" class="error-msg" style="display:none">Please select a subject before proceeding.</div>
 
         <div style="margin-top:24px;margin-bottom:8px">
@@ -637,7 +613,7 @@
         </div>
 
         <div class="btn-row">
-          <button class="btn btn-primary btn-lg" onclick="page1Next()">Continue to Chapter Structure ?</button>
+          <button class="btn btn-primary btn-lg" onclick="page1Next()">Continue to Chapter Structure &#8594;</button>
         </div>
       </div>
     </div>
@@ -852,14 +828,14 @@
 
         <div id="questionCountsSection">
         <div class="section-divider"></div>
-        <div style="font-size:14px;font-weight:600;margin-bottom:8px">?? Question Input</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px">&#128221; Question Input</div>
         <div class="info-box" style="margin-bottom:12px;font-size:12px">
           Type your requirements directly in the notepads below. Leave a notepad <strong>empty</strong> to skip generating that type (treated as 0).<br>
           <span style="color:var(--muted)">Your text is passed directly to the AI — describe counts, difficulty, topics, or any instructions you need.</span>
         </div>
 
         <div style="margin-bottom:16px">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">? Objective Questions (SCQ + RA)</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">&#127919; Objective Questions (SCQ + RA)</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Leave empty to skip Objective generation (count = 0).</div>
           <div style="position:relative">
             <div style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;border-radius:10px;background:repeating-linear-gradient(transparent,transparent 27px,rgba(99,102,241,0.08) 28px);z-index:0"></div>
@@ -873,7 +849,7 @@
         </div>
 
         <div style="margin-bottom:4px">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">?? Subjective Questions (VSA / SA / LA)</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">&#9997;&#65039; Subjective Questions (VSA / SA / LA)</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Leave empty to skip Subjective generation (count = 0).</div>
           <div style="position:relative">
             <div style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;border-radius:10px;background:repeating-linear-gradient(transparent,transparent 27px,rgba(99,102,241,0.08) 28px);z-index:0"></div>
@@ -887,7 +863,7 @@
         </div>
 
         <div id="radSection" style="display:none;margin-top:16px;margin-bottom:4px">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">?? Reason-Assertion Descriptive (RAD)</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">&#9878;&#65039; Reason-Assertion Descriptive (RAD)</div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Leave empty to skip RAD generation (count = 0). Supported for Math, Chemistry, Physics, Social CBSE and Biology ICSE.</div>
           <div style="position:relative">
             <div style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;border-radius:10px;background:repeating-linear-gradient(transparent,transparent 27px,rgba(99,102,241,0.08) 28px);z-index:0"></div>
@@ -905,8 +881,8 @@
 
         <div id="inputError" class="error-msg" style="display:none">Please fill all required fields.</div>
         <div class="btn-row">
-          <button class="btn btn-primary btn-lg" onclick="page3Next()">Validate & Proceed ?</button>
-          <button class="btn btn-secondary" onclick="goToPage(2)">? Back</button>
+          <button class="btn btn-primary btn-lg" onclick="page3Next()">Validate & Proceed &#8594;</button>
+          <button class="btn btn-secondary" onclick="goToPage(2)">&#8592; Back</button>
         </div>
       </div>
     </div>
@@ -914,12 +890,12 @@
     <!-- PAGE 4: GENERATION -->
     <div class="page" id="page-4">
       <div class="card">
-        <div class="card-title">?? Generating Content</div>
+        <div class="card-title">&#9881;&#65039; Generating Content</div>
         <div class="card-sub" id="generationSubtitle">Configure parallel agents below, then click Start.</div>
 
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;font-size:13px;color:var(--muted)">
           <label style="display:flex;align-items:center;gap:6px;font-weight:500">
-            ? Workers (concepts in parallel):
+            &#9881;&#65039; Workers (concepts in parallel):
             <select id="concurrencySelect" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);font-size:13px;color:var(--text)">
               <option value="1">1 — Sequential</option>
               <option value="3">3</option>
@@ -942,15 +918,15 @@
         <div class="progress-track" id="progressTrack"></div>
 
         <div id="genError" style="display:none" class="info-box warn">
-          ?? <span id="genErrorMsg"></span>
+          &#9888;&#65039; <span id="genErrorMsg"></span>
         </div>
 
         <!-- GENERATION MODE -->
         <div style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface);">
-          <div style="font-weight:600;font-size:13px;color:var(--text);margin-bottom:10px;">?? Generation Mode</div>
+          <div style="font-weight:600;font-size:13px;color:var(--text);margin-bottom:10px;">&#127919; Generation Mode</div>
           <div style="display:flex;gap:20px;flex-wrap:wrap;">
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-              <input type="radio" name="genMode" value="full" checked onchange="onGenModeChange('full')" style="accent-color:var(--accent)"> Full Generation (Terms ? LO ? PLT ? Questions)
+              <input type="radio" name="genMode" value="full" checked onchange="onGenModeChange('full')" style="accent-color:var(--accent)"> Full Generation (Terms &#8594; LO &#8594; PLT &#8594; Questions)
             </label>
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
               <input type="radio" name="genMode" value="questions" onchange="onGenModeChange('questions')" style="accent-color:var(--accent)"> Questions Only
@@ -968,7 +944,7 @@
 
           <!-- Prereq / Glossary note panel -->
           <div id="prereqGlossaryPanel" style="display:none;margin-top:12px;padding:10px 14px;border-top:1px solid var(--border);background:var(--surface2);border-radius:8px;font-size:12px;color:var(--muted);">
-            ?? This mode uses the PDF / images you attached on page 2 as the source. Make sure your textbook file is uploaded before generating.
+            &#128196; This mode uses the PDF / images you attached on page 2 as the source. Make sure your textbook file is uploaded before generating.
           </div>
 
           <!-- Questions-only sub-options (hidden by default) -->
@@ -1000,10 +976,10 @@
 
             <!-- MTF panel — shown only when MTF SCQ Only or MTF Subjective Only is selected -->
             <div id="mtfPanel" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-              <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;">?? Learning Outcomes (for MTF generation)</div>
+              <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;">&#127919; Learning Outcomes (for MTF generation)</div>
               <textarea id="mtfLOTextarea" placeholder="Paste Learning Outcomes here..." onchange="state.mtfLOText=this.value" oninput="state.mtfLOText=this.value"
                 style="width:100%;min-height:80px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;resize:vertical;box-sizing:border-box;font-family:monospace;"></textarea>
-              <div style="font-size:13px;font-weight:500;color:var(--text);margin:10px 0 6px;">??? MTF Count Notepad <span style="font-size:11px;color:var(--text2);font-weight:400;">(each line = one MTF question; specify cognitive + difficulty)</span></div>
+              <div style="font-size:13px;font-weight:500;color:var(--text);margin:10px 0 6px;">&#128221; MTF Count Notepad <span style="font-size:11px;color:var(--text2);font-weight:400;">(each line = one MTF question; specify cognitive + difficulty)</span></div>
               <textarea id="mtfMetadataTextarea" placeholder="e.g.&#10;Understanding Easy&#10;Understanding Medium&#10;Application Hard" onchange="state.mtfMetadata=this.value" oninput="state.mtfMetadata=this.value"
                 style="width:100%;min-height:80px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;resize:vertical;box-sizing:border-box;font-family:monospace;"></textarea>
             </div>
@@ -1011,7 +987,7 @@
 
           <!-- LO input panel — shown for Questions Only and PLT Only -->
           <div id="loInputPanel" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-            <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;">?? Learning Outcomes</div>
+            <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;">&#127919; Learning Outcomes</div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
               Option 1 — Paste LOs directly (used for all selected concepts):
             </div>
@@ -1023,7 +999,7 @@
             </div>
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
               <label style="padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:var(--card);font-size:12px;cursor:pointer;color:var(--text);">
-                ?? Choose LO Folder
+                &#128193; Choose LO Folder
                 <input type="file" id="loFolderInput" webkitdirectory multiple accept=".txt" style="display:none" onchange="loadLOsFromFolder(this.files)">
               </label>
               <span id="loFolderStatus" style="font-size:12px;color:var(--muted);">No folder selected</span>
@@ -1035,7 +1011,7 @@
         <!-- CONCEPT SELECTION -->
         <div id="conceptSelectionCard" style="margin-bottom:16px;border:1px solid var(--border);border-radius:10px;padding:16px;background:var(--surface);">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="font-weight:600;font-size:14px;color:var(--text);">?? Select Concepts to Generate</div>
+            <div style="font-weight:600;font-size:14px;color:var(--text);">&#9989; Select Concepts to Generate</div>
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--accent);font-weight:500;">
               <input type="checkbox" id="selectAllConcepts" onchange="toggleAllConcepts(this.checked)" checked style="accent-color:var(--accent);width:15px;height:15px;">
               Select All
@@ -1045,8 +1021,8 @@
         </div>
 
         <div class="btn-row" id="genButtons">
-          <button class="btn btn-primary btn-lg" id="startGenBtn" onclick="startGeneration()">? Start Generation</button>
-          <button class="btn btn-secondary" onclick="goToPage(3)">? Back to Configure</button>
+          <button class="btn btn-primary btn-lg" id="startGenBtn" onclick="startGeneration()">&#9654;&#65039; Start Generation</button>
+          <button class="btn btn-secondary" onclick="goToPage(3)">&#8592; Back to Configure</button>
         </div>
       </div>
     </div>
@@ -1054,27 +1030,27 @@
     <!-- PAGE 5: DOWNLOAD -->
     <div class="page" id="page-5">
       <div class="card">
-        <div class="card-title">? Generation Complete</div>
+        <div class="card-title">&#10003; Generation Complete</div>
         <div class="card-sub">Your question bank has been generated. Download files or copy content below.</div>
 
         <div class="stat-row">
-          <div class="stat-box"><div class="stat-num" id="dlStatTotal">—</div><div class="stat-lbl">Questions</div></div>
-          <div class="stat-box"><div class="stat-num" id="dlStatFiles">—</div><div class="stat-lbl">Files</div></div>
-          <div class="stat-box"><div class="stat-num" id="dlStatTs">—</div><div class="stat-lbl">Generated</div></div>
+          <div class="stat-box"><div class="stat-num" id="dlStatTotal">&mdash;</div><div class="stat-lbl">Questions</div></div>
+          <div class="stat-box"><div class="stat-num" id="dlStatFiles">&mdash;</div><div class="stat-lbl">Files</div></div>
+          <div class="stat-box"><div class="stat-num" id="dlStatTs">&mdash;</div><div class="stat-lbl">Generated</div></div>
         </div>
 
         <div class="output-section">
-          <h3>?? Folder Structure</h3>
+          <h3>&#128193; Folder Structure</h3>
           <div class="file-tree" id="fileTree"></div>
         </div>
 
         <div class="output-section">
-          <h3>?? Download Files</h3>
+          <h3>&#128190; Download Files</h3>
           <div class="download-grid" id="downloadGrid"></div>
         </div>
 
         <div class="btn-row">
-          <button class="btn btn-primary btn-lg" onclick="downloadAll()">? Download All as ZIP</button>
+          <button class="btn btn-primary btn-lg" onclick="downloadAll()">&#128230; Download All as ZIP</button>
           <button class="btn btn-primary" onclick="generateMore()" style="background:var(--success,#22c55e);border-color:var(--success,#22c55e)">+ Generate More Topics</button>
           <button class="btn btn-secondary" onclick="startOver()">Start New Chapter</button>
         </div>
@@ -1461,19 +1437,19 @@ const state = {
 // SUBJECT CONFIG
 // ============================================================
 const SUBJECTS = [
-  { id:'Biology',  icon:'🧬', label:'Biology',        icse:true,  cbse:false },
-  { id:'Chemistry',icon:'⚗️',  label:'Chemistry',      icse:true,  cbse:true  },
-  { id:'Physics',  icon:'⚡',  label:'Physics',        icse:true,  cbse:true  },
-  { id:'Mathematics',icon:'📐',label:'Mathematics',   icse:true,  cbse:true  },
+  { id:'Biology',  icon:'\uD83E\uDDEC', label:'Biology',        icse:true,  cbse:false },
+  { id:'Chemistry',icon:'\u2697\uFE0F',  label:'Chemistry',      icse:true,  cbse:true  },
+  { id:'Physics',  icon:'\u26A1',  label:'Physics',        icse:true,  cbse:true  },
+  { id:'Mathematics',icon:'\uD83D\uDCD0',label:'Mathematics',   icse:true,  cbse:true  },
   { id:'Social',  icon:'\uD83C\uDFDB\uFE0F', label:'Social',         icse:false, cbse:true  },
-  { id:'Civics',   icon:'🏛️', label:'Civics',         icse:true,  cbse:false },
-  { id:'Geography',icon:'🌍',  label:'Geography',      icse:true,  cbse:false },
-  { id:'History',  icon:'📜',  label:'History',        icse:true,  cbse:false },
-  { id:'English',  icon:'📘',  label:'English',        icse:true,  cbse:true  },
-  { id:'Commerce', icon:'💼',  label:'Commerce',       icse:true,  cbse:false },
-  { id:'Economics',icon:'📈',  label:'Economics',      icse:true,  cbse:false },
-  { id:'Business Studies',icon:'💼',label:'Business Studies',icse:false,cbse:false,soon:true},
-  { id:'Accountancy',icon:'🧾',label:'Accountancy',   icse:false, cbse:false, soon:true },
+  { id:'Civics',   icon:'\uD83C\uDFDB\uFE0F', label:'Civics',         icse:true,  cbse:false },
+  { id:'Geography',icon:'\uD83C\uDF0D',  label:'Geography',      icse:true,  cbse:false },
+  { id:'History',  icon:'\uD83D\uDCDC',  label:'History',        icse:true,  cbse:false },
+  { id:'English',  icon:'\uD83D\uDCD8',  label:'English',        icse:true,  cbse:true  },
+  { id:'Commerce', icon:'\uD83D\uDCBC',  label:'Commerce',       icse:true,  cbse:false },
+  { id:'Economics',icon:'\uD83D\uDCC8',  label:'Economics',      icse:true,  cbse:false },
+  { id:'Business Studies',icon:'\uD83D\uDCBC',label:'Business Studies',icse:false,cbse:false,soon:true},
+  { id:'Accountancy',icon:'\uD83E\uDDFE',label:'Accountancy',   icse:false, cbse:false, soon:true },
 ];
 
 function isRADSupportedSubject() {
@@ -1589,7 +1565,7 @@ function renderSubjectGrid() {
     div.className = `subject-card${sel ? ' selected' : ''}${disabled ? ' disabled' : ''}`;
     div.innerHTML = `<div class="subject-icon">${s.icon}</div>
       <div class="subject-name">${s.label}</div>
-      <div class="subject-tag">${s.soon ? '? Soon' : (cur==='CBSE'&&s.cbse?'CBSE':cur==='ICSE'&&s.icse?'ICSE':'')}</div>`;
+      <div class="subject-tag">${s.soon ? 'Soon' : (cur==='CBSE'&&s.cbse?'CBSE':cur==='ICSE'&&s.icse?'ICSE':'')}</div>`;
     if (!disabled) div.onclick = () => selectSubject(s.id, div);
     grid.appendChild(div);
   });
@@ -1701,7 +1677,7 @@ function loadImageFile(file) {
     document.getElementById('imgFileSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
     document.getElementById('imgPreviewWrap').style.display = 'block';
 
-    document.querySelector('.img-upload-text').textContent = '? Image loaded — ready to analyse';
+    document.querySelector('.img-upload-text').textContent = '\u2713 Image loaded - ready to analyse';
     document.querySelector('.img-upload-sub').textContent = 'Click to replace with a different image';
   };
   reader.readAsDataURL(file);
@@ -1745,12 +1721,12 @@ function loadTextbookPdfs(files) {
       if (listEl) {
         const row = document.createElement('div');
         row.style.cssText = 'font-size:12px;color:var(--success);display:flex;align-items:center;gap:6px;';
-        row.innerHTML = `? <strong>${file.name}</strong> (${mb} MB)`;
+        row.innerHTML = `&#128196; <strong>${file.name}</strong> (${mb} MB)`;
         listEl.appendChild(row);
       }
       if (loaded === allFiles.length) {
-        document.getElementById('pdfUploadText').textContent = `? ${loaded} PDF${loaded > 1 ? 's' : ''} loaded — click to replace`;
-        document.getElementById('pdfStatus').innerHTML = `<span style="color:var(--success)">? ${loaded} PDF${loaded > 1 ? 's' : ''} ready — Claude will read all pages</span>`;
+        document.getElementById('pdfUploadText').textContent = `\u2713 ${loaded} PDF${loaded > 1 ? 's' : ''} loaded - click to replace`;
+        document.getElementById('pdfStatus').innerHTML = `<span style="color:var(--success)">&#10003; ${loaded} PDF${loaded > 1 ? 's' : ''} ready - Claude will read all pages</span>`;
       }
     };
     reader.readAsDataURL(file);
@@ -1786,8 +1762,8 @@ function loadTextbookImages(files) {
       thumb.innerHTML = `<img src="${dataUrl}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;border:1px solid var(--border);"><br>${file.name}`;
       preview.appendChild(thumb);
       if (loaded === files.length) {
-        document.getElementById('tbImagesUploadText').textContent = `? ${loaded} image${loaded > 1 ? 's' : ''} loaded — click to replace`;
-        document.getElementById('pdfStatus').innerHTML = `<span style="color:var(--success)">? ${loaded} image${loaded > 1 ? 's' : ''} ready for Claude</span>`;
+        document.getElementById('tbImagesUploadText').textContent = `\u2713 ${loaded} image${loaded > 1 ? 's' : ''} loaded - click to replace`;
+        document.getElementById('pdfStatus').innerHTML = `<span style="color:var(--success)">&#10003; ${loaded} image${loaded > 1 ? 's' : ''} ready for Claude</span>`;
       }
     };
     reader.readAsDataURL(file);
@@ -1983,7 +1959,7 @@ async function page2Analyze() {
 
   const btn = event.target;
   const originalBtnText = btn.innerHTML;
-  btn.innerHTML = '? Reading structure…';
+  btn.innerHTML = '&#128269; Reading structure...';
   btn.disabled = true;
 
   try {
@@ -2448,21 +2424,21 @@ function getPromptKey() {
 
 // Steps for ICSE Science subjects
 const SCIENCE_STEPS = [
-  { id:'prereq', name:'Pre-requisite Questions', icon:'??' },
-  { id:'terms',  name:'Terms and Definition',     icon:'??' },
-  { id:'lo',     name:'Learning Outcomes',        icon:'??' },
-  { id:'plt',    name:'Proficiency Level Transcript (PLT)', icon:'??' },
-  { id:'glossary',name:'Glossary',               icon:'??' },
-  { id:'objective',name:'Objective Questions (SCQ + RA)',  icon:'?' },
-  { id:'subjective',name:'Subjective Questions (VSA/SA/LA)',icon:'??'},
-  { id:'reason_assertion', name:'Reason-Assertion Descriptive', icon:'??' },
+  { id:'prereq', name:'Pre-requisite Questions', icon:'\uD83D\uDCDD' },
+  { id:'terms',  name:'Terms and Definition',     icon:'\uD83D\uDCD6' },
+  { id:'lo',     name:'Learning Outcomes',        icon:'\uD83C\uDFAF' },
+  { id:'plt',    name:'Proficiency Level Transcript (PLT)', icon:'\uD83D\uDCCA' },
+  { id:'glossary',name:'Glossary',               icon:'\uD83D\uDCD8' },
+  { id:'objective',name:'Objective Questions (SCQ + RA)',  icon:'\uD83C\uDFAF' },
+  { id:'subjective',name:'Subjective Questions (VSA/SA/LA)',icon:'\u270D\uFE0F'},
+  { id:'reason_assertion', name:'Reason-Assertion Descriptive', icon:'\u2696\uFE0F' },
 ];
 
 const ENGLISH_STEPS = [
-  { id:'lo',     name:'Learning Outcomes',        icon:'??' },
-  { id:'plt',    name:'PLT',                      icon:'??' },
-  { id:'objective',name:'Objective Questions (SCQ)',icon:'?' },
-  { id:'subjective',name:'Subjective Questions',  icon:'??' },
+  { id:'lo',     name:'Learning Outcomes',        icon:'\uD83C\uDFAF' },
+  { id:'plt',    name:'PLT',                      icon:'\uD83D\uDCCA' },
+  { id:'objective',name:'Objective Questions (SCQ)',icon:'\uD83C\uDFAF' },
+  { id:'subjective',name:'Subjective Questions',  icon:'\u270D\uFE0F' },
 ];
 
 function getSteps() {
@@ -2489,8 +2465,8 @@ function renderConceptCheckboxes() {
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:9px 12px;border-radius:7px;background:var(--surface2);border:1px solid var(--accent);transition:border-color .15s;">
       <input type="checkbox" class="concept-cb" data-type="chapter" onchange="updateSelectAll()" ${chapterDone ? '' : 'checked'} style="accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;cursor:pointer;">
       <span style="font-size:13px;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
-        <strong style="color:var(--accent);">??</strong>${state.chapterName}
-        ${chapterDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">? Already generated</span>' : ''}
+        <strong style="color:var(--accent);">&#128218;</strong>${state.chapterName}
+        ${chapterDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">&#10003; Already generated</span>' : ''}
         <span style="color:var(--muted);font-size:11px;">(Chapter — prereq questions, terms, learning outcomes, glossary)</span>
       </span>
     </label>`;
@@ -2507,8 +2483,8 @@ function renderConceptCheckboxes() {
           onchange="onNanoCbChange(${si}, ${ni})" ${nanoDone ? '' : 'checked'}
           style="accent-color:var(--accent);width:13px;height:13px;flex-shrink:0;cursor:pointer;">
         <span style="font-size:12px;color:var(--text2);display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
-          ?? ${nc}
-          ${nanoDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">? Done</span>' : ''}
+          &#128313; ${nc}
+          ${nanoDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">&#10003; Done</span>' : ''}
         </span>
       </label>`;
     }).join('');
@@ -2521,7 +2497,7 @@ function renderConceptCheckboxes() {
           style="accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;cursor:pointer;">
         <span style="font-size:13px;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
           <strong style="color:var(--muted);">${si + 1}.</strong>${st.name}
-          ${stDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">? Done</span>' : ''}
+          ${stDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">&#10003; Done</span>' : ''}
           ${nanos.length ? `<span style="color:var(--muted);font-size:11px;">(${nanos.length} nano${nanos.length > 1 ? 's' : ''})</span>` : ''}
         </span>
       </label>
@@ -2625,7 +2601,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const isChapter = item.level === 'chapter';
   const isNano = item.level === 'nano';
   const isRTC = state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType === 'RTC';
-  const scopeLabel = isChapter ? ('?? ' + name) : isNano ? ('?? ' + name) : ('?? ' + name);
+  const scopeLabel = isChapter ? ('\uD83D\uDCD8 ' + name) : isNano ? ('\uD83D\uDD39 ' + name) : ('\uD83D\uDCCC ' + name);
   const conceptKey = makeConceptKey(item);
 
   const fp = (suffix) => {
@@ -2680,12 +2656,12 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   async function runStep(stepId, stepName, stepIcon, shouldRun, fn, timeoutMs) {
     if (!shouldRun) return undefined;
     if (cp.completedSteps.has(stepId)) {
-      logStep(scopeLabel, stepName, stepIcon, 'skipped', 'Already done ?');
+      logStep(scopeLabel, stepName, stepIcon, 'skipped', 'Already done');
       return undefined;
     }
     logStep(scopeLabel, stepName, stepIcon, 'running');
     const safeKey = encodeURIComponent(conceptKey);
-    const retryBtn = `<button onclick="retryAgent(decodeURIComponent('${safeKey}'))" style="margin-left:8px;padding:2px 8px;border-radius:4px;border:1px solid #e74c3c;background:transparent;color:#e74c3c;cursor:pointer;font-size:11px;vertical-align:middle">? Retry this concept</button>`;
+    const retryBtn = `<button onclick="retryAgent(decodeURIComponent('${safeKey}'))" style="margin-left:8px;padding:2px 8px;border-radius:4px;border:1px solid #e74c3c;background:transparent;color:#e74c3c;cursor:pointer;font-size:11px;vertical-align:middle">Retry this concept</button>`;
     const limitMs = timeoutMs || 180000;
     const limitLabel = limitMs >= 60000 ? (Math.round(limitMs / 60000) + ' min') : (limitMs / 1000 + ' sec');
     let timeoutId;
@@ -2787,7 +2763,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
                         ' — ' + combo.cognitiveLevel + ' · ' + combo.difficultyLevel +
                         ' (' + rtcSubType + ')';
 
-      await runStep(stepId, stepLabel, '??', true, async () => {
+      await runStep(stepId, stepLabel, '\u2699\uFE0F', true, async () => {
         // Fill base prompt — {{chapterType}} resolves to rtcSubType (Prose/Poetry/Drama)
         const basePrompt = fillPlaceholders(masterPrompt, name, item, '')
           .replace(/\{\{cognitiveLevel\}\}/gi, combo.cognitiveLevel)
@@ -2879,31 +2855,31 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   }
 
   // COMMERCE GLOSSARY — runs at chapter level before Terms (Commerce ICSE only)
-  await runStep('commerce_glossary', 'Glossary', '??', isCommerce && isChapter && !singleStepMode, async () => {
+  await runStep('commerce_glossary', 'Glossary', '\u2699\uFE0F', isCommerce && isChapter && !singleStepMode, async () => {
     const result = stripMarkdownFormatting(await callClaude(buildGlossaryPrompt(name, baseMasterPrompt), 40000));
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
-    logStep(scopeLabel, 'Glossary', '??', 'done');
+    logStep(scopeLabel, 'Glossary', '\u2699\uFE0F', 'done');
   });
 
   // PREREQ — runs in full mode (chapter only) OR in prereqOnly mode (chapter only)
-  await runStep('prereq', 'Pre-requisites', '??', isChapter && !isEnglish && !isCommerce && (!singleStepMode || prereqOnly), async () => {
+  await runStep('prereq', 'Pre-requisites', '\u2699\uFE0F', isChapter && !isEnglish && !isCommerce && (!singleStepMode || prereqOnly), async () => {
     const result = await callClaude(buildPrereqPrompt(name, baseMasterPrompt), 40000);
     saveFile(ch + '/' + ch + '/' + ch + '_Prerequisites.json', result);
-    logStep(scopeLabel, 'Pre-requisites', '??', 'done', countLines(result) + ' lines');
+    logStep(scopeLabel, 'Pre-requisites', '\u2699\uFE0F', 'done', countLines(result) + ' lines');
   });
 
   // TERMS — skipped for English, single-step modes, and GeoHistCivICSE subtopic Case B
-  await runStep('terms', 'Terms and Definition', '??', !singleStepMode && !isEnglish && !isGeoSubtopicCaseB, async () => {
+  await runStep('terms', 'Terms and Definition', '\u2699\uFE0F', !singleStepMode && !isEnglish && !isGeoSubtopicCaseB, async () => {
     const result = stripMarkdownFormatting(await callClaude(buildTermsPrompt(name, item, baseMasterPrompt), 40000));
     saveFile(fp('Terms.txt'), result);
-    logStep(scopeLabel, 'Terms and Definition', '??', 'done');
+    logStep(scopeLabel, 'Terms and Definition', '\u2699\uFE0F', 'done');
   });
 
   // LEARNING OUTCOMES — capture for PLT; skipped in single-step modes and GeoHistCivICSE subtopic Case B
-  const loRes = await runStep('lo', 'Learning Outcomes', '??', !singleStepMode && !isGeoSubtopicCaseB, async () => {
+  const loRes = await runStep('lo', 'Learning Outcomes', '\u2699\uFE0F', !singleStepMode && !isGeoSubtopicCaseB, async () => {
     const result = stripMarkdownFormatting(await callClaude(buildLOPrompt(name, item, baseMasterPrompt), 40000));
     saveFile(fp('LO.txt'), result);
-    logStep(scopeLabel, 'Learning Outcomes', '??', 'done');
+    logStep(scopeLabel, 'Learning Outcomes', '\u2699\uFE0F', 'done');
     return result;
   });
   if (loRes !== undefined) { loResult = loRes; cp.loResult = loResult; }
@@ -2912,26 +2888,26 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // In PLT-only mode, also require that there is actually an LO available for this concept
   const pltHasLO = !pltOnly || !!loResult;
   const doPLT = pltHasLO && !isEnglish && !isGeoSubtopicCaseB && !questionsOnly && !prereqOnly && !glossaryOnly && (isNano || pltOnly || (!singleStepMode && (isChapter || item.level === 'subtopic')));
-  await runStep('plt', 'PLT', '??', doPLT, async () => {
+  await runStep('plt', 'PLT', '\u2699\uFE0F', doPLT, async () => {
     const loLines = (loResult || '').split('\n').filter(l => /LO\d+|^\s*\d+[\.\)]/i.test(l.trim()));
     const loCount = loLines.length || 10;
     const result = stripMarkdownFormatting(await callClaude(buildPLTPrompt(name, item, baseMasterPrompt, loResult), 40000));
     saveFile(fp('PLT.txt'), result);
-    logStep(scopeLabel, 'PLT', '??', 'done', loCount + ' LOs covered');
+    logStep(scopeLabel, 'PLT', '\u2699\uFE0F', 'done', loCount + ' LOs covered');
   });
 
   // GLOSSARY — runs in full mode (chapter only) OR in glossaryOnly mode (chapter only)
   const hasGlossarySection = !!extractSection(baseMasterPrompt, 'GLOSSARY_CREATION_PROMPT');
-  await runStep('glossary', 'Glossary', '??', isChapter && !isEnglish && !isCommerce && hasGlossarySection && (!singleStepMode || glossaryOnly), async () => {
+  await runStep('glossary', 'Glossary', '\u2699\uFE0F', isChapter && !isEnglish && !isCommerce && hasGlossarySection && (!singleStepMode || glossaryOnly), async () => {
     const result = stripMarkdownFormatting(await callClaude(buildGlossaryPrompt(name, baseMasterPrompt), 40000));
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
-    logStep(scopeLabel, 'Glossary', '??', 'done');
+    logStep(scopeLabel, 'Glossary', '\u2699\uFE0F', 'done');
   });
 
   // OBJECTIVE — skipped for GeoHistCivICSE subtopic Case B only
   const isEnglishCBSE = state.subject === 'English' && state.curriculum === 'CBSE';
   const doObjectiveHere = doObjective && !isGeoSubtopicCaseB;
-  const objQ = await runStep('objective', 'Objective Questions', '?', doObjectiveHere, async () => {
+  const objQ = await runStep('objective', 'Objective Questions', '\uD83C\uDFAF', doObjectiveHere, async () => {
     const includeRA = !isNano;
     const result = isCommerce
       ? await callClaude(buildCommerceObjectivePrompt(name, item, masterPrompt, loResult), 40000)
@@ -2955,7 +2931,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     }
     saveFile(fp('Objective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
-    logStep(scopeLabel, 'Objective Questions', '?', 'done', qCount + ' questions');
+    logStep(scopeLabel, 'Objective Questions', '\uD83C\uDFAF', 'done', qCount + ' questions');
     return qCount;
   });
   if (objQ !== undefined) { addedQ += objQ; cp.totalQ += objQ; }
@@ -2963,7 +2939,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // SUBJECTIVE — skipped for GeoHistCivICSE nanos; Case B subtopic uses aggregated nano LOs
   const doSubjectiveHere = doSubjective && !isGeoNano && !isCommerce;
   const shouldRunSubj = isGeoSubtopicCaseB ? doSubjective : doSubjectiveHere;
-  const subjQ = await runStep('subjective', 'Subjective Questions', '??', shouldRunSubj, async () => {
+  const subjQ = await runStep('subjective', 'Subjective Questions', '\u2699\uFE0F', shouldRunSubj, async () => {
     let subjLoText = loResult;
     if (isGeoSubtopicCaseB) {
       const nanoLOs = (item.nanoConcepts || []).map(nc => {
@@ -3030,12 +3006,12 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       saveFile(fp('Subjective.json'), JSON.stringify(normalized, null, 2));
     }
     const qCount = normalized.length;
-    logStep(scopeLabel, 'Subjective Questions', '??', 'done', qCount + ' questions');
+    logStep(scopeLabel, 'Subjective Questions', '\u2699\uFE0F', 'done', qCount + ' questions');
     return qCount;
   }, 600000); // 10-minute timeout — subjective is the heaviest step under parallel load
   if (subjQ !== undefined) { addedQ += subjQ; cp.totalQ += subjQ; }
 
-  // REASON-ASSERTION DESCRIPTIVE ??? Mathematics / Chemistry / Physics CBSE, Biology ICSE, Social CBSE
+  // REASON-ASSERTION DESCRIPTIVE: Mathematics / Chemistry / Physics CBSE, Biology ICSE, Social CBSE
   const isMathCBSERAD = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
   const isChemCBSERAD = state.subject === 'Chemistry' && state.curriculum === 'CBSE';
   const isPhysCBSERAD = state.subject === 'Physics' && state.curriculum === 'CBSE';
@@ -3043,7 +3019,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const isSocialCBSERAD = state.subject === 'Social' && state.curriculum === 'CBSE';
   const hasRADInput = !!(state.radMetadata && state.radMetadata.trim());
   const doRAD = (isMathCBSERAD || isChemCBSERAD || isPhysCBSERAD || isBioICSERAD || isSocialCBSERAD) && (hasRADInput || isRADOnly);
-  const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '??????',
+  const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '\u2696\uFE0F',
     doRAD || ((isMathCBSERAD || isChemCBSERAD || isPhysCBSERAD || isBioICSERAD || isSocialCBSERAD) && isRADOnly), async () => {
     const radLoText = (state.radLOText || state.globalLOText || '').trim() || loResult;
     const radTotal = parseRADMetadata().length;
@@ -3061,7 +3037,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       throw new Error('RAD returned ' + qCount + ' questions, expected ' + radTotal + '. Click Retry.');
     }
     saveFile(fp('ReasonAssertion.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
-    logStep(scopeLabel, 'Reason-Assertion Descriptive', '??????', 'done', qCount + ' questions');
+    logStep(scopeLabel, 'Reason-Assertion Descriptive', '\u2696\uFE0F', 'done', qCount + ' questions');
     return qCount;
   });
   if (raQ !== undefined) { addedQ += raQ; cp.totalQ += raQ; }
@@ -3069,36 +3045,36 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // MTF SCQ — Biology ICSE only
   const isBioICSE = state.subject === 'Biology' && state.curriculum === 'ICSE';
   const mtfLO = (state.mtfLOText || '').trim() || loResult || '';
-  const mtfScqQ = await runStep('mtf_scq', 'MTF SCQ', '??',
+  const mtfScqQ = await runStep('mtf_scq', 'MTF SCQ', '\u2699\uFE0F',
     isBioICSE && isMTFScqOnly, async () => {
     const rawResult = await callClaude(buildMTFObjectivePrompt(name, item, mtfLO), 40000, undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('MTF_SCQ.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
-    logStep(scopeLabel, 'MTF SCQ', '??', 'done', qCount + ' questions');
+    logStep(scopeLabel, 'MTF SCQ', '\u2699\uFE0F', 'done', qCount + ' questions');
     return qCount;
   });
   if (mtfScqQ !== undefined) { addedQ += mtfScqQ; cp.totalQ += mtfScqQ; }
 
   // MTF Subjective — Biology ICSE only
-  const mtfSubQ = await runStep('mtf_sub', 'MTF Subjective', '??',
+  const mtfSubQ = await runStep('mtf_sub', 'MTF Subjective', '\u2699\uFE0F',
     isBioICSE && isMTFSubOnly, async () => {
     const rawResult = await callClaude(buildMTFSubjectivePrompt(name, item, mtfLO), 40000, undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('MTF_Subjective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
-    logStep(scopeLabel, 'MTF Subjective', '??', 'done', qCount + ' questions');
+    logStep(scopeLabel, 'MTF Subjective', '\u2699\uFE0F', 'done', qCount + ' questions');
     return qCount;
   });
   if (mtfSubQ !== undefined) { addedQ += mtfSubQ; cp.totalQ += mtfSubQ; }
 
-  const mtfMultiQ = await runStep('mtf_multi', 'MTF Multistatement SCQ', '??',
+  const mtfMultiQ = await runStep('mtf_multi', 'MTF Multistatement SCQ', '\u2699\uFE0F',
     isBioICSE && isMTFMultiOnly, async () => {
     const rawResult = await callClaude(buildMTFMultiStatementPrompt(name, item, mtfLO), 40000, undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('MTF_MultiStatement.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
-    logStep(scopeLabel, 'MTF Multistatement SCQ', '??', 'done', qCount + ' questions');
+    logStep(scopeLabel, 'MTF Multistatement SCQ', '\u2699\uFE0F', 'done', qCount + ' questions');
     return qCount;
   });
   if (mtfMultiQ !== undefined) { addedQ += mtfMultiQ; cp.totalQ += mtfMultiQ; }
@@ -3284,10 +3260,10 @@ async function startGeneration() {
 
   if (failCount > 0) {
     document.getElementById('agentStatusBar').textContent =
-      '? ' + doneCount + ' done  |  ? ' + failCount + ' failed — use ? Retry buttons above';
+      'Done: ' + doneCount + '  |  Failed: ' + failCount + ' - use Retry buttons above';
   } else {
     document.getElementById('agentStatusBar').textContent =
-      '? All ' + doneCount + ' concepts completed successfully!';
+      'All ' + doneCount + ' concepts completed successfully!';
   }
 
   const hasAnyFiles = Object.keys(state.generatedFiles).length > 0;
@@ -3341,38 +3317,38 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
 
     // Prereq
     if (isChapter && !isEnglish && (!singleStepMode || prereqOnly))
-      expected.push({ path: ch + '/' + ch + '/' + ch + '_Prerequisites.json', label: scopeLabel + ' ? Prerequisites', item });
+      expected.push({ path: ch + '/' + ch + '/' + ch + '_Prerequisites.json', label: scopeLabel + ' - Prerequisites', item });
 
     // Terms
     if (!singleStepMode && !isEnglish && !isGeoSubtopicCaseB)
-      expected.push({ path: fp('Terms.txt'), label: scopeLabel + ' ? Terms & Definitions', item });
+      expected.push({ path: fp('Terms.txt'), label: scopeLabel + ' - Terms & Definitions', item });
 
     // LO
     if (!singleStepMode && !isGeoSubtopicCaseB)
-      expected.push({ path: fp('LO.txt'), label: scopeLabel + ' ? Learning Outcomes', item });
+      expected.push({ path: fp('LO.txt'), label: scopeLabel + ' - Learning Outcomes', item });
 
     // PLT
     const pltHasLO = !pltOnly || !!(getLOForConcept(item.name));
     const doPLT = pltHasLO && !isEnglish && !isGeoSubtopicCaseB && !questionsOnly && !prereqOnly && !glossaryOnly && (isNano || pltOnly || (!singleStepMode && (isChapter || item.level === 'subtopic')));
     if (doPLT)
-      expected.push({ path: fp('PLT.txt'), label: scopeLabel + ' ? PLT', item });
+      expected.push({ path: fp('PLT.txt'), label: scopeLabel + ' - PLT', item });
 
     // Glossary
     if (isChapter && !isEnglish && hasGlossarySection && (!singleStepMode || glossaryOnly))
-      expected.push({ path: ch + '/' + ch + '/' + ch + '_Glossary.txt', label: scopeLabel + ' ? Glossary', item });
+      expected.push({ path: ch + '/' + ch + '/' + ch + '_Glossary.txt', label: scopeLabel + ' - Glossary', item });
 
     // Objective
     const doObjFinal = doObjective && !isGeoSubtopicCaseB;
     if (doObjFinal)
-      expected.push({ path: fp('Objective.json'), label: scopeLabel + ' ? Objective Questions', item });
+      expected.push({ path: fp('Objective.json'), label: scopeLabel + ' - Objective Questions', item });
 
     if (state.subject === 'Biology' && state.curriculum === 'ICSE' && state.genMode === 'questions') {
       if (state.questionsType === 'mtfScq')
-        expected.push({ path: fp('MTF_SCQ.json'), label: scopeLabel + ' ? MTF SCQ', item });
+        expected.push({ path: fp('MTF_SCQ.json'), label: scopeLabel + ' - MTF SCQ', item });
       if (state.questionsType === 'mtfSub')
-        expected.push({ path: fp('MTF_Subjective.json'), label: scopeLabel + ' ? MTF Subjective', item });
+        expected.push({ path: fp('MTF_Subjective.json'), label: scopeLabel + ' - MTF Subjective', item });
       if (state.questionsType === 'mtfMulti')
-        expected.push({ path: fp('MTF_MultiStatement.json'), label: scopeLabel + ' ? Multistatement SCQ', item });
+        expected.push({ path: fp('MTF_MultiStatement.json'), label: scopeLabel + ' - Multistatement SCQ', item });
     }
 
     // Subjective
@@ -3389,16 +3365,16 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
                           state.generatedFiles[laPath]  !== undefined;
         if (!anyExists) {
           // Use VSA as the representative expected path so the missing-check has a single anchor to retry against
-          expected.push({ path: vsaPath, label: scopeLabel + ' ? Subjective Questions (VSA/SA/LA)', item });
+          expected.push({ path: vsaPath, label: scopeLabel + ' - Subjective Questions (VSA/SA/LA)', item });
         }
       } else {
-        expected.push({ path: fp('Subjective.json'), label: scopeLabel + ' ? Subjective Questions', item });
+        expected.push({ path: fp('Subjective.json'), label: scopeLabel + ' - Subjective Questions', item });
       }
     }
 
     // RAD
     if (isRADExpected && (!isMetaSkip(state.radMetadata) || isRADOnly))
-      expected.push({ path: fp('ReasonAssertion.json'), label: scopeLabel + ' ? Reason-Assertion', item });
+      expected.push({ path: fp('ReasonAssertion.json'), label: scopeLabel + ' - Reason-Assertion', item });
 
     // RTC
     if (isRTCMode) {
@@ -3410,7 +3386,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
       const rtcTotal = rtcLines.length > 0 ? rtcLines.length : 5;
       for (let i = 1; i <= rtcTotal; i++) {
         const lbl = rtcLines[i-1] || ('Set ' + i);
-        expected.push({ path: fp('RTC_' + i + '.txt'), label: scopeLabel + ' ? RTC Set ' + i + ' — ' + lbl, item });
+        expected.push({ path: fp('RTC_' + i + '.txt'), label: scopeLabel + ' - RTC Set ' + i + ' — ' + lbl, item });
       }
     }
   }
@@ -3437,7 +3413,7 @@ async function checkMissingFiles(scopeItems, masterPrompt, isEnglish, ch) {
     const listHtml = missing.map(e => `<li style="margin:4px 0;font-size:13px;color:var(--text2);">${e.label}</li>`).join('');
 
     box.innerHTML = `
-      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">?? ${missing.length} file${missing.length !== 1 ? 's' : ''} not generated</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">&#9888;&#65039; ${missing.length} file${missing.length !== 1 ? 's' : ''} not generated</div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:14px;">The following files were expected but could not be generated. Would you like to retry generating only these missing files?</div>
       <ul style="margin:0 0 20px 18px;padding:0;">${listHtml}</ul>
       <div style="display:flex;gap:12px;justify-content:flex-end;">
@@ -3481,7 +3457,7 @@ async function checkMissingFiles(scopeItems, masterPrompt, isEnglish, ch) {
       if (stillMissing.length > 0) {
         await checkMissingFiles(missingItems, masterPrompt, isEnglish, ch);
       } else {
-        showToast('? All missing files have been generated! You can now download everything.');
+        showToast('All missing files have been generated! You can now download everything.');
       }
       resolve();
     };
@@ -4662,7 +4638,7 @@ ${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}${loText ? 'Learning Outco
 QUESTION SPECIFICATIONS (one question per line):
 ${specsText}
 
-RULES FOR MULTISTATEMENT SCQ (BIOLOGY ICSE â€” MANDATORY):
+RULES FOR MULTISTATEMENT SCQ (BIOLOGY ICSE — MANDATORY):
 - Each question must present 4 statements labelled P, Q, R and S.
 - Exactly one option string must be correct and it must be one of the 4 pair options.
 - The question must ask the learner to identify the correct statements or correct combination from the statements given.
@@ -4752,10 +4728,10 @@ function renderDownloadPage() {
     const ext = name.split('.').pop();
     const color = ext === 'json' ? 'var(--warn)' : 'var(--success)';
     return `<div class="dl-card">
-      <div class="dl-name" style="color:${color}">?? ${name}</div>
+      <div class="dl-name" style="color:${color}">&#128196; ${name}</div>
       <div class="dl-size">${path.replace(name,'').slice(0,-1)}</div>
       <div class="dl-size">${sizeStr}</div>
-      <button class="btn btn-sm btn-secondary" style="margin-top:4px" onclick="downloadFile('${path}')">? Download</button>
+      <button class="btn btn-sm btn-secondary" style="margin-top:4px" onclick="downloadFile('${path}')">&#128229; Download</button>
     </div>`;
   }).join('');
 }
@@ -4780,9 +4756,9 @@ function renderTree(node, depth) {
     if (v === null) {
       const ext = k.split('.').pop();
       const cls = ext === 'json' ? 'ft-json' : 'ft-txt';
-      html += `${pad}<span class="${cls}">?? ${k}</span>\n`;
+      html += `${pad}<span class="${cls}">&#128196; ${k}</span>\n`;
     } else {
-      html += `${pad}<span class="ft-folder">?? ${k}/</span>\n`;
+      html += `${pad}<span class="ft-folder">&#128193; ${k}/</span>\n`;
       html += renderTree(v, depth+1);
     }
   });
@@ -4817,7 +4793,7 @@ async function downloadAll() {
   }
 
   const btn = document.querySelector('[onclick="downloadAll()"]');
-  if (btn) { btn.disabled = true; btn.textContent = '? Building ZIP…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Building ZIP...'; }
 
   try {
     const zip = new JSZip();
@@ -4864,7 +4840,7 @@ async function downloadAll() {
       </div>`;
     document.querySelector('#page-5 .btn-row').after(prompt);
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '? Download All as ZIP'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Download All as ZIP'; }
   }
 }
 
@@ -4926,7 +4902,7 @@ function loadLOsFromFolder(files) {
     reader.onload = (ev) => {
       state.providedLOs[conceptName] = ev.target.result;
       loaded++;
-      preview.innerHTML += `<div>? ${conceptName}</div>`;
+      preview.innerHTML += `<div>&#10003; ${conceptName}</div>`;
       if (loaded === loFiles.length) {
         const isPLTOnly = state.genMode === 'plt';
         document.getElementById('loFolderStatus').textContent =
@@ -4954,7 +4930,7 @@ function getLOForConcept(conceptName) {
 
 function generateMore() {
   goToPage(4);
-  // Re-render checkboxes — already-generated concepts get unchecked + "? Already generated" badge
+  // Re-render checkboxes — already-generated concepts get unchecked + "Already generated" badge
   renderConceptCheckboxes();
   updateSelectAll();
   document.getElementById('startGenBtn').style.display = '';
