@@ -3003,7 +3003,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       ? await callClaude(buildCommerceObjectivePrompt(name, item, masterPrompt, loResult), 40000)
       : await callClaude(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 40000);
     let parsed = parseJSON(result);
-    assertGeneratedQuestionCounts(parsed, state.objMetadata, objectiveMetaTypes, 'Objective');
+    parsed = assertGeneratedQuestionCounts(parsed, state.objMetadata, objectiveMetaTypes, 'Objective');
     // Rotate correct answer position round-robin across all SCQ questions (pos 0,1,2,3,0,1,…)
     if (Array.isArray(parsed)) {
       let rotIdx = 0;
@@ -3054,8 +3054,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     }
     // Claude continues from the '[' prefill, so prepend it back before parsing.
     const result = '[' + (rawResult || '');
-    const parsed = parseJSON(result);
-    assertGeneratedQuestionCounts(parsed, state.subjMetadata, SUBJECTIVE_META_TYPES, 'Subjective');
+    let parsed = parseJSON(result);
+    parsed = assertGeneratedQuestionCounts(parsed, state.subjMetadata, SUBJECTIVE_META_TYPES, 'Subjective');
     if (!Array.isArray(parsed) || parsed.length === 0) {
       const preview = (rawResult || '').substring(0, 500);
       throw new Error('Subjective returned 0 questions — raw response preview: ' + preview + ' — click Retry');
@@ -3358,6 +3358,12 @@ async function startGeneration() {
     alert('Please select at least one concept to generate.');
     return;
   }
+  const metadataError = getQuestionGenerationMetadataError();
+  if (metadataError) {
+    alert(metadataError);
+    return;
+  }
+
   document.getElementById('startGenBtn').style.display = 'none';
   document.getElementById('genError').style.display = 'none';
   document.getElementById('progressTrack').innerHTML = '';
@@ -4264,13 +4270,10 @@ Generate the output in the following JSON format:
 
   if (isEnglishCBSEGrammar) {
     const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
-    const grammarCounts = (countsText || '').trim() || [
-      '[Number of Understanding Easy Questions]: VSA-FIB: 2; VSA: 2',
-      '[Number of Understanding Medium Questions]: VSA-FIB: 2; VSA: 1',
-      '[Number of Understanding Hard Questions]: VSA-FIB: 2; VSA: 1',
-      '[Number of Application Medium Questions]: VSA-FIB: 2; VSA: 1',
-      '[Number of Application Hard Questions]: VSA-FIB: 2; VSA: 1'
-    ].join('\n');
+    const grammarCounts = (countsText || '').trim();
+    if (!grammarCounts) {
+      throw new Error('Subjective metadata is required for English CBSE Grammar. Enter explicit Page 3 counts such as VSA-FIB:2; VSA:2.');
+    }
     return `Act as an experienced English teacher who has expertise in creating descriptive grammar questions.
 
 You are tasked with generating academic descriptive grammar questions suitable for CBSE curriculum students following NCERT textbook standards. Your goal is to create well-structured grammar questions that test students' understanding of the specified topic at the given difficulty level and cognitive level.
@@ -4671,12 +4674,13 @@ function parseRADMetadata() {
   const lines = (state.radMetadata || '').split('\n').map(l => l.trim()).filter(Boolean);
   const specs = [];
   for (const line of lines) {
+    const radCounts = parseQuestionTypeCounts(line, RAD_META_TYPES);
+    const count = Object.values(radCounts).reduce((sum, n) => sum + n, 0);
+    if (!count) continue;
     const cogMatch = line.match(/\b(Understanding|Application|Factual|Analysing|Evaluating)\b/i);
     const difMatch = line.match(/\b(Easy|Medium|Hard)\b/i);
-    const countMatch = line.match(/\b(\d+)\b/);
-    const count = countMatch ? parseInt(countMatch[1], 10) : 1;
     const entry = {
-      cognitiveLevel: cogMatch ? capitalize(cogMatch[1]) : 'Understanding',
+      cognitiveLevel: cogMatch ? capitalize(cogMatch[1]) : 'Application',
       difficultyLevel: difMatch ? capitalize(difMatch[1]) : 'Medium'
     };
     for (let i = 0; i < count; i++) specs.push(entry);
@@ -5133,6 +5137,30 @@ function metadataHasAnyQuestionType(text, allowedTypes) {
   return Object.values(parseQuestionTypeCounts(text, allowedTypes)).some(n => n > 0);
 }
 
+function getQuestionGenerationMetadataError() {
+  if (state.genMode !== 'questions') return '';
+  const objectiveMetaTypes = getObjectiveMetaTypes();
+  const hasObjective = metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes);
+  const hasSubjective = metadataHasAnyQuestionType(state.subjMetadata, SUBJECTIVE_META_TYPES);
+  const hasRAD = metadataHasAnyQuestionType(state.radMetadata, RAD_META_TYPES);
+  if (isSocialCBSERADOnlySubject()) {
+    return hasRAD ? '' : 'For Social CBSE, enter explicit RAD counts on Page 3 before generating, for example: Application Medium Questions: RA:4.';
+  }
+  if (state.questionsType === 'objective') {
+    return hasObjective ? '' : 'Objective Only needs explicit Objective metadata on Page 3, for example: Understanding Easy Questions: SCQ:4.';
+  }
+  if (state.questionsType === 'subjective') {
+    return hasSubjective ? '' : 'Subjective Only needs explicit Subjective metadata on Page 3, for example: Understanding Easy Questions: VSA:2; SA:1.';
+  }
+  if (state.questionsType === 'rad') {
+    return hasRAD ? '' : 'RAD Only needs explicit RAD metadata on Page 3, for example: Application Medium Questions: RA:4.';
+  }
+  if (state.questionsType === 'both' && !hasObjective && !hasSubjective) {
+    return 'Enter explicit Objective and/or Subjective counts on Page 3 before generating questions. Empty notepads are treated as zero.';
+  }
+  return '';
+}
+
 function generatedQuestionTypeKeys(q) {
   const keys = new Set();
   const qt = normalizeMetaType(q && q.questionType);
@@ -5151,25 +5179,47 @@ function generatedQuestionTypeKeys(q) {
   return keys;
 }
 
+function preferredGeneratedQuestionTypeKey(q) {
+  const keys = generatedQuestionTypeKeys(q);
+  const specialPriority = [
+    'PASSAGE BASED FIB', 'NAME THE FOLLOWING', 'ARRANGE IN CORRECT ORDER',
+    'CHOOSE ODD ONE OUT', 'DIFFERENTIATE', 'DISTINGUISH', 'LOCATION',
+    'MTF', 'FIB', 'T/F', 'TF', 'RA', 'RAD'
+  ];
+  for (const key of specialPriority) if (keys.has(key)) return key;
+  for (const key of ['SCQ', 'VSA', 'SA', 'LA', 'MSQ', 'OA', 'CS', 'DIA', 'CALC', 'DEF', 'DIFF', 'LIST', 'APPLY', 'EVAL']) {
+    if (keys.has(key)) return key;
+  }
+  return '';
+}
+
 function assertGeneratedQuestionCounts(items, metadataText, allowedTypes, label) {
   const expected = parseQuestionTypeCounts(metadataText, allowedTypes);
   const expectedKeys = Object.keys(expected);
   if (!expectedKeys.length) throw new Error(label + ' metadata has no explicit supported question type/count. Click Retry after updating Page 3 metadata.');
   if (!Array.isArray(items)) throw new Error(label + ' did not return a JSON array. Click Retry.');
   const actual = Object.fromEntries(expectedKeys.map(k => [k, 0]));
+  const selected = [];
   const unexpected = [];
+
   items.forEach((q, idx) => {
-    const keys = generatedQuestionTypeKeys(q);
-    let matched = expectedKeys.filter(k => keys.has(k));
-    const specialMatched = matched.filter(k => !['SCQ', 'RA', 'VSA', 'SA', 'LA'].includes(k));
-    if (specialMatched.length) matched = specialMatched;
-    if (!matched.length) unexpected.push((q && q.questionType) || (q && q.question_type_tag) || ('item ' + (idx + 1)));
-    matched.forEach(k => actual[k]++);
+    const key = preferredGeneratedQuestionTypeKey(q);
+    if (!expectedKeys.includes(key)) {
+      unexpected.push((q && q.question_type_tag) || (q && q.questionType) || ('item ' + (idx + 1)));
+      return;
+    }
+    if (actual[key] < expected[key]) {
+      actual[key]++;
+      selected.push(q);
+    }
   });
-  const mismatches = expectedKeys.filter(k => actual[k] !== expected[k]).map(k => k + ': expected ' + expected[k] + ', got ' + actual[k]);
-  if (unexpected.length || mismatches.length) {
-    throw new Error(label + ' output does not match Page 3 metadata. ' + mismatches.concat(unexpected.length ? ['unexpected types: ' + unexpected.join(', ')] : []).join('; ') + '. Click Retry.');
+
+  const shortages = expectedKeys.filter(k => actual[k] < expected[k]).map(k => k + ': expected ' + expected[k] + ', got ' + actual[k]);
+  if (shortages.length) {
+    const unexpectedText = unexpected.length ? '; ignored unexpected/extra types: ' + unexpected.slice(0, 8).join(', ') : '';
+    throw new Error(label + ' output is short against Page 3 metadata. ' + shortages.join('; ') + unexpectedText + '. Click Retry.');
   }
+  return selected;
 }
 
 function parseJSON(text) {
