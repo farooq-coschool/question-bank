@@ -850,8 +850,8 @@
         </div>
 
         <div id="subjectiveMetadataBlock" style="margin-bottom:4px">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">&#9997;&#65039; Subjective Questions (VSA / SA / LA)</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Leave empty to skip Subjective generation (count = 0).</div>
+          <div id="subjMetadataTitle" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">&#9997;&#65039; Subjective Questions (VSA / SA / LA)</div>
+          <div id="subjMetadataHint" style="font-size:11px;color:var(--muted);margin-bottom:8px">Leave empty to skip Subjective generation (count = 0).</div>
           <div style="position:relative">
             <div style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;border-radius:10px;background:repeating-linear-gradient(transparent,transparent 27px,rgba(99,102,241,0.08) 28px);z-index:0"></div>
             <textarea id="subjMetadataTextarea"
@@ -2279,6 +2279,16 @@ function renderCountsTable() {
   const objEl  = document.getElementById('objMetadataTextarea');
   const subjEl = document.getElementById('subjMetadataTextarea');
   const radEl  = document.getElementById('radMetadataTextarea');
+  const subjTitle = document.getElementById('subjMetadataTitle');
+  const subjHint = document.getElementById('subjMetadataHint');
+  const isEnglish = state.subject === 'English';
+  if (subjTitle) subjTitle.innerHTML = isEnglish ? '&#9997;&#65039; Subjective Questions (count only)' : '&#9997;&#65039; Subjective Questions (VSA / SA / LA)';
+  if (subjHint) subjHint.textContent = isEnglish
+    ? 'For English, enter only cognitive level + difficulty + count. Example: Understanding Easy Questions: 2. Leave empty to skip.'
+    : 'Leave empty to skip Subjective generation (count = 0).';
+  if (subjEl) subjEl.placeholder = isEnglish
+    ? 'e.g. Understanding Easy Questions: 2\nUnderstanding Medium Questions: 2\nApplication Hard Questions: 1'
+    : 'e.g. Generate 2 VSA, 2 SA, and 1 LA question. VSA should be factual, SA application-based, LA from the subtopic on photosynthesis.';
   const isSocialRADOnly = isSocialCBSERADOnlySubject();
 
   const objWrap = document.getElementById('objectiveMetadataBlock');
@@ -2784,7 +2794,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const isSocialRADOnly = isSocialCBSERADOnlySubject();
   const objectiveMetaTypes = getObjectiveMetaTypes();
   const hasObjectiveMeta = metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes);
-  const hasSubjectiveMeta = metadataHasAnyQuestionType(state.subjMetadata, SUBJECTIVE_META_TYPES);
+  const hasSubjectiveMeta = hasSubjectiveMetadata();
   const doObjective  = !isSocialRADOnly && !isEnglishCBSEGrammar && (!singleStepMode || (questionsOnly && state.questionsType !== 'subjective' && !isRADOnly && !isMTFMode)) && hasObjectiveMeta;
   const doSubjective = !isSocialRADOnly && (!singleStepMode || (questionsOnly && state.questionsType !== 'objective' && !isRADOnly && !isMTFMode)) && hasSubjectiveMeta;
 
@@ -3049,8 +3059,9 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       saveFile(fp('Subjective.txt'), textResult);
       const legacyPath = fp('Subjective.json');
       if (state.generatedFiles[legacyPath] !== undefined) delete state.generatedFiles[legacyPath];
-      logStep(scopeLabel, 'Subjective Questions', '\u2699\uFE0F', 'done', '1 passage set');
-      return 1;
+      const expectedEnglishTextCount = getEnglishSubjectiveExpectedTotal(state.subjMetadata) || 1;
+      logStep(scopeLabel, 'Subjective Questions', '\u2699\uFE0F', 'done', expectedEnglishTextCount + ' requested set(s)');
+      return expectedEnglishTextCount;
     }
     // Claude continues from the '[' prefill, so prepend it back before parsing.
     const parseSubjectiveResult = (txt) => {
@@ -3059,17 +3070,20 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       return parseJSON(candidate);
     };
     let parsed = parseSubjectiveResult(rawResult);
+    const validateSubjectiveCounts = (items) => (state.subject === 'English' && hasEnglishSubjectiveCountMetadata(state.subjMetadata))
+      ? assertGeneratedEnglishSubjectiveCounts(items, state.subjMetadata, 'Subjective')
+      : assertGeneratedQuestionCounts(items, state.subjMetadata, SUBJECTIVE_META_TYPES, 'Subjective');
     try {
-      parsed = assertGeneratedQuestionCounts(parsed, state.subjMetadata, SUBJECTIVE_META_TYPES, 'Subjective');
+      parsed = validateSubjectiveCounts(parsed);
     } catch (countErr) {
-      if (!isEnglishICSEGrammar) throw countErr;
+      if (!isEnglishICSEGrammar && !isEnglishCBSEGrammar) throw countErr;
       const retryPrompt = subjectivePrompt + `
 
-IMPORTANT RETRY FEEDBACK: The previous English ICSE Grammar subjective output failed validation: ${countErr.message}
-Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. For FIB requests, return questionType "SA" with question_type_tag "FIB". For Passage Based FIB requests, return questionType "SA" with question_type_tag "Passage Based FIB". For plain SA requests, return questionType "SA" with question_type_tag "" or omit question_type_tag. Return exactly the requested counts, no extra types, no markdown.`;
+IMPORTANT RETRY FEEDBACK: The previous English Grammar subjective output failed validation: ${countErr.message}
+Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page 3 metadata is count-only, match cognitiveLevel and difficultyLevel exactly for each requested count and choose only the allowed English Grammar subjective formats from the prompt. If FIB is used, return questionType "SA" with question_type_tag "FIB". If Passage Based FIB is used, return questionType "SA" with question_type_tag "Passage Based FIB". For plain SA, return questionType "SA" with question_type_tag "" or omit question_type_tag. Return exactly the requested counts, no extra types, no markdown.`;
       const retryRaw = await callClaude(retryPrompt, 64000, MODELS.SUBJECTIVE, '[');
       parsed = parseSubjectiveResult(retryRaw);
-      parsed = assertGeneratedQuestionCounts(parsed, state.subjMetadata, SUBJECTIVE_META_TYPES, 'Subjective');
+      parsed = validateSubjectiveCounts(parsed);
     }
     if (!Array.isArray(parsed) || parsed.length === 0) {
       const preview = (rawResult || '').substring(0, 500);
@@ -3492,7 +3506,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
   const socialRADOnly = isSocialCBSERADOnlySubject();
   const objectiveMetaTypes = getObjectiveMetaTypes();
   const doObjective   = !socialRADOnly && !isEnglishCBSEGrammar && (state.questionsType === 'both' || state.questionsType === 'objective') && metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes);
-  const doSubjective  = !socialRADOnly && (state.questionsType === 'both' || state.questionsType === 'subjective') && metadataHasAnyQuestionType(state.subjMetadata, SUBJECTIVE_META_TYPES);
+  const doSubjective  = !socialRADOnly && (state.questionsType === 'both' || state.questionsType === 'subjective') && hasSubjectiveMetadata();
   const isRADExpected = isRADSupportedSubject();
   const isRTCMode     = state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType === 'RTC';
   const isGeoHistCivICSE = ['Geography', 'History', 'Civics'].includes(state.subject) && state.curriculum === 'ICSE';
@@ -4287,8 +4301,9 @@ Generate the output in the following JSON format:
     const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
     const grammarCounts = (countsText || '').trim();
     if (!grammarCounts) {
-      throw new Error('Subjective metadata is required for English CBSE Grammar. Enter explicit Page 3 counts such as VSA-FIB:2; VSA:2.');
+      throw new Error('Subjective metadata is required for English CBSE Grammar. Enter count-only Page 3 metadata such as Understanding Easy Questions: 2.');
     }
+    const countModeInstruction = buildEnglishSubjectiveCountInstruction(grammarCounts);
     return `Act as an experienced English teacher who has expertise in creating descriptive grammar questions.
 
 You are tasked with generating academic descriptive grammar questions suitable for CBSE curriculum students following NCERT textbook standards. Your goal is to create well-structured grammar questions that test students' understanding of the specified topic at the given difficulty level and cognitive level.
@@ -4304,6 +4319,7 @@ METADATA INPUT SPECIFICATIONS:
 [Learning Outcomes]: ${loText || '(Auto-generated in previous step)'}
 [Script]: [Attached]
 ${grammarCounts}
+${countModeInstruction}
 
 QUESTION TYPES and FRAMING RULES:
 1. VSA-FIB (Very Short Answer with fill-in-the-blank format) - 1 mark each
@@ -4456,7 +4472,8 @@ Generate the output in the following JSON format:
   const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
 
   if (isEnglishICSESubjective) {
-    const metadataBlock = `\n\n---\nMETADATA INPUT:\n[Subject]: ${state.subject}\n[Curriculum]: ${state.curriculum}\n[Textbook]: ${state.textbook || 'ICSE'}\n[Grade]: ${state.grade}\n[Literature Type]: ${state.chapterType || 'Prose'}\n[Chapter Name]: ${state.chapterName}\n[Subtopic Name]: ${conceptName}\n${nanoList ? '[Subconcepts]: ' + nanoList + '\n' : ''}[Learning Outcomes]: ${loText || '(Auto-generated in previous step)'}\n[Script]: [Attached]\n${countsText ? countsText + '\n' : ''}${chapterScopeNote(item)}`;
+    const englishCountInstruction = buildEnglishSubjectiveCountInstruction(countsText);
+    const metadataBlock = `\n\n---\nMETADATA INPUT:\n[Subject]: ${state.subject}\n[Curriculum]: ${state.curriculum}\n[Textbook]: ${state.textbook || 'ICSE'}\n[Grade]: ${state.grade}\n[Literature Type]: ${state.chapterType || 'Prose'}\n[Chapter Name]: ${state.chapterName}\n[Subtopic Name]: ${conceptName}\n${nanoList ? '[Subconcepts]: ' + nanoList + '\n' : ''}[Learning Outcomes]: ${loText || '(Auto-generated in previous step)'}\n[Script]: [Attached]\n${countsText ? countsText + '\n' : ''}${englishCountInstruction}${chapterScopeNote(item)}`;
     if (isEnglishICSEGrammarSubjective()) {
       return `${section}${metadataBlock}\n\nReturn ONLY a valid JSON array in the exact JSON format specified above. Do not use markdown code fences, headings, or any text outside the JSON array. All line breaks inside JSON string values must be escaped as \\n, never written as raw line breaks inside quoted strings.`;
     }
@@ -5152,11 +5169,67 @@ function metadataHasAnyQuestionType(text, allowedTypes) {
   return Object.values(parseQuestionTypeCounts(text, allowedTypes)).some(n => n > 0);
 }
 
+function normalizeEnglishCountWord(value) {
+  const v = String(value || '').trim().toLowerCase();
+  return v ? v.charAt(0).toUpperCase() + v.slice(1) : '';
+}
+
+function parseEnglishSubjectiveCountSpecs(text) {
+  const specs = [];
+  if (!text || !text.trim()) return specs;
+  const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const seen = new Set();
+  lines.forEach(line => {
+    const clean = line.replace(/^[\-\*\u2022\s]+/, '').replace(/^\[|\]$/g, '').trim();
+    const cogMatch = clean.match(/\b(Factual|Understanding|Application)\b/i);
+    const diffMatch = clean.match(/\b(Easy|Medium|Hard)\b/i);
+    if (!cogMatch || !diffMatch) return;
+    const countMatch = clean.match(/(?:[:=\-]\s*|\b)(\d+)\s*(?:questions?|sets?)?\s*$/i);
+    if (!countMatch) return;
+    const count = parseInt(countMatch[1], 10);
+    if (!Number.isFinite(count) || count <= 0) return;
+    const cognitiveLevel = normalizeEnglishCountWord(cogMatch[1]);
+    const difficultyLevel = normalizeEnglishCountWord(diffMatch[1]);
+    const key = cognitiveLevel + '|' + difficultyLevel;
+    if (seen.has(key)) {
+      const existing = specs.find(spec => spec.key === key);
+      existing.count += count;
+    } else {
+      seen.add(key);
+      specs.push({ key, cognitiveLevel, difficultyLevel, count });
+    }
+  });
+  return specs;
+}
+
+function hasEnglishSubjectiveCountMetadata(text) {
+  return parseEnglishSubjectiveCountSpecs(text).length > 0;
+}
+
+function hasSubjectiveMetadata() {
+  if (state.subject === 'English') {
+    return hasEnglishSubjectiveCountMetadata(state.subjMetadata) || metadataHasAnyQuestionType(state.subjMetadata, SUBJECTIVE_META_TYPES);
+  }
+  return metadataHasAnyQuestionType(state.subjMetadata, SUBJECTIVE_META_TYPES);
+}
+
+function getEnglishSubjectiveExpectedTotal(text) {
+  return parseEnglishSubjectiveCountSpecs(text).reduce((sum, spec) => sum + spec.count, 0);
+}
+
+function buildEnglishSubjectiveCountInstruction(text) {
+  const specs = parseEnglishSubjectiveCountSpecs(text);
+  if (!specs.length) return '';
+  const lines = specs.map(spec => '- ' + spec.cognitiveLevel + ' ' + spec.difficultyLevel + ': ' + spec.count).join('\n');
+  const total = specs.reduce((sum, spec) => sum + spec.count, 0);
+  return `\nENGLISH SUBJECTIVE COUNT MODE:\nThe Page 3 subjective metadata is count-only. Do not expect VSA, SA, LA, FIB, or Passage Based FIB counts from the user. Generate exactly ${total} subjective item(s)/set(s) in total, distributed by cognitiveLevel and difficultyLevel exactly as follows:\n${lines}\nUse only the question formats and rules allowed by the selected English prompt. Do not generate any extra cognitive/difficulty combination.\n`;
+}
+
 function getQuestionGenerationMetadataError() {
   if (state.genMode !== 'questions') return '';
   const objectiveMetaTypes = getObjectiveMetaTypes();
   const hasObjective = metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes);
-  const hasSubjective = metadataHasAnyQuestionType(state.subjMetadata, SUBJECTIVE_META_TYPES);
+  const hasSubjective = hasSubjectiveMetadata();
   const hasRAD = metadataHasAnyQuestionType(state.radMetadata, RAD_META_TYPES);
   if (isSocialCBSERADOnlySubject()) {
     return hasRAD ? '' : 'For Social CBSE, enter explicit RAD counts on Page 3 before generating, for example: Application Medium Questions: RA:4.';
@@ -5165,7 +5238,9 @@ function getQuestionGenerationMetadataError() {
     return hasObjective ? '' : 'Objective Only needs explicit Objective metadata on Page 3, for example: Understanding Easy Questions: SCQ:4.';
   }
   if (state.questionsType === 'subjective') {
-    return hasSubjective ? '' : 'Subjective Only needs explicit Subjective metadata on Page 3, for example: Understanding Easy Questions: VSA:2; SA:1.';
+    return hasSubjective ? '' : (state.subject === 'English'
+      ? 'Subjective Only needs English count metadata on Page 3, for example: Understanding Easy Questions: 2.'
+      : 'Subjective Only needs explicit Subjective metadata on Page 3, for example: Understanding Easy Questions: VSA:2; SA:1.');
   }
   if (state.questionsType === 'rad') {
     return hasRAD ? '' : 'RAD Only needs explicit RAD metadata on Page 3, for example: Application Medium Questions: RA:4.';
@@ -5208,6 +5283,38 @@ function preferredGeneratedQuestionTypeKey(q) {
   return '';
 }
 
+function normalizeQuestionLevel(value) {
+  return normalizeEnglishCountWord(String(value || '').replace(/[^A-Za-z]/g, ' '));
+}
+
+function assertGeneratedEnglishSubjectiveCounts(items, metadataText, label) {
+  const specs = parseEnglishSubjectiveCountSpecs(metadataText);
+  if (!specs.length) return assertGeneratedQuestionCounts(items, metadataText, SUBJECTIVE_META_TYPES, label);
+  if (!Array.isArray(items)) throw new Error(label + ' did not return a JSON array. Click Retry.');
+  const expected = Object.fromEntries(specs.map(spec => [spec.key, spec.count]));
+  const actual = Object.fromEntries(specs.map(spec => [spec.key, 0]));
+  const selected = [];
+  const unexpected = [];
+  items.forEach((q, idx) => {
+    const cog = normalizeQuestionLevel(q && q.cognitiveLevel);
+    const diff = normalizeQuestionLevel(q && q.difficultyLevel);
+    const key = cog + '|' + diff;
+    if (!Object.prototype.hasOwnProperty.call(expected, key)) {
+      unexpected.push((cog && diff ? cog + ' ' + diff : 'item ' + (idx + 1)));
+      return;
+    }
+    if (actual[key] < expected[key]) {
+      actual[key]++;
+      selected.push(q);
+    }
+  });
+  const shortages = specs.filter(spec => actual[spec.key] < spec.count).map(spec => spec.cognitiveLevel + ' ' + spec.difficultyLevel + ': expected ' + spec.count + ', got ' + actual[spec.key]);
+  if (shortages.length) {
+    const unexpectedText = unexpected.length ? '; ignored unexpected/extra levels: ' + unexpected.slice(0, 8).join(', ') : '';
+    throw new Error(label + ' output is short against Page 3 English count metadata. ' + shortages.join('; ') + unexpectedText + '. Click Retry.');
+  }
+  return selected;
+}
 function assertGeneratedQuestionCounts(items, metadataText, allowedTypes, label) {
   const expected = parseQuestionTypeCounts(metadataText, allowedTypes);
   const expectedKeys = Object.keys(expected);
