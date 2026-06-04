@@ -2385,7 +2385,17 @@ async function handleTextbookPdfUpload(event) {
   }
 }
 
+function syncQuestionMetadataFromInputs() {
+  const objEl = document.getElementById('objMetadataTextarea');
+  const subjEl = document.getElementById('subjMetadataTextarea');
+  const radEl = document.getElementById('radMetadataTextarea');
+  if (objEl) state.objMetadata = objEl.value || '';
+  if (subjEl) state.subjMetadata = subjEl.value || '';
+  if (radEl) state.radMetadata = radEl.value || '';
+}
+
 function page3Next() {
+  syncQuestionMetadataFromInputs();
   const errEl = document.getElementById('inputError');
 
   const hasTextbook = state.textbookPdfBase64 || (state.textbookPdfs && state.textbookPdfs.length > 0) || (state.textbookImages && state.textbookImages.length > 0) || !!(state.textbookText && state.textbookText.trim());
@@ -2795,7 +2805,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const objectiveMetaTypes = getObjectiveMetaTypes();
   const hasObjectiveMeta = metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes);
   const hasSubjectiveMeta = hasSubjectiveMetadata();
-  const doObjective  = !isSocialRADOnly && !isEnglishCBSEGrammar && (!singleStepMode || (questionsOnly && state.questionsType !== 'subjective' && !isRADOnly && !isMTFMode)) && hasObjectiveMeta;
+  const subjectiveOnlyMode = state.questionsType === 'subjective';
+  const doObjective  = !isSocialRADOnly && !isEnglishCBSEGrammar && !subjectiveOnlyMode && (!singleStepMode || (questionsOnly && !isRADOnly && !isMTFMode)) && hasObjectiveMeta;
   const doSubjective = !isSocialRADOnly && (!singleStepMode || (questionsOnly && state.questionsType !== 'objective' && !isRADOnly && !isMTFMode)) && hasSubjectiveMeta;
 
   // Geo / History / Civics ICSE special logic
@@ -3381,6 +3392,8 @@ async function runConceptAgentsConcurrent(scopeItems, concurrency, runItem, onUp
 }
 
 async function startGeneration() {
+  syncQuestionMetadataFromInputs();
+  if (state.genMode === 'questions' && state.questionsType === 'subjective') state.objMetadata = '';
   if (!state.subject) { alert('Please select a subject first.'); return; }
   const checkedConcepts = document.querySelectorAll('.concept-cb:checked');
   if (checkedConcepts.length === 0) {
@@ -3505,7 +3518,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
   const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
   const socialRADOnly = isSocialCBSERADOnlySubject();
   const objectiveMetaTypes = getObjectiveMetaTypes();
-  const doObjective   = !socialRADOnly && !isEnglishCBSEGrammar && (state.questionsType === 'both' || state.questionsType === 'objective') && metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes);
+  const doObjective   = !socialRADOnly && !isEnglishCBSEGrammar && state.questionsType !== 'subjective' && (state.questionsType === 'both' || state.questionsType === 'objective') && metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes);
   const doSubjective  = !socialRADOnly && (state.questionsType === 'both' || state.questionsType === 'subjective') && hasSubjectiveMetadata();
   const isRADExpected = isRADSupportedSubject();
   const isRTCMode     = state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType === 'RTC';
