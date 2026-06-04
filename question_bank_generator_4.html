@@ -1859,8 +1859,8 @@ MANDATORY QUALITY RULES — apply to every item you generate:
     messages,
   };
 
-  const maxAttempts = Math.max(1, opts.attempts || 3);
-  const retryDelayMs = opts.retryDelayMs || 1200;
+  const maxAttempts = Math.max(1, opts.attempts || 5);
+  const retryDelayMs = opts.retryDelayMs || 1800;
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   const retryableStatuses = new Set([408, 409, 425, 429, 500, 502, 503, 504, 529]);
 
@@ -1897,8 +1897,12 @@ MANDATORY QUALITY RULES — apply to every item you generate:
           const err = await resp.json();
           errMsg = err.error?.message || errMsg;
         } catch (_) {}
+        if (/^API Error (502|503|504|529)$/.test(errMsg)) {
+          errMsg += ' - upstream model gateway is temporarily busy or timed out; retrying automatically.';
+        }
         lastErr = new Error(errMsg);
         lastErr.status = resp.status;
+        lastErr.isRetryable = retryableStatuses.has(resp.status);
         lastErr.isSizeError = /maximum size|too large|request.*too large|exceeds.*limit/i.test(errMsg);
         if (lastErr.isSizeError || !retryableStatuses.has(resp.status) || attempt === maxAttempts) {
           throw lastErr;
@@ -1907,7 +1911,8 @@ MANDATORY QUALITY RULES — apply to every item you generate:
         throw lastErr || new Error('Network error: request failed');
       }
 
-      await sleep((retryDelayMs * attempt) + Math.floor(Math.random() * 400));
+      const backoffMs = Math.min(18000, retryDelayMs * Math.pow(2, attempt - 1));
+      await sleep(backoffMs + Math.floor(Math.random() * 900));
     }
     throw lastErr || new Error('API request failed');
   }
@@ -3062,29 +3067,43 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     }
     const isEnglishICSESubtype = isEnglishICSESubtypeSubjective();
     const isEnglishICSEGrammar = isEnglishICSEGrammarSubjective();
-    const subjectivePrompt = buildSubjectivePrompt(name, item, masterPrompt, subjLoText);
-    const rawResult = await callClaude(subjectivePrompt, 64000, MODELS.SUBJECTIVE, isEnglishICSESubtype ? '' : '[');
     if (isEnglishICSESubtype) {
-      let textResult = (rawResult || '').trim();
-      if (!textResult) throw new Error('English ICSE subjective returned empty output. Click Retry.');
-      try {
-        assertEnglishICSESubjectiveTextCounts(textResult, state.subjMetadata);
-      } catch (countErr) {
-        const retryPrompt = subjectivePrompt + `
+      const expandedSpecs = expandEnglishSubjectiveCountSpecs(state.subjMetadata);
+      if (!expandedSpecs.length) throw new Error('English ICSE subjective needs count metadata on Page 3, for example: Understanding Easy Questions: 2.');
+      const blockResults = [];
+      for (let i = 0; i < expandedSpecs.length; i++) {
+        const spec = expandedSpecs[i];
+        const singleMetadata = getEnglishSubjectiveSingleMetadata(spec);
+        const singlePrompt = buildSubjectivePrompt(name, item, masterPrompt, subjLoText, singleMetadata) + `
 
-IMPORTANT RETRY FEEDBACK: The previous English ICSE subjective output failed validation: ${countErr.message}
-Regenerate the complete plain-text output now. Follow the required screenshot-style format exactly. Generate exactly the Page 3 requested number of blocks for each cognitiveLevel and difficultyLevel. Every generated block must include exactly one header line in this form: Cognitive Level: <level> | Difficulty Level: <level>. Do not use JSON or markdown code fences.`;
-        const retryRaw = await callClaude(retryPrompt, 64000, MODELS.SUBJECTIVE, '');
-        textResult = (retryRaw || '').trim();
-        assertEnglishICSESubjectiveTextCounts(textResult, state.subjMetadata);
+BLOCK GENERATION CONTROL: Generate only block ${i + 1} of ${expandedSpecs.length} for this concept. This API call must return exactly ONE plain-text block for Cognitive Level: ${spec.cognitiveLevel} | Difficulty Level: ${spec.difficultyLevel}. Do not generate any other block, level, or difficulty.`;
+        const singleMaxTokens = getEnglishICSESubjectiveMaxTokens(singleMetadata);
+        const singleOptions = { attempts: 5, retryDelayMs: 2400 };
+        let textResult = (await callClaude(singlePrompt, singleMaxTokens, MODELS.SUBJECTIVE, '', singleOptions) || '').trim();
+        try {
+          assertEnglishICSESubjectiveTextCounts(textResult, singleMetadata);
+        } catch (countErr) {
+          const retryPrompt = singlePrompt + `
+
+IMPORTANT RETRY FEEDBACK: The previous English ICSE subjective block failed validation: ${countErr.message}
+Regenerate exactly ONE complete plain-text block now. The block must include exactly one header line in this form: Cognitive Level: ${spec.cognitiveLevel} | Difficulty Level: ${spec.difficultyLevel}. Do not use JSON or markdown code fences.`;
+          textResult = (await callClaude(retryPrompt, singleMaxTokens, MODELS.SUBJECTIVE, '', singleOptions) || '').trim();
+          assertEnglishICSESubjectiveTextCounts(textResult, singleMetadata);
+        }
+        if (!textResult) throw new Error('English ICSE subjective returned empty output for ' + spec.cognitiveLevel + ' ' + spec.difficultyLevel + '. Click Retry.');
+        blockResults.push(textResult);
       }
+      const textResult = blockResults.join('\n\n');
+      assertEnglishICSESubjectiveTextCounts(textResult, state.subjMetadata);
       saveFile(fp('Subjective.txt'), textResult);
       const legacyPath = fp('Subjective.json');
       if (state.generatedFiles[legacyPath] !== undefined) delete state.generatedFiles[legacyPath];
-      const expectedEnglishTextCount = getEnglishSubjectiveExpectedTotal(state.subjMetadata) || 1;
+      const expectedEnglishTextCount = expandedSpecs.length;
       logStep(scopeLabel, 'Subjective Questions', '\u2699\uFE0F', 'done', expectedEnglishTextCount + ' requested set(s)');
       return expectedEnglishTextCount;
     }
+    const subjectivePrompt = buildSubjectivePrompt(name, item, masterPrompt, subjLoText);
+    const rawResult = await callClaude(subjectivePrompt, 64000, MODELS.SUBJECTIVE, '[');
     // Claude continues from the '[' prefill, so prepend it back before parsing.
     const parseSubjectiveResult = (txt) => {
       const raw = txt || '';
@@ -3186,7 +3205,20 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
       const radPrompt = buildRADescPrompt(name, item, masterPrompt, radLoText, chunkSpecs, startIndex);
       const expectedCount = chunkSpecs.length;
       const radMaxTokens = 8192;
-      let rawResult = await callClaude(radPrompt, radMaxTokens, MODELS.RAD, '[', radCallOptions);
+      let rawResult;
+      try {
+        rawResult = await callClaude(radPrompt, radMaxTokens, MODELS.RAD, '[', radCallOptions);
+      } catch (apiErr) {
+        if (allowSplitFallback && expectedCount > 1 && (apiErr.isRetryable || [502, 503, 504, 529].includes(apiErr.status))) {
+          const singleResults = [];
+          for (let j = 0; j < chunkSpecs.length; j++) {
+            const oneResult = await generateRADChunk([chunkSpecs[j]], startIndex + j, false);
+            singleResults.push(...oneResult);
+          }
+          return singleResults;
+        }
+        throw apiErr;
+      }
       let parsed = parseJSON('[' + (rawResult || ''));
       let qCount = Array.isArray(parsed) ? parsed.length : 0;
       if (qCount !== expectedCount) {
@@ -4209,7 +4241,7 @@ Each element must have: cognitiveLevel, difficultyLevel, questionType, question,
   return section + metaBlock;
 }
 
-function buildSubjectivePrompt(conceptName, item, masterPrompt, loText) {
+function buildSubjectivePrompt(conceptName, item, masterPrompt, loText, metadataOverride) {
   if (state.subject === 'Economics' && state.curriculum === 'ISC') {
     return `ROLE:
 
@@ -4318,7 +4350,7 @@ Generate the output in the following JSON format:
     throw new Error('Missing English ICSE ' + (state.chapterType || 'Prose') + ' subjective prompt. Paste it into PROMPTS["' + getEnglishICSESubjectivePromptKey() + '"].');
   }
   let section = applyPromptCountEdits(fillPlaceholders(rawSection, conceptName, item, loText));
-  let countsText = (state.subjMetadata || '').trim();
+  let countsText = (metadataOverride != null ? metadataOverride : (state.subjMetadata || '')).trim();
 
   if (isEnglishCBSEGrammar) {
     const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
@@ -5236,6 +5268,25 @@ function hasSubjectiveMetadata() {
 
 function getEnglishSubjectiveExpectedTotal(text) {
   return parseEnglishSubjectiveCountSpecs(text).reduce((sum, spec) => sum + spec.count, 0);
+}
+
+function expandEnglishSubjectiveCountSpecs(text) {
+  const expanded = [];
+  parseEnglishSubjectiveCountSpecs(text).forEach(spec => {
+    for (let i = 0; i < spec.count; i++) {
+      expanded.push({ key: spec.key, cognitiveLevel: spec.cognitiveLevel, difficultyLevel: spec.difficultyLevel, count: 1 });
+    }
+  });
+  return expanded;
+}
+
+function getEnglishSubjectiveSingleMetadata(spec) {
+  return '[Number of ' + spec.cognitiveLevel + ' ' + spec.difficultyLevel + ' Questions]: 1';
+}
+
+function getEnglishICSESubjectiveMaxTokens(text) {
+  const total = Math.max(1, getEnglishSubjectiveExpectedTotal(text) || 1);
+  return Math.min(28000, Math.max(9000, total * 3500));
 }
 
 function buildEnglishSubjectiveCountInstruction(text) {
