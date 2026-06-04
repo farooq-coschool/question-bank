@@ -2735,7 +2735,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     // For English CBSE, subjective is considered done only when ANY of the split files exists.
     // For all other subjects, presence of legacy Subjective.json marks subjective complete.
     if (isEnglishICSESubtypeResume) {
-      stepFiles.push(['subjective', fp(isEnglishICSEGrammarSubjective() ? 'Subjective.json' : 'Subjective.txt')]);
+      stepFiles.push(['subjective', fp('Subjective.txt')]);
     } else if (!isEnglishCBSEResume) {
       stepFiles.push(['subjective', fp('Subjective.json')]);
     }
@@ -3063,10 +3063,21 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     const isEnglishICSESubtype = isEnglishICSESubtypeSubjective();
     const isEnglishICSEGrammar = isEnglishICSEGrammarSubjective();
     const subjectivePrompt = buildSubjectivePrompt(name, item, masterPrompt, subjLoText);
-    const rawResult = await callClaude(subjectivePrompt, 64000, MODELS.SUBJECTIVE, (isEnglishICSESubtype && !isEnglishICSEGrammar) ? '' : '[');
-    if (isEnglishICSESubtype && !isEnglishICSEGrammar) {
-      const textResult = (rawResult || '').trim();
+    const rawResult = await callClaude(subjectivePrompt, 64000, MODELS.SUBJECTIVE, isEnglishICSESubtype ? '' : '[');
+    if (isEnglishICSESubtype) {
+      let textResult = (rawResult || '').trim();
       if (!textResult) throw new Error('English ICSE subjective returned empty output. Click Retry.');
+      try {
+        assertEnglishICSESubjectiveTextCounts(textResult, state.subjMetadata);
+      } catch (countErr) {
+        const retryPrompt = subjectivePrompt + `
+
+IMPORTANT RETRY FEEDBACK: The previous English ICSE subjective output failed validation: ${countErr.message}
+Regenerate the complete plain-text output now. Follow the required screenshot-style format exactly. Generate exactly the Page 3 requested number of blocks for each cognitiveLevel and difficultyLevel. Every generated block must include exactly one header line in this form: Cognitive Level: <level> | Difficulty Level: <level>. Do not use JSON or markdown code fences.`;
+        const retryRaw = await callClaude(retryPrompt, 64000, MODELS.SUBJECTIVE, '');
+        textResult = (retryRaw || '').trim();
+        assertEnglishICSESubjectiveTextCounts(textResult, state.subjMetadata);
+      }
       saveFile(fp('Subjective.txt'), textResult);
       const legacyPath = fp('Subjective.json');
       if (state.generatedFiles[legacyPath] !== undefined) delete state.generatedFiles[legacyPath];
@@ -3585,8 +3596,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
     if (doSubjFinal) {
       const isEngCBSE_ce = state.subject === 'English' && state.curriculum === 'CBSE';
       const isEngICSESubtype_ce = isEnglishICSESubtypeSubjective();
-      const isEngICSEGrammar_ce = isEnglishICSEGrammarSubjective();
-      if (isEngICSESubtype_ce && !isEngICSEGrammar_ce) {
+      if (isEngICSESubtype_ce) {
         expected.push({ path: fp('Subjective.txt'), label: scopeLabel + ' - Subjective Questions', item });
       } else if (isEngCBSE_ce) {
         // English CBSE splits subjective into VSA/SA/LA — expect at least one to exist
@@ -4486,11 +4496,9 @@ Generate the output in the following JSON format:
 
   if (isEnglishICSESubjective) {
     const englishCountInstruction = buildEnglishSubjectiveCountInstruction(countsText);
-    const metadataBlock = `\n\n---\nMETADATA INPUT:\n[Subject]: ${state.subject}\n[Curriculum]: ${state.curriculum}\n[Textbook]: ${state.textbook || 'ICSE'}\n[Grade]: ${state.grade}\n[Literature Type]: ${state.chapterType || 'Prose'}\n[Chapter Name]: ${state.chapterName}\n[Subtopic Name]: ${conceptName}\n${nanoList ? '[Subconcepts]: ' + nanoList + '\n' : ''}[Learning Outcomes]: ${loText || '(Auto-generated in previous step)'}\n[Script]: [Attached]\n${countsText ? countsText + '\n' : ''}${englishCountInstruction}${chapterScopeNote(item)}`;
-    if (isEnglishICSEGrammarSubjective()) {
-      return `${section}${metadataBlock}\n\nReturn ONLY a valid JSON array in the exact JSON format specified above. Do not use markdown code fences, headings, or any text outside the JSON array. All line breaks inside JSON string values must be escaped as \\n, never written as raw line breaks inside quoted strings.`;
-    }
-    return `${section}${metadataBlock}\n\nReturn only the generated passage and question set in the output format specified above. Do not wrap the answer in JSON and do not use markdown code fences.`;
+    const englishTextFormatInstruction = buildEnglishICSESubjectiveTextFormatInstruction(countsText);
+    const metadataBlock = `\n\n---\nMETADATA INPUT:\n[Subject]: ${state.subject}\n[Curriculum]: ${state.curriculum}\n[Textbook]: ${state.textbook || 'ICSE'}\n[Grade]: ${state.grade}\n[Literature Type]: ${state.chapterType || 'Prose'}\n[Chapter Name]: ${state.chapterName}\n[Subtopic Name]: ${conceptName}\n${nanoList ? '[Subconcepts]: ' + nanoList + '\n' : ''}[Learning Outcomes]: ${loText || '(Auto-generated in previous step)'}\n[Script]: [Attached]\n${countsText ? countsText + '\n' : ''}${englishCountInstruction}${englishTextFormatInstruction}${chapterScopeNote(item)}`;
+    return `${section}${metadataBlock}\n\nReturn ONLY plain text in the required screenshot-style format. Do not return JSON. Do not use markdown code fences.`;
   }
 
   const plainExample = `{
@@ -5238,6 +5246,46 @@ function buildEnglishSubjectiveCountInstruction(text) {
   return `\nENGLISH SUBJECTIVE COUNT MODE:\nThe Page 3 subjective metadata is count-only. Do not expect VSA, SA, LA, FIB, or Passage Based FIB counts from the user. Generate exactly ${total} subjective item(s)/set(s) in total, distributed by cognitiveLevel and difficultyLevel exactly as follows:\n${lines}\nUse only the question formats and rules allowed by the selected English prompt. Do not generate any extra cognitive/difficulty combination.\n`;
 }
 
+function buildEnglishICSESubjectiveTextFormatInstruction(text) {
+  const specs = parseEnglishSubjectiveCountSpecs(text);
+  const total = specs.reduce((sum, spec) => sum + spec.count, 0) || 1;
+  const distribution = specs.length
+    ? specs.map(spec => '- ' + spec.cognitiveLevel + ' ' + spec.difficultyLevel + ': ' + spec.count + ' block(s)').join('\n')
+    : '- Use the requested cognitive and difficulty level metadata.';
+  const chapterType = state.chapterType || 'Prose';
+  const sectionTitle = chapterType === 'Grammar' ? 'Subjective Questions' : 'Reference to Context';
+  const extractNoun = chapterType === 'Poetry' ? 'poem' : (chapterType === 'Drama' ? 'play' : 'story');
+  return `\nENGLISH ICSE SUBJECTIVE OUTPUT FORMAT (MANDATORY):\nGenerate exactly ${total} separate plain-text block(s). Do not generate fewer or extra blocks. Distribution:\n${distribution}\n\nFor every block, use this exact top format:\nICSE Grade ${state.grade} - ${state.textbook || 'Standard Textbook'} | ${chapterType}\n${state.chapterName} - ${sectionTitle}\nCognitive Level: <Factual|Understanding|Application> | Difficulty Level: <Easy|Medium|Hard>\n____________________________________\n\nFor Prose, Poetry, and Drama blocks:\n- Then write: Read the following extract from the ${extractNoun} ${state.chapterName} and answer the questions that follow.\n- Include a suitable extract from the attached script.\n- Then write five questions labelled (i) to (v).\n- Use marks exactly like [3] for (i) to (iv), and [4] for (v).\n- Immediately after each question, write Answer: followed by the answer.\n- Put a separator line of underscores before each question as shown in the screenshot.\n\nFor Grammar blocks:\n- Use the same top three header lines and separator line.\n- Then write the grammar instruction/question set according to the selected Grammar prompt rules.\n- Use numbered sub-parts where the prompt requires them.\n- Immediately after each question or set, write Answer: followed by the answer.\n- If the selected prompt mentions JSON output, ignore only the JSON formatting requirement and use these plain-text formatting rules instead.\n\nEvery block must contain exactly one line beginning with Cognitive Level: and that line must match one requested Page 3 cognitive/difficulty combination. Follow all rules, question structures, marks, and guidelines from the selected English ICSE subjective prompt.\n`;
+}
+function countEnglishICSESubjectiveTextSpecs(text) {
+  const counts = {};
+  const re = /^\s*Cognitive\s+Level\s*:\s*(Factual|Understanding|Application)\s*\|\s*Difficulty\s+Level\s*:\s*(Easy|Medium|Hard)\s*$/gmi;
+  let match;
+  while ((match = re.exec(text || '')) !== null) {
+    const key = normalizeEnglishCountWord(match[1]) + '|' + normalizeEnglishCountWord(match[2]);
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  return counts;
+}
+
+function assertEnglishICSESubjectiveTextCounts(text, metadataText) {
+  const specs = parseEnglishSubjectiveCountSpecs(metadataText);
+  if (!specs.length) return true;
+  if (!text || !text.trim()) throw new Error('English ICSE subjective returned empty text.');
+  const actual = countEnglishICSESubjectiveTextSpecs(text);
+  const shortages = specs
+    .filter(spec => (actual[spec.key] || 0) < spec.count)
+    .map(spec => spec.cognitiveLevel + ' ' + spec.difficultyLevel + ': expected ' + spec.count + ', got ' + (actual[spec.key] || 0));
+  const expectedKeys = new Set(specs.map(spec => spec.key));
+  const extras = Object.keys(actual)
+    .filter(key => !expectedKeys.has(key) || actual[key] > (specs.find(spec => spec.key === key)?.count || 0))
+    .map(key => key.replace('|', ' ') + ': got ' + actual[key]);
+  if (shortages.length || extras.length) {
+    const extraText = extras.length ? '; extra/unrequested blocks: ' + extras.join('; ') : '';
+    throw new Error('Expected English ICSE subjective text blocks do not match Page 3 metadata. ' + shortages.join('; ') + extraText + '.');
+  }
+  return true;
+}
 function getQuestionGenerationMetadataError() {
   if (state.genMode !== 'questions') return '';
   const objectiveMetaTypes = getObjectiveMetaTypes();
