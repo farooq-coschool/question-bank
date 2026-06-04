@@ -3053,12 +3053,27 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       return 1;
     }
     // Claude continues from the '[' prefill, so prepend it back before parsing.
-    const result = '[' + (rawResult || '');
-    let parsed = parseJSON(result);
-    parsed = assertGeneratedQuestionCounts(parsed, state.subjMetadata, SUBJECTIVE_META_TYPES, 'Subjective');
+    const parseSubjectiveResult = (txt) => {
+      const raw = txt || '';
+      const candidate = raw.trim().startsWith('[') ? raw : ('[' + raw);
+      return parseJSON(candidate);
+    };
+    let parsed = parseSubjectiveResult(rawResult);
+    try {
+      parsed = assertGeneratedQuestionCounts(parsed, state.subjMetadata, SUBJECTIVE_META_TYPES, 'Subjective');
+    } catch (countErr) {
+      if (!isEnglishICSEGrammar) throw countErr;
+      const retryPrompt = subjectivePrompt + `
+
+IMPORTANT RETRY FEEDBACK: The previous English ICSE Grammar subjective output failed validation: ${countErr.message}
+Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. For FIB requests, return questionType "SA" with question_type_tag "FIB". For Passage Based FIB requests, return questionType "SA" with question_type_tag "Passage Based FIB". For plain SA requests, return questionType "SA" with question_type_tag "" or omit question_type_tag. Return exactly the requested counts, no extra types, no markdown.`;
+      const retryRaw = await callClaude(retryPrompt, 64000, MODELS.SUBJECTIVE, '[');
+      parsed = parseSubjectiveResult(retryRaw);
+      parsed = assertGeneratedQuestionCounts(parsed, state.subjMetadata, SUBJECTIVE_META_TYPES, 'Subjective');
+    }
     if (!Array.isArray(parsed) || parsed.length === 0) {
       const preview = (rawResult || '').substring(0, 500);
-      throw new Error('Subjective returned 0 questions — raw response preview: ' + preview + ' — click Retry');
+      throw new Error('Subjective returned 0 questions - raw response preview: ' + preview + ' - click Retry');
     }
     // English CBSE: split output into separate VSA/SA/LA files. All others: single Subjective.json
     const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
@@ -5237,19 +5252,64 @@ function parseJSON(text) {
   try { const m = text.match(/\[[\s\S]*\]/); if (m) { const r = JSON.parse(m[0]); if (Array.isArray(r)) return r; } } catch(e) {}
   // Strategy 4: whole text is a JSON object (not array) — wrap it
   try { const r = JSON.parse(text.trim()); if (Array.isArray(r)) return r; if (r && typeof r === 'object') return [r]; } catch(e) {}
-  // Strategy 5: find all top-level JSON objects via brace-depth scanning and wrap in array
+  // Strategy 5: repair raw newlines inside quoted JSON strings, then retry array extraction.
+  try {
+    const repaired = escapeRawNewlinesInJSONString(text);
+    const m = repaired.match(/\[[\s\S]*\]/);
+    if (m) {
+      const r = JSON.parse(m[0]);
+      if (Array.isArray(r)) return r;
+    }
+  } catch(e) {}
+  // Strategy 6: find all top-level JSON objects via brace-depth scanning and wrap in array
   try {
     const objs = [];
-    let depth = 0, start = -1;
+    let depth = 0, start = -1, inString = false, escaped = false;
     for (let i = 0; i < text.length; i++) {
-      if (text[i] === '{') { if (depth === 0) start = i; depth++; }
-      else if (text[i] === '}') { depth--; if (depth === 0 && start >= 0) { try { objs.push(JSON.parse(text.slice(start, i + 1))); } catch(e) {} start = -1; } }
+      const ch = text[i];
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (ch === '\\') escaped = true;
+        else if (ch === '"') inString = false;
+        continue;
+      }
+      if (ch === '"') { inString = true; continue; }
+      if (ch === '{') { if (depth === 0) start = i; depth++; }
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0 && start >= 0) {
+          const slice = text.slice(start, i + 1);
+          try { objs.push(JSON.parse(slice)); }
+          catch(e) { try { objs.push(JSON.parse(escapeRawNewlinesInJSONString(slice))); } catch(e2) {} }
+          start = -1;
+        }
+      }
     }
     if (objs.length > 0) return objs;
   } catch(e) {}
   return text;
 }
 
+function escapeRawNewlinesInJSONString(text) {
+  const input = String(text || '');
+  let out = '', inString = false, escaped = false;
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+    const code = ch.charCodeAt(0);
+    if (inString) {
+      if (escaped) { out += ch; escaped = false; continue; }
+      if (ch === '\\') { out += ch; escaped = true; continue; }
+      if (ch === '"') { out += ch; inString = false; continue; }
+      if (code === 10) { out += '\\n'; continue; }
+      if (code === 13) { if (input.charCodeAt(i + 1) === 10) i++; out += '\\n'; continue; }
+      out += ch;
+      continue;
+    }
+    out += ch;
+    if (ch === '"') inString = true;
+  }
+  return out;
+}
 function countLines(text) { return text.split('\n').length; }
 
 function saveFile(path, content) {
