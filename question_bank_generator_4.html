@@ -2828,7 +2828,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const isSocialRADOnly = isSocialCBSERADOnlySubject();
   const isSocialSubjUnavailable = isSocialCBSESubjectiveUnavailable();
   const objectiveMetaTypes = getObjectiveMetaTypes();
-  const hasObjectiveMeta = metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes);
+  const hasObjectiveMeta = hasObjectiveMetadata();
   const hasSubjectiveMeta = hasSubjectiveMetadata();
   const subjectiveOnlyMode = state.questionsType === 'subjective';
   const doObjective  = !isSocialRADOnly && !isEnglishCBSEGrammar && !subjectiveOnlyMode && (!singleStepMode || (questionsOnly && !isRADOnly && !isMTFMode)) && hasObjectiveMeta;
@@ -3049,7 +3049,9 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       ? await callClaude(buildCommerceObjectivePrompt(name, item, masterPrompt, loResult), 40000)
       : await callClaude(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 40000);
     let parsed = parseJSON(result);
-    parsed = assertGeneratedQuestionCounts(parsed, state.objMetadata, objectiveMetaTypes, 'Objective');
+    parsed = (state.subject === 'English' && hasEnglishCountMetadata(state.objMetadata) && !metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes))
+      ? assertGeneratedEnglishQuestionLevelCounts(parsed, state.objMetadata, 'Objective')
+      : assertGeneratedQuestionCounts(parsed, state.objMetadata, objectiveMetaTypes, 'Objective');
     // Rotate correct answer position round-robin across all SCQ questions (pos 0,1,2,3,0,1,…)
     if (Array.isArray(parsed)) {
       let rotIdx = 0;
@@ -3127,6 +3129,8 @@ Regenerate exactly ONE complete plain-text block now. The block must include exa
     // Claude continues from the '[' prefill, so prepend it back before parsing.
     const parseSubjectiveResult = (txt) => {
       const raw = txt || '';
+      const direct = parseJSON(raw);
+      if (Array.isArray(direct) && direct.length) return direct;
       const candidate = raw.trim().startsWith('[') ? raw : ('[' + raw);
       return parseJSON(candidate);
     };
@@ -3589,7 +3593,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
   const socialRADOnly = isSocialCBSERADOnlySubject();
   const socialSubjUnavailable = isSocialCBSESubjectiveUnavailable();
   const objectiveMetaTypes = getObjectiveMetaTypes();
-  const doObjective   = !socialRADOnly && !isEnglishCBSEGrammar && state.questionsType !== 'subjective' && (state.questionsType === 'both' || state.questionsType === 'objective') && metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes);
+  const doObjective   = !socialRADOnly && !isEnglishCBSEGrammar && state.questionsType !== 'subjective' && (state.questionsType === 'both' || state.questionsType === 'objective') && hasObjectiveMetadata();
   const doSubjective  = !socialRADOnly && !socialSubjUnavailable && (state.questionsType === 'both' || state.questionsType === 'subjective') && hasSubjectiveMetadata();
   const isRADExpected = isRADSupportedSubject();
   const isRTCMode     = state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType === 'RTC';
@@ -4089,6 +4093,7 @@ function buildObjectivePrompt(conceptName, item, masterPrompt, includeRA, loText
   let section = applyPromptCountEdits(fillPlaceholders(rawSection, conceptName, item, loText));
   const countsText = (state.objMetadata || '').trim();
   const isEnglish = state.subject === 'English';
+  const englishObjectiveCountMode = isEnglish && hasEnglishCountMetadata(countsText) && !metadataHasAnyQuestionType(countsText, getObjectiveMetaTypes());
   // When user has provided their own counts, strip [Number of ...] lines from the template
   // so there is no conflict — METADATA INPUT counts become the sole source of truth.
   if (countsText) {
@@ -4178,6 +4183,13 @@ For RA questions use EXACTLY this schema. The four option strings are FIXED and 
 
   const nanoList = item && item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
 
+  const objectiveCountLock = englishObjectiveCountMode
+    ? `?? ENGLISH OBJECTIVE COUNT MODE: The Page 3 objective metadata is count-only. Generate ONLY SCQ questions. Do not expect SCQ/RA labels from the user. Generate exactly the requested total, distributed by cognitiveLevel and difficultyLevel exactly as listed in METADATA INPUT. Do not generate RA or any other objective type.`
+    : `?? USER METADATA TYPE LOCK: Generate ONLY the question types explicitly listed with non-zero counts in METADATA INPUT. If METADATA INPUT lists only "SCQ: 4", generate exactly 4 SCQ and 0 RA. If it lists "RA: 2", generate exactly 2 RA and 0 SCQ. Do not generate any absent type.`;
+  const objectiveTypeRestriction = englishObjectiveCountMode
+    ? `?? QUESTION TYPE RESTRICTION: For English Objective count mode, generate SCQ objects only. Do NOT generate RA, subjective, descriptive, short-answer, open-ended, or any non-SCQ object.`
+    : `?? QUESTION TYPE RESTRICTION: For Objective generation, generate only SCQ and/or RA when those exact types are requested in METADATA INPUT. Do NOT generate open-ended, descriptive, short-answer, wh-type, fill-in-the-blank, or any other format unless that exact type is explicitly requested with a non-zero count.`;
+
   const formatSpec = `
 
 ---
@@ -4192,9 +4204,9 @@ ${extraFields}${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}${countsText
 
 ?? STRICT COUNT COMPLIANCE (NON-NEGOTIABLE): The question count instructions in the METADATA INPUT above are the ONLY source of truth. You MUST generate EXACTLY the numbers specified, no more, no less, none skipped. Ignore ANY count values that appeared earlier in this prompt.
 
-?? USER METADATA TYPE LOCK: Generate ONLY the question types explicitly listed with non-zero counts in METADATA INPUT. If METADATA INPUT lists only "SCQ: 4", generate exactly 4 SCQ and 0 RA. If it lists "RA: 2", generate exactly 2 RA and 0 SCQ. Do not generate any absent type.
+${objectiveCountLock}
 
-?? QUESTION TYPE RESTRICTION: For Objective generation, generate only SCQ and/or RA when those exact types are requested in METADATA INPUT. Do NOT generate open-ended, descriptive, short-answer, wh-type, fill-in-the-blank, or any other format unless that exact type is explicitly requested with a non-zero count.
+${objectiveTypeRestriction}
 
 ?? FINAL OUTPUT FORMAT — This section completely overrides and replaces any output format, JSON structure, field names, or schema mentioned anywhere in the prompt above. Ignore all prior format instructions entirely.
 
@@ -5348,6 +5360,17 @@ function hasEnglishSubjectiveCountMetadata(text) {
   return parseEnglishSubjectiveCountSpecs(text).length > 0;
 }
 
+function hasEnglishCountMetadata(text) {
+  return parseEnglishSubjectiveCountSpecs(text).length > 0;
+}
+
+function hasObjectiveMetadata() {
+  if (state.subject === 'English') {
+    return hasEnglishCountMetadata(state.objMetadata) || metadataHasAnyQuestionType(state.objMetadata, getObjectiveMetaTypes());
+  }
+  return metadataHasAnyQuestionType(state.objMetadata, getObjectiveMetaTypes());
+}
+
 function hasSubjectiveMetadata() {
   if (state.subject === 'English') {
     return hasEnglishSubjectiveCountMetadata(state.subjMetadata) || metadataHasAnyQuestionType(state.subjMetadata, SUBJECTIVE_META_TYPES);
@@ -5429,7 +5452,7 @@ function assertEnglishICSESubjectiveTextCounts(text, metadataText) {
 function getQuestionGenerationMetadataError() {
   if (state.genMode !== 'questions') return '';
   const objectiveMetaTypes = getObjectiveMetaTypes();
-  const hasObjective = metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes);
+  const hasObjective = hasObjectiveMetadata();
   const hasSubjective = hasSubjectiveMetadata();
   const hasRAD = metadataHasAnyQuestionType(state.radMetadata, RAD_META_TYPES);
   if (isSocialCBSERADOnlySubject()) {
@@ -5489,6 +5512,17 @@ function preferredGeneratedQuestionTypeKey(q) {
 
 function normalizeQuestionLevel(value) {
   return normalizeEnglishCountWord(String(value || '').replace(/[^A-Za-z]/g, ' '));
+}
+
+function assertGeneratedEnglishQuestionLevelCounts(items, metadataText, label) {
+  const selected = assertGeneratedEnglishSubjectiveCounts(items, metadataText, label);
+  return selected.map(q => ({
+    ...q,
+    questionType: 'SCQ',
+    options: Array.isArray(q && q.options) ? q.options : [],
+    answers: Array.isArray(q && q.answers) ? q.answers : (q && q.solution ? [String(q.solution)] : []),
+    solution: q && q.solution != null ? String(q.solution) : (Array.isArray(q && q.answers) && q.answers.length ? String(q.answers[0]) : '')
+  }));
 }
 
 function assertGeneratedEnglishSubjectiveCounts(items, metadataText, label) {
