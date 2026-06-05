@@ -1865,8 +1865,8 @@ MANDATORY QUALITY RULES — apply to every item you generate:
     messages,
   };
 
-  const maxAttempts = Math.max(1, opts.attempts || 5);
-  const retryDelayMs = opts.retryDelayMs || 1800;
+  const maxAttempts = Math.max(1, opts.attempts || 7);
+  const retryDelayMs = opts.retryDelayMs || 2500;
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   const retryableStatuses = new Set([408, 409, 425, 429, 500, 502, 503, 504, 529]);
 
@@ -1917,7 +1917,7 @@ MANDATORY QUALITY RULES — apply to every item you generate:
         throw lastErr || new Error('Network error: request failed');
       }
 
-      const backoffMs = Math.min(18000, retryDelayMs * Math.pow(2, attempt - 1));
+      const backoffMs = Math.min(45000, retryDelayMs * Math.pow(2, attempt - 1));
       await sleep(backoffMs + Math.floor(Math.random() * 900));
     }
     throw lastErr || new Error('API request failed');
@@ -2793,7 +2793,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     logStep(scopeLabel, stepName, stepIcon, 'running');
     const safeKey = encodeURIComponent(conceptKey);
     const retryBtn = `<button onclick="retryAgent(decodeURIComponent('${safeKey}'))" style="margin-left:8px;padding:2px 8px;border-radius:4px;border:1px solid #e74c3c;background:transparent;color:#e74c3c;cursor:pointer;font-size:11px;vertical-align:middle">Retry this concept</button>`;
-    const limitMs = timeoutMs || 180000;
+    const limitMs = timeoutMs || 600000;
     const limitLabel = limitMs >= 60000 ? (Math.round(limitMs / 60000) + ' min') : (limitMs / 1000 + ' sec');
     let timeoutId;
     const timeoutPromise = new Promise((_, reject) => {
