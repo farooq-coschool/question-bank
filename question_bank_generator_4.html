@@ -2758,7 +2758,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     ];
     // For English CBSE, subjective is considered done only when ANY of the split files exists.
     // For all other subjects, presence of legacy Subjective.json marks subjective complete.
-    if (isEnglishICSESubtypeResume) {
+    if (isEnglishICSESubtypeResume && !isEnglishICSEGrammarSubjective()) {
       stepFiles.push(['subjective', fp('Subjective.txt')]);
     } else if (!isEnglishCBSEResume) {
       stepFiles.push(['subjective', fp('Subjective.json')]);
@@ -3087,7 +3087,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     }
     const isEnglishICSESubtype = isEnglishICSESubtypeSubjective();
     const isEnglishICSEGrammar = isEnglishICSEGrammarSubjective();
-    if (isEnglishICSESubtype) {
+    if (isEnglishICSESubtype && !isEnglishICSEGrammar) {
       const expandedSpecs = expandEnglishSubjectiveCountSpecs(state.subjMetadata);
       if (!expandedSpecs.length) throw new Error('English ICSE subjective needs count metadata on Page 3, for example: Understanding Easy Questions: 2.');
       const blockResults = [];
@@ -3141,7 +3141,7 @@ Regenerate exactly ONE complete plain-text block now. The block must include exa
       const retryPrompt = subjectivePrompt + `
 
 IMPORTANT RETRY FEEDBACK: The previous English Grammar subjective output failed validation: ${countErr.message}
-Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page 3 metadata is count-only, match cognitiveLevel and difficultyLevel exactly for each requested count and choose only the allowed English Grammar subjective formats from the prompt. If FIB is used, return questionType "SA" with question_type_tag "FIB". If Passage Based FIB is used, return questionType "SA" with question_type_tag "Passage Based FIB". For plain SA, return questionType "SA" with question_type_tag "" or omit question_type_tag. Every English CBSE Grammar subjective object must use questionType "SA" and marks "4". Return exactly the requested counts, no extra types, no markdown.`;
+Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page 3 metadata is count-only, match cognitiveLevel and difficultyLevel exactly for each requested count and choose only the allowed English Grammar subjective formats from the prompt. If FIB is used, return questionType "SA" with question_type_tag "FIB". If Passage Based FIB is used, return questionType "SA" with question_type_tag "Passage Based FIB". For plain SA, return questionType "SA" with question_type_tag "" or omit question_type_tag. Every English Grammar subjective object must use questionType "SA" and marks "4". Return exactly the requested counts, no extra types, no markdown.`;
       const retryRaw = await callClaude(retryPrompt, 64000, MODELS.SUBJECTIVE, '[');
       parsed = parseSubjectiveResult(retryRaw);
       parsed = validateSubjectiveCounts(parsed);
@@ -3152,7 +3152,8 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
     }
     // English CBSE: split output into separate VSA/SA/LA files. All others: single Subjective.json
     const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
-    const normalized = isEnglishCBSEGrammar ? parsed.map(q => {
+    const isEnglishGrammarSubjective = isEnglishICSEGrammar || isEnglishCBSEGrammar;
+    const normalized = isEnglishGrammarSubjective ? parsed.map(q => {
       const questionText = q && q.question != null ? String(q.question) : '';
       const rawTag = q && q.question_type_tag != null ? String(q.question_type_tag).trim() : '';
       const isPassageFib = /passage\s*based\s*fib/i.test(rawTag) || (/passage/i.test(questionText) && /fill in/i.test(questionText));
@@ -3199,6 +3200,10 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
       if (state.generatedFiles[legacyPath] !== undefined) delete state.generatedFiles[legacyPath];
     } else {
       saveFile(fp('Subjective.json'), JSON.stringify(normalized, null, 2));
+      if (isEnglishICSEGrammar) {
+        const staleTextPath = fp('Subjective.txt');
+        if (state.generatedFiles[staleTextPath] !== undefined) delete state.generatedFiles[staleTextPath];
+      }
     }
     const qCount = normalized.length;
     logStep(scopeLabel, 'Subjective Questions', '\u2699\uFE0F', 'done', qCount + ' questions');
@@ -3651,7 +3656,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
     if (doSubjFinal) {
       const isEngCBSE_ce = state.subject === 'English' && state.curriculum === 'CBSE';
       const isEngICSESubtype_ce = isEnglishICSESubtypeSubjective();
-      if (isEngICSESubtype_ce) {
+      if (isEngICSESubtype_ce && !isEnglishICSEGrammarSubjective()) {
         expected.push({ path: fp('Subjective.txt'), label: scopeLabel + ' - Subjective Questions', item });
       } else if (isEngCBSE_ce) {
         // English CBSE splits subjective into VSA/SA/LA — expect at least one to exist
@@ -4567,12 +4572,55 @@ Generate the output in the following JSON format:
   const isBioFIB = state.subject === 'Biology' && gradeNum >= 6 && gradeNum <= 10;
   const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
 
-  if (isEnglishICSESubjective) {
+  if (isEnglishICSESubjective && !isEnglishICSEGrammarSubjective()) {
     const englishCountInstruction = buildEnglishSubjectiveCountInstruction(countsText);
     const englishTextFormatInstruction = buildEnglishICSESubjectiveTextFormatInstruction(countsText);
     const metadataBlock = `\n\n---\nMETADATA INPUT:\n[Subject]: ${state.subject}\n[Curriculum]: ${state.curriculum}\n[Textbook]: ${state.textbook || 'ICSE'}\n[Grade]: ${state.grade}\n[Literature Type]: ${state.chapterType || 'Prose'}\n[Chapter Name]: ${state.chapterName}\n[Subtopic Name]: ${conceptName}\n${nanoList ? '[Subconcepts]: ' + nanoList + '\n' : ''}[Learning Outcomes]: ${loText || '(Auto-generated in previous step)'}\n[Script]: [Attached]\n${countsText ? countsText + '\n' : ''}${englishCountInstruction}${englishTextFormatInstruction}${chapterScopeNote(item)}`;
     return `${section}${metadataBlock}\n\nReturn ONLY plain text in the required screenshot-style format. Do not return JSON. Do not use markdown code fences.`;
   }
+  if (isEnglishICSEGrammarSubjective()) {
+    const englishCountInstruction = buildEnglishSubjectiveCountInstruction(countsText);
+    const metadataBlock = `
+
+---
+METADATA INPUT:
+[Subject]: ${state.subject}
+[Curriculum]: ${state.curriculum}
+[Textbook]: ${state.textbook || 'ICSE'}
+[Grade]: ${state.grade}
+[Literature Type]: Grammar
+[Chapter Name]: ${state.chapterName}
+[Subtopic Name]: ${conceptName}
+${nanoList ? '[Subconcepts]: ' + nanoList + '\n' : ''}[Learning Outcomes]: ${loText || '(Auto-generated in previous step)'}
+[Script]: [Attached]
+${countsText ? countsText + '\n' : ''}${englishCountInstruction}${chapterScopeNote(item)}`;
+    return `${section}${metadataBlock}
+
+ENGLISH ICSE GRAMMAR JSON OUTPUT LOCK (MANDATORY):
+- Return ONLY a valid JSON array. Do not return markdown code fences, headings, explanations, screenshot-style text, or plain text outside JSON.
+- Every object must contain exactly these fields: "cognitiveLevel", "difficultyLevel", "questionType", "question_type_tag", "question", "solution", "marks".
+- Every object must use "questionType": "SA" and "marks": "4".
+- For four standalone blanks, use "question_type_tag": "FIB".
+- For a passage with numbered blanks, use "question_type_tag": "Passage Based FIB".
+- For rewrite, transform, correct, convert, join, combine, choose-as-instructed, and other non-FIB grammar sets, use "question_type_tag": "".
+- Each JSON object is one four-mark question set containing exactly four numbered sub-parts or blanks.
+- The solution must list answers in matching serial order using newline separators.
+- The number of JSON objects must exactly match the Page 3 metadata counts by cognitiveLevel and difficultyLevel.
+
+JSON schema example:
+[
+  {
+    "cognitiveLevel": "Understanding",
+    "difficultyLevel": "Easy",
+    "questionType": "SA",
+    "question_type_tag": "FIB",
+    "question": "Fill in the blank with appropriate words. \n1. ...\n2. ...\n3. ...\n4. ...",
+    "solution": "1. answer\n2. answer\n3. answer\n4. answer",
+    "marks": "4"
+  }
+]`;
+  }
+
 
   const plainExample = `{
   "cognitiveLevel": "Factual",
