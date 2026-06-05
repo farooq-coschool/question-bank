@@ -3067,6 +3067,12 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
         opts[targetPos] = correctText;
         return { ...q, options: opts };
       });
+      if (state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType === 'Grammar') {
+        parsed = parsed.map(q => {
+          const answerText = Array.isArray(q && q.answers) && q.answers.length ? String(q.answers[0]) : '';
+          return answerText ? { ...q, solution: answerText } : q;
+        });
+      }
     }
     saveFile(fp('Objective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
@@ -4221,6 +4227,7 @@ ${raExample}
 MANDATORY RULES:
 - "options" ? plain array of strings e.g. ["text1","text2","text3","text4"] — NEVER an object like {"A":"...","B":"..."}
 - "answers" and "solution" ? the exact option string as it appears in the options array — NEVER a letter like "A" or "B"
+- ENGLISH ICSE GRAMMAR OBJECTIVE: "solution" MUST be exactly identical to answers[0]. Do not add explanations, reasons, notes, conjunction explanations, grammar rule explanations, or any extra words.
 - Allowed field names ONLY: cognitiveLevel, difficultyLevel, questionType, question, options, answers, solution
 - FORBIDDEN fields (do not use): question_type, cognitive_level, difficulty, difficultyTag, stem, type_tag, answer_key, correct_answer, explanation, hint, topic
 - For RA questions: the "options" array must contain the EXACT four strings shown in the RA schema above — copy them character for character, do not rephrase or invent new wording
@@ -5516,13 +5523,17 @@ function normalizeQuestionLevel(value) {
 
 function assertGeneratedEnglishQuestionLevelCounts(items, metadataText, label) {
   const selected = assertGeneratedEnglishSubjectiveCounts(items, metadataText, label);
-  return selected.map(q => ({
-    ...q,
-    questionType: 'SCQ',
-    options: Array.isArray(q && q.options) ? q.options : [],
-    answers: Array.isArray(q && q.answers) ? q.answers : (q && q.solution ? [String(q.solution)] : []),
-    solution: q && q.solution != null ? String(q.solution) : (Array.isArray(q && q.answers) && q.answers.length ? String(q.answers[0]) : '')
-  }));
+  return selected.map(q => {
+    const answers = Array.isArray(q && q.answers) ? q.answers : (q && q.solution ? [String(q.solution)] : []);
+    const solution = answers.length ? String(answers[0]) : '';
+    return {
+      ...q,
+      questionType: 'SCQ',
+      options: Array.isArray(q && q.options) ? q.options : [],
+      answers,
+      solution
+    };
+  });
 }
 
 function assertGeneratedEnglishSubjectiveCounts(items, metadataText, label) {
