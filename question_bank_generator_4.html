@@ -3235,13 +3235,14 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
     const radSpecs = parseRADMetadata();
     const radTotal = radSpecs.length;
     const useRadLightSource = !!(radLoText && radLoText.trim().length > 40);
-    const radCallOptions = { attempts: 4, retryDelayMs: 1600 };
+    const radCallOptions = { attempts: 8, retryDelayMs: 2600 };
     if (useRadLightSource) radCallOptions.skipTextbookSource = true;
+    const radChunkSize = Math.max(1, Math.min(2, radSpecs.length || 1));
 
     async function generateRADChunk(chunkSpecs, startIndex, allowSplitFallback = true) {
       const radPrompt = buildRADescPrompt(name, item, masterPrompt, radLoText, chunkSpecs, startIndex);
       const expectedCount = chunkSpecs.length;
-      const radMaxTokens = 8192;
+      const radMaxTokens = Math.min(24000, Math.max(10000, expectedCount * 3000));
       let rawResult;
       try {
         rawResult = await callClaude(radPrompt, radMaxTokens, MODELS.RAD, '[', radCallOptions);
@@ -3260,9 +3261,21 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
       let qCount = Array.isArray(parsed) ? parsed.length : 0;
       if (qCount !== expectedCount) {
         const retryPrompt = radPrompt + '\n\nIMPORTANT RETRY FEEDBACK: Your previous output contained ' + qCount + ' questions, but exactly ' + expectedCount + ' are required. Regenerate the entire JSON array with exactly ' + expectedCount + ' questions only. Do not add any extra text.';
-        rawResult = await callClaude(retryPrompt, radMaxTokens, MODELS.RAD, '[', radCallOptions);
-        parsed = parseJSON('[' + (rawResult || ''));
-        qCount = Array.isArray(parsed) ? parsed.length : 0;
+        try {
+          rawResult = await callClaude(retryPrompt, radMaxTokens, MODELS.RAD, '[', radCallOptions);
+          parsed = parseJSON('[' + (rawResult || ''));
+          qCount = Array.isArray(parsed) ? parsed.length : 0;
+        } catch (retryErr) {
+          if (allowSplitFallback && expectedCount > 1 && (retryErr.isRetryable || [502, 503, 504, 529].includes(retryErr.status))) {
+            const singleResults = [];
+            for (let j = 0; j < chunkSpecs.length; j++) {
+              const oneResult = await generateRADChunk([chunkSpecs[j]], startIndex + j, false);
+              singleResults.push(...oneResult);
+            }
+            return singleResults;
+          }
+          throw retryErr;
+        }
       }
       if (Array.isArray(parsed) && qCount > expectedCount) {
         parsed = parsed.slice(0, expectedCount);
@@ -3278,7 +3291,7 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
       }
       if (qCount !== expectedCount && expectedCount === 1) {
         const emergencyPrompt = radPrompt + '\n\nFINAL REPAIR ATTEMPT: Return a JSON array with exactly ONE valid Reason-Assertion Descriptive question object for RAD ' + (startIndex + 1) + '. Do not include markdown. Do not include any text outside the array. If unsure, create one grade-appropriate item strictly from the supplied learning outcomes and concept context.';
-        rawResult = await callClaude(emergencyPrompt, 8192, MODELS.RAD, '[', { ...radCallOptions, attempts: 5, retryDelayMs: 2200 });
+        rawResult = await callClaude(emergencyPrompt, Math.max(radMaxTokens, 12000), MODELS.RAD, '[', { ...radCallOptions, attempts: 8, retryDelayMs: 2800 });
         parsed = parseJSON('[' + (rawResult || ''));
         qCount = Array.isArray(parsed) ? parsed.length : 0;
         if (Array.isArray(parsed) && qCount > 1) {
@@ -3292,10 +3305,25 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
       return parsed;
     }
 
-    // Main path: one concept = one API call for the full user-requested RAD count.
-    // If the model returns a short/invalid array, generateRADChunk automatically splits
-    // into one-question repair calls so the file can still complete instead of skipping.
-    let parsed = await generateRADChunk(radSpecs, 0);
+    // Main path: selected concepts still run concurrently. Inside each concept, RAD is
+    // generated in small chunks so one partial response cannot fail the whole concept.
+    const parsed = [];
+    for (let i = 0; i < radSpecs.length; i += radChunkSize) {
+      const chunk = radSpecs.slice(i, i + radChunkSize);
+      try {
+        parsed.push(...await generateRADChunk(chunk, i, true));
+      } catch (chunkErr) {
+        // Last-resort repair: rerun each missing RAD spec independently before failing this concept.
+        for (let j = 0; j < chunk.length; j++) {
+          try {
+            parsed.push(...await generateRADChunk([chunk[j]], i + j, false));
+          } catch (singleErr) {
+            const message = singleErr && singleErr.message ? singleErr.message : String(singleErr || chunkErr);
+            throw new Error('RAD item ' + (i + j + 1) + ' failed after repair attempts: ' + message);
+          }
+        }
+      }
+    }
 
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
     if (qCount !== radTotal) {
