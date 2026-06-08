@@ -3251,9 +3251,56 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
           if (parsed.length === 1 && Array.isArray(parsed[0])) return parsed[0];
           return parsed;
         }
-        if (parsed && typeof parsed === 'object') return [parsed];
+        if (parsed && typeof parsed === 'object') {
+          for (const key of ['questions', 'items', 'data', 'output', 'result']) {
+            if (Array.isArray(parsed[key])) return parsed[key];
+          }
+          return [parsed];
+        }
       }
       return [];
+    }
+    function buildCompactRADFallbackPrompt(spec, startIndex) {
+      const optionLetter = ['A', 'B', 'C', 'D'][Math.max(0, startIndex || 0) % 4];
+      const topicName = (name || (item && item.name) || state.chapterName || '').trim();
+      const subtopicLine = item && item.subtopicName ? 'Parent Subtopic: ' + item.subtopicName + '\n' : '';
+      const nanoLine = item && item.nanoConcepts && item.nanoConcepts.length ? 'Nano Concepts: ' + item.nanoConcepts.join(', ') + '\n' : '';
+      const loLine = radLoText ? 'Learning Outcomes:\n' + radLoText + '\n' : '';
+      return `You are an expert ${state.curriculum} ${state.subject} teacher. The earlier full RAD prompt failed by returning zero usable questions. Generate exactly ONE Reason-Assertion Descriptive question now.
+
+METADATA:
+Subject: ${state.subject}
+Curriculum: ${state.curriculum}
+Textbook: ${state.textbook || (state.curriculum === 'CBSE' ? 'NCERT' : 'Standard Textbook')}
+Grade: ${state.grade}
+Chapter Name: ${state.chapterName}
+Topic/Concept Name: ${topicName}
+${subtopicLine}${nanoLine}${loLine}Cognitive Level: ${spec.cognitiveLevel}
+Difficulty Level: ${spec.difficultyLevel}
+Required correct option letter for this RAD item: ${optionLetter}
+
+Use the attached textbook/script/source when available. If the attachment cannot be read or is insufficient, use the chapter name, concept name and learning outcomes above to create a grade-appropriate question. Never return an empty array.
+
+Return ONLY a complete valid JSON array with exactly one object. No markdown. No explanation outside JSON.
+
+The object MUST use this exact schema:
+{
+  "cognitiveLevel": "${spec.cognitiveLevel}",
+  "difficultyLevel": "${spec.difficultyLevel}",
+  "questionType": "VSA",
+  "question_type_tag": "Reason-Assertion Description",
+  "question": "Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\n\n<b>Assertion (A):</b> <assertion>.\n<b>Reason (R):</b> <reason>.\n\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\n\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\n(C) Assertion (A) is true, but Reason (R) is false.\n(D) Assertion (A) is false, but Reason (R) is true.",
+  "solution": "Option (${optionLetter}) is correct.\n<one-line justification>",
+  "marks": "1"
+}
+
+Correct option meaning:
+A: Both Assertion and Reason are true, and Reason correctly explains Assertion.
+B: Both Assertion and Reason are true, but Reason does not explain Assertion.
+C: Assertion is true, but Reason is false.
+D: Assertion is false, but Reason is true.
+
+Write Assertion and Reason so the correct option is exactly ${optionLetter}.`;
     }
     async function generateRADChunk(chunkSpecs, startIndex, allowSplitFallback = true) {
       const radPrompt = buildRADescPrompt(name, item, masterPrompt, radLoText, chunkSpecs, startIndex);
@@ -3308,6 +3355,16 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
       if (qCount !== expectedCount && expectedCount === 1) {
         const emergencyPrompt = radPrompt + '\n\nFINAL REPAIR ATTEMPT: Return a JSON array with exactly ONE valid Reason-Assertion Descriptive question object for RAD ' + (startIndex + 1) + '. Do not include markdown. Do not include any text outside the array. If unsure, create one grade-appropriate item strictly from the supplied learning outcomes and concept context.';
         rawResult = await callClaude(emergencyPrompt + '\n\nNever return an empty array. Return exactly one JSON object inside a complete JSON array.', Math.max(radMaxTokens, 12000), MODELS.RAD, null, { ...radCallOptions, attempts: 8, retryDelayMs: 2800 });
+        parsed = parseRADArray(rawResult);
+        qCount = Array.isArray(parsed) ? parsed.length : 0;
+        if (Array.isArray(parsed) && qCount > 1) {
+          parsed = parsed.slice(0, 1);
+          qCount = 1;
+        }
+      }
+      if (qCount !== expectedCount && expectedCount === 1) {
+        const compactPrompt = buildCompactRADFallbackPrompt(chunkSpecs[0], startIndex);
+        rawResult = await callClaude(compactPrompt, 10000, MODELS.RAD, null, { ...radCallOptions, attempts: 8, retryDelayMs: 3000 });
         parsed = parseRADArray(rawResult);
         qCount = Array.isArray(parsed) ? parsed.length : 0;
         if (Array.isArray(parsed) && qCount > 1) {
