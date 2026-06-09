@@ -5029,9 +5029,11 @@ Standard options:
 (D) Assertion (A) is false, but Reason (R) is true.`;
 }
 function buildRADescPrompt(conceptName, item, masterPrompt, loText, overrideSpecs, startIndex) {
-  const raw = (state.subject === 'Social' && state.curriculum === 'CBSE')
-    ? buildSocialCBSERADPrompt()
-    : (extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || buildGenericRADBasePrompt());
+  const raw = (state.subject === 'Chemistry' && state.curriculum === 'CBSE')
+    ? buildChemistryCBSERADPrompt()
+    : (state.subject === 'Social' && state.curriculum === 'CBSE')
+      ? buildSocialCBSERADPrompt()
+      : (extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT') || buildGenericRADBasePrompt());
   let section = applyPromptCountEdits(fillPlaceholders(raw, conceptName, item, loText));
   // Strip [Number of ...] lines — METADATA INPUT below is sole source of truth
   section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
@@ -6044,6 +6046,137 @@ function startOver() {
     if(i===0){s.classList.add('active');}else{s.classList.add('disabled');}
   });
   goToPage(1);
+}
+function buildChemistryCBSERADPrompt() {
+  return `## REASON_ASSERTION_CREATION_PROMPT
+You are an experienced Chemistry teacher who has a good record with creation of question banks which aligns with Bloom's taxonomy. Understand the information given below and perform the assigned task.
+
+Your task is to generate Reason-Assertion questions for the following information.
+
+[META DATA INPUT SPECIFICATIONS]
+
+[Subject]: {{subject}}
+[Curriculum]: CBSE
+[Textbook]: NCERT
+[Grade]: {{gradenumber}}
+[Chapter Name]: {{chaptername}}
+[Subtopic Name]: {{subtopicname}}
+[Subconcepts]: {{subconcepts}}
+[Learning Outcomes]: {{learningoutcomes}}
+[Script]: [Attached]
+[Number of Application Medium Questions]: RA:2
+[Number of Application Hard Questions]: RA:2
+
+Your understanding of cognitive and difficulty level:
+1. Application Medium: Questions where students apply concepts or formulas to routine real-world problems which are not from the textbook examples.
+2. Application Hard: Questions requiring application of concepts to new or unfamiliar real-world situations which are not from the textbook examples.
+
+[RA question rules]:
+1. An RA question is a Reason-Assertion type question.
+2. A statement (Assertion, A) is given.
+3. A second statement (Reason, R) is provided, which may or may not correctly explain the Assertion.
+4. The student must judge the truth of both statements and whether the Reason is the correct explanation of the Assertion.
+5. No consecutive RA question must have the same correct option letter.
+
+[Standard question format]:
+Two statements are given, one labelled as Assertion (A) and the other as Reason (R).
+Assertion (A): A declarative statement claimed to be true
+Reason (R): A statement proposed as explanation or cause for the assertion
+Answer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.
+
+The standard options are:
+A. Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).
+B. Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).
+C. Assertion (A) is true, but Reason (R) is false.
+D. Assertion (A) is false, but Reason (R) is true.
+
+[Question Ending Format Rule]:
+Rotate the question ending format across all RA questions using these variations in order:
+Question 1: Answer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.
+Question 2: Choose the appropriate option given below and justify your answer with a one-line explanation.
+Question 3: Choose the appropriate option given below and answer with a 1-2 liner explanation.
+Question 4: AI-generated variation similar in structure and clarity to the above formats.
+Question 5: AI-generated variation.
+Question 6: AI-generated variation.
+Question 7: Repeat from format 1, and so on.
+- No two consecutive questions should have the same ending format.
+
+[Solution rules for numerical based questions]:
+1. Solution must include detailed step-by-step calculations in this flow: standard formula, formula conversion, then substitution, calculation, and final answer.
+2. First mention the standard formula, then convert it into required format, wherever applicable.
+3. Correct answer and final answer in solution must match.
+
+How to Vary the Correct Answer:
+1. For Answer (a) - Both true, R explains A.
+2. For Answer (b) - Both true, but R does not explain A.
+3. For Answer (c) - A true, R false.
+4. For Answer (d) - A false, R true.
+
+[Sample Question]:
+Two statements are given, one labelled as Assertion (A) and the other as Reason (R).
+Assertion (A): Carbon shares its valence electrons with other atoms of carbon or with atoms of other elements.
+Reason (R): The shared electrons belong to the outermost shells of both the atoms and lead to both atoms attaining the noble gas configuration.
+Answer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.
+Options:
+(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).
+(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).
+(C) Assertion (A) is true, but Reason (R) is false.
+(D) Assertion (A) is false, but Reason (R) is true.
+Solution: option (B) is correct.
+Carbon forms covalent bonds by sharing valence electrons, and these shared electrons count toward both atoms' outermost shells, enabling both to achieve the stable noble gas configuration.
+
+[Content Boundaries]:
+1. All questions and solutions must be in simple language understandable by [Grade] students.
+2. Generate questions, options and solutions STRICTLY based on the content present in the [Script] following NCERT [Grade] [Subject] [Textbook] ONLY.
+3. Use only the terminology, language style, notations and expressions as found in the CBSE [Textbook] [Grade] [Subject] and [Script] attached.
+4. Cover all important concepts from the provided [Subtopic Name] and [Subconcepts] if provided.
+5. Wherever a chemical name appears, always include its chemical formula or symbol in brackets right next to it.
+6. Activity-based questions should focus on testing key learning points and main takeaways from the activity.
+7. Generate a combination of both numeric and theoretical questions based on the [Script] provided.
+8. Never use the terms according to the textbook/text, from the NCERT, or from the figure/table/activity references within the question text. Use conceptual names instead, if any.
+
+Core Content:
+9. Include state symbols (s), (l), (g), (aq) in all chemical equations.
+10. If a question or answer refers to any chemical equation or reaction, generate the equation or reaction as well instead of just text explanation.
+11. To avoid confusion between visually similar symbols, always specify the complete term, such as Carbon (\\(\\text{C}\\)) for the element or concentration (\\(\\text{C}\\)) for the variable.
+12. Avoid generating asterisks, hash, or em dash at any point.
+13. For structure based questions, instead of asking students to draw a structure, only ask for the equation of the structure.
+14. Use the calculation formulas and methods that are used in the script: [Script].
+15. Provide the values of constants in the question that the student requires to solve that question.
+
+Do NOT introduce:
+- Concepts beyond the NCERT curriculum
+- Advanced scientific terminology not in the textbook
+- Examples or case studies not mentioned in NCERT materials
+- College-level or research-based concepts
+
+Rules to be followed:
+1. Use clear and simple language appropriate for [Grade] CBSE students.
+2. Use concepts, terminology, textbook language, and notations which are used in the script: [Script].
+3. Avoid duplications or repetitions at any point.
+4. Complexity of calculations and solvables must align with [Grade] level as per NCERT.
+5. Use only BRITISH ENGLISH SPELLINGS only throughout the generation.
+6. Use Indian metrics in measurements.
+7. All mathematical and chemical equations, symbols other than text, must be in latex format and enclosed within \\(...\\). Use \\text{} for all alphabetic latex content. NEVER use \\ce{} or display math $$.
+
+[LaTeX Formatting rules]
+All mathematical and chemical equations, all units, numbers, symbols, formulas, bonds, functional groups, hybridization states, and mechanism notations must be in inline LaTeX format using double backslashes \\(...\\). Use \\text{} for all chemical content to ensure upright text with manual subscripts and superscripts. NEVER use \\ce{} or display math $$.
+
+If a symbol or letter is in LaTeX once, it must always be in LaTeX for the entire generation.
+
+Generate the output in following JSON code block format:
+
+[
+  {
+    "cognitiveLevel": "Application",
+    "difficultyLevel": "Medium",
+    "questionType": "VSA",
+    "question_type_tag": "Reason-Assertion Description",
+    "question": "Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\\n\\n<b>Assertion (A):</b> Carbon shares its valence electrons with other atoms of carbon or with atoms of other elements.\\n<b>Reason (R):</b> The shared electrons belong to the outermost shells of both the atoms and lead to both atoms attaining the noble gas configuration.\\n\\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\\n\\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\\n(C) Assertion (A) is true, but Reason (R) is false.\\n(D) Assertion (A) is false, but Reason (R) is true.",
+    "solution": "Option (B) is correct.\\nCarbon forms covalent bonds by sharing valence electrons, and these shared electrons count toward both atoms' outermost shells, enabling both to achieve the stable noble gas configuration.",
+    "marks": "2"
+  }
+]`;
 }
 </script>
 </body>
