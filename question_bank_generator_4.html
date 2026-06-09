@@ -1442,6 +1442,7 @@ const state = {
   generatedFiles: {},
   generatedConceptKeys: new Set(),
   downloadedFilePaths: new Set(),
+  lastClaudeUsage: null,
   currentPage: 1,
   genMode: 'full',          // 'full' | 'questions'
   questionsType: 'both',    // 'both' | 'objective' | 'subjective'
@@ -1942,6 +1943,22 @@ MANDATORY QUALITY RULES — apply to every item you generate:
     throw apiErr;
   }
   const data = await resp.json();
+  if (data && data.usage) {
+    const usageRecord = {
+      label: opts.label || '',
+      model: body.model,
+      max_tokens: body.max_tokens,
+      input_tokens: data.usage.input_tokens ?? null,
+      output_tokens: data.usage.output_tokens ?? null,
+      cache_creation_input_tokens: data.usage.cache_creation_input_tokens ?? null,
+      cache_read_input_tokens: data.usage.cache_read_input_tokens ?? null,
+      timestamp: new Date().toISOString(),
+    };
+    state.lastClaudeUsage = usageRecord;
+    if (/RAD/i.test(String(opts.label || ''))) {
+      console.log('[Claude usage]', usageRecord);
+    }
+  }
   if (data.stop_reason === 'max_tokens') {
     throw new Error('Response truncated (max_tokens reached) — reduce load or retry');
   }
@@ -2764,6 +2781,11 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
       stepFiles.push(['subjective', fp('Subjective.json')]);
     }
     for (const [stepId, filePath] of stepFiles) {
+      if (stepId === 'reason_assertion') {
+        if (state.generatedFiles[filePath] !== undefined) delete state.generatedFiles[filePath];
+        cp.completedSteps.delete(stepId);
+        continue;
+      }
       if (state.generatedFiles[filePath] !== undefined) cp.completedSteps.add(stepId);
     }
     if (isEnglishCBSEResume) {
@@ -3234,9 +3256,9 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
     const radLoText = (state.radLOText || state.globalLOText || '').trim() || loResult;
     const radSpecs = parseRADMetadata();
     const radTotal = radSpecs.length;
-    const radCallOptions = { attempts: 8, retryDelayMs: 2600 };
+    const radCallOptions = { attempts: 5, retryDelayMs: 1800 };
     // RAD prompts require the attached script/textbook as source; do not drop it just because LOs are present.
-    const radChunkSize = Math.max(1, Math.min(2, radSpecs.length || 1));
+    const radChunkSize = Math.max(1, radSpecs.length || 1);
 
     function parseRADArray(rawText) {
       const raw = String(rawText || '').trim();
@@ -3260,118 +3282,21 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
       }
       return [];
     }
-    function buildCompactRADFallbackPrompt(spec, startIndex) {
-      const optionLetter = ['A', 'B', 'C', 'D'][Math.max(0, startIndex || 0) % 4];
-      const topicName = (name || (item && item.name) || state.chapterName || '').trim();
-      const subtopicLine = item && item.subtopicName ? 'Parent Subtopic: ' + item.subtopicName + '\n' : '';
-      const nanoLine = item && item.nanoConcepts && item.nanoConcepts.length ? 'Nano Concepts: ' + item.nanoConcepts.join(', ') + '\n' : '';
-      const loLine = radLoText ? 'Learning Outcomes:\n' + radLoText + '\n' : '';
-      return `You are an expert ${state.curriculum} ${state.subject} teacher. The earlier full RAD prompt failed by returning zero usable questions. Generate exactly ONE Reason-Assertion Descriptive question now.
-
-METADATA:
-Subject: ${state.subject}
-Curriculum: ${state.curriculum}
-Textbook: ${state.textbook || (state.curriculum === 'CBSE' ? 'NCERT' : 'Standard Textbook')}
-Grade: ${state.grade}
-Chapter Name: ${state.chapterName}
-Topic/Concept Name: ${topicName}
-${subtopicLine}${nanoLine}${loLine}Cognitive Level: ${spec.cognitiveLevel}
-Difficulty Level: ${spec.difficultyLevel}
-Required correct option letter for this RAD item: ${optionLetter}
-
-Use the attached textbook/script/source when available. If the attachment cannot be read or is insufficient, use the chapter name, concept name and learning outcomes above to create a grade-appropriate question. Never return an empty array.
-
-Return ONLY a complete valid JSON array with exactly one object. No markdown. No explanation outside JSON.
-
-The object MUST use this exact schema:
-{
-  "cognitiveLevel": "${spec.cognitiveLevel}",
-  "difficultyLevel": "${spec.difficultyLevel}",
-  "questionType": "VSA",
-  "question_type_tag": "Reason-Assertion Description",
-  "question": "Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\n\n<b>Assertion (A):</b> <assertion>.\n<b>Reason (R):</b> <reason>.\n\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\n\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\n(C) Assertion (A) is true, but Reason (R) is false.\n(D) Assertion (A) is false, but Reason (R) is true.",
-  "solution": "Option (${optionLetter}) is correct.\n<one-line justification>",
-  "marks": "1"
-}
-
-Correct option meaning:
-A: Both Assertion and Reason are true, and Reason correctly explains Assertion.
-B: Both Assertion and Reason are true, but Reason does not explain Assertion.
-C: Assertion is true, but Reason is false.
-D: Assertion is false, but Reason is true.
-
-Write Assertion and Reason so the correct option is exactly ${optionLetter}.`;
+    function normalizeRADItems(items) {
+      return (Array.isArray(items) ? items : []).map(q => ({
+        ...q,
+        questionType: 'VSA',
+        question_type_tag: 'Reason-Assertion Description',
+        marks: '2'
+      }));
     }
-    async function generateRADChunk(chunkSpecs, startIndex, allowSplitFallback = true) {
+    async function generateRADChunk(chunkSpecs, startIndex) {
       const radPrompt = buildRADescPrompt(name, item, masterPrompt, radLoText, chunkSpecs, startIndex);
       const expectedCount = chunkSpecs.length;
       const radMaxTokens = Math.min(24000, Math.max(10000, expectedCount * 3000));
-      let rawResult;
-      try {
-        rawResult = await callClaude(radPrompt, radMaxTokens, MODELS.RAD, null, radCallOptions);
-      } catch (apiErr) {
-        if (allowSplitFallback && expectedCount > 1 && (apiErr.isRetryable || [502, 503, 504, 529].includes(apiErr.status))) {
-          const singleResults = [];
-          for (let j = 0; j < chunkSpecs.length; j++) {
-            const oneResult = await generateRADChunk([chunkSpecs[j]], startIndex + j, false);
-            singleResults.push(...oneResult);
-          }
-          return singleResults;
-        }
-        throw apiErr;
-      }
-      let parsed = parseRADArray(rawResult);
+      const rawResult = await callClaude(radPrompt, radMaxTokens, MODELS.RAD, null, { ...radCallOptions, label: `${state.subject} RAD` });
+      const parsed = normalizeRADItems(parseRADArray(rawResult));
       let qCount = Array.isArray(parsed) ? parsed.length : 0;
-      if (qCount !== expectedCount) {
-        const retryPrompt = radPrompt + '\n\nIMPORTANT RETRY FEEDBACK: Your previous output contained ' + qCount + ' questions, but exactly ' + expectedCount + ' are required. Regenerate the entire JSON array with exactly ' + expectedCount + ' questions only. Do not add any extra text.';
-        try {
-          rawResult = await callClaude(retryPrompt + '\n\nNever return an empty array. Return a complete JSON array beginning with [ and ending with ].', radMaxTokens, MODELS.RAD, null, radCallOptions);
-          parsed = parseRADArray(rawResult);
-          qCount = Array.isArray(parsed) ? parsed.length : 0;
-        } catch (retryErr) {
-          if (allowSplitFallback && expectedCount > 1 && (retryErr.isRetryable || [502, 503, 504, 529].includes(retryErr.status))) {
-            const singleResults = [];
-            for (let j = 0; j < chunkSpecs.length; j++) {
-              const oneResult = await generateRADChunk([chunkSpecs[j]], startIndex + j, false);
-              singleResults.push(...oneResult);
-            }
-            return singleResults;
-          }
-          throw retryErr;
-        }
-      }
-      if (Array.isArray(parsed) && qCount > expectedCount) {
-        parsed = parsed.slice(0, expectedCount);
-        qCount = expectedCount;
-      }
-      if (qCount !== expectedCount && allowSplitFallback && expectedCount > 1) {
-        const singleResults = [];
-        for (let j = 0; j < chunkSpecs.length; j++) {
-          const oneResult = await generateRADChunk([chunkSpecs[j]], startIndex + j, false);
-          singleResults.push(...oneResult);
-        }
-        return singleResults;
-      }
-      if (qCount !== expectedCount && expectedCount === 1) {
-        const emergencyPrompt = radPrompt + '\n\nFINAL REPAIR ATTEMPT: Return a JSON array with exactly ONE valid Reason-Assertion Descriptive question object for RAD ' + (startIndex + 1) + '. Do not include markdown. Do not include any text outside the array. If unsure, create one grade-appropriate item strictly from the supplied learning outcomes and concept context.';
-        rawResult = await callClaude(emergencyPrompt + '\n\nNever return an empty array. Return exactly one JSON object inside a complete JSON array.', Math.max(radMaxTokens, 12000), MODELS.RAD, null, { ...radCallOptions, attempts: 8, retryDelayMs: 2800 });
-        parsed = parseRADArray(rawResult);
-        qCount = Array.isArray(parsed) ? parsed.length : 0;
-        if (Array.isArray(parsed) && qCount > 1) {
-          parsed = parsed.slice(0, 1);
-          qCount = 1;
-        }
-      }
-      if (qCount !== expectedCount && expectedCount === 1) {
-        const compactPrompt = buildCompactRADFallbackPrompt(chunkSpecs[0], startIndex);
-        rawResult = await callClaude(compactPrompt, 10000, MODELS.RAD, null, { ...radCallOptions, attempts: 8, retryDelayMs: 3000 });
-        parsed = parseRADArray(rawResult);
-        qCount = Array.isArray(parsed) ? parsed.length : 0;
-        if (Array.isArray(parsed) && qCount > 1) {
-          parsed = parsed.slice(0, 1);
-          qCount = 1;
-        }
-      }
       if (qCount !== expectedCount) {
         throw new Error('RAD chunk returned ' + qCount + ' questions, expected ' + expectedCount + '. Click Retry.');
       }
@@ -3383,29 +3308,18 @@ Write Assertion and Reason so the correct option is exactly ${optionLetter}.`;
     const parsed = [];
     for (let i = 0; i < radSpecs.length; i += radChunkSize) {
       const chunk = radSpecs.slice(i, i + radChunkSize);
-      try {
-        parsed.push(...await generateRADChunk(chunk, i, true));
-      } catch (chunkErr) {
-        // Last-resort repair: rerun each missing RAD spec independently before failing this concept.
-        for (let j = 0; j < chunk.length; j++) {
-          try {
-            parsed.push(...await generateRADChunk([chunk[j]], i + j, false));
-          } catch (singleErr) {
-            const message = singleErr && singleErr.message ? singleErr.message : String(singleErr || chunkErr);
-            throw new Error('RAD item ' + (i + j + 1) + ' failed after repair attempts: ' + message);
-          }
-        }
-      }
+      parsed.push(...await generateRADChunk(chunk, i));
     }
 
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
     if (qCount !== radTotal) {
       throw new Error('RAD returned ' + qCount + ' questions, expected ' + radTotal + '. Click Retry.');
     }
+    parsed = normalizeRADItems(parsed);
     saveFile(fp('ReasonAssertion.json'), JSON.stringify(parsed, null, 2));
     logStep(scopeLabel, 'Reason-Assertion Descriptive', '\u2696\uFE0F', 'done', qCount + ' questions');
     return qCount;
-  }, 600000);
+  }, 300000);
   if (raQ !== undefined) { addedQ += raQ; cp.totalQ += raQ; }
 
   // MTF SCQ — Biology ICSE only
@@ -3667,7 +3581,8 @@ async function startGeneration() {
       'All ' + doneCount + ' concepts completed successfully!';
   }
 
-  const remainingMissing = await repairMissingFilesSilently(scopeItems, masterPrompt, isEnglish, ch, 3);
+  const remainingMissing = computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch)
+    .filter(e => state.generatedFiles[e.path] === undefined);
 
   document.getElementById('statFiles').textContent = Object.keys(state.generatedFiles).length;
   const hasAnyFiles = Object.keys(state.generatedFiles).length > 0;
@@ -3676,7 +3591,14 @@ async function startGeneration() {
     setTimeout(async () => {
       goToPage(5);
       renderDownloadPage();
-      if (remainingMissing.length > 0) await checkMissingFiles(scopeItems, masterPrompt, isEnglish, ch);
+      if (remainingMissing.length > 0) {
+        void (async () => {
+          const stillMissing = await repairMissingFilesSilently(scopeItems, masterPrompt, isEnglish, ch, 1);
+          document.getElementById('statFiles').textContent = Object.keys(state.generatedFiles).length;
+          renderDownloadPage();
+          if (stillMissing.length > 0) await checkMissingFiles(scopeItems, masterPrompt, isEnglish, ch);
+        })();
+      }
     }, 1200);
   } else {
     document.getElementById('startGenBtn').style.display = '';
@@ -4749,7 +4671,7 @@ JSON schema example:
   "question_type_tag": "",
   "question": "<question text — each sub-part on its own line, no marks beside question>",
   "solution": "<answer text — each sub-part label (a),(b),(c) on its own separate line, bullet points for multi-point standalone answers, full stop at end of each point>",
-  "marks": "1"
+  "marks": "2"
 }`;
 
   const taggedExample = isBioFIB
@@ -5081,7 +5003,8 @@ Generate the output in JSON array format only. Each object must use:
   "questionType": "VSA",
   "question_type_tag": "Reason-Assertion Description",
   "question": "Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\n\n<b>Assertion (A):</b> <assertion>.\n<b>Reason (R):</b> <reason>.\n\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\n\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\n(C) Assertion (A) is true, but Reason (R) is false.\n(D) Assertion (A) is false, but Reason (R) is true.",
-  "solution": "Option (<letter>) is correct.\n<one-line justification>"
+  "solution": "Option (<letter>) is correct.\n<one-line justification>",
+  "marks": "2"
 }`;
 }
 function buildGenericRADBasePrompt() {
@@ -5127,7 +5050,7 @@ function buildRADescPrompt(conceptName, item, masterPrompt, loText, overrideSpec
   "question_type_tag": "Reason-Assertion Description",
   "question": "Two statements are given, one labelled as Assertion (A) and the other as Reason (R).\\n\\n<b>Assertion (A):</b> <assertion statement>.\\n<b>Reason (R):</b> <reason statement>.\\n\\nAnswer the following question by selecting the appropriate option given below and justify your answer with a one-line explanation.\\n\\n(A) Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A).\\n(B) Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A).\\n(C) Assertion (A) is true, but Reason (R) is false.\\n(D) Assertion (A) is false, but Reason (R) is true.",
   "solution": "Option (<correct letter>) is correct.\\n<one-line justification explaining why the chosen option is correct>",
-  "marks": "1"
+  "marks": "2"
 }`;
 
   const formatSpec = `
@@ -5156,7 +5079,7 @@ Every element MUST use EXACTLY this schema:
 ${radExample}
 
 MANDATORY RULES:
-- "questionType" is always "VSA" and "marks" is always "1" for RAD questions
+- "questionType" is always "VSA" and "marks" is always "2" for RAD questions
 - "question_type_tag" is always exactly "Reason-Assertion Description"
 - The question field MUST follow this EXACT structure verbatim:
   Line 1: "Two statements are given, one labelled as Assertion (A) and the other as Reason (R)."
@@ -5769,8 +5692,43 @@ function escapeRawNewlinesInJSONString(text) {
 }
 function countLines(text) { return text.split('\n').length; }
 
+function normalizeReasonAssertionMarksInJson(value) {
+  if (Array.isArray(value)) {
+    return value.map(normalizeReasonAssertionMarksInJson);
+  }
+  if (value && typeof value === 'object') {
+    const tag = normalizeMetaType(value.question_type_tag);
+    const questionText = String(value.question || '');
+    const looksLikeRAD =
+      tag === 'REASON ASSERTION DESCRIPTION' ||
+      (normalizeMetaType(value.questionType) === 'VSA' &&
+       /ASSERTION\s*\(A\)/i.test(questionText) &&
+       /REASON\s*\(R\)/i.test(questionText));
+    const next = { ...value };
+    if (looksLikeRAD) {
+      next.marks = '2';
+    }
+    for (const key of Object.keys(next)) {
+      next[key] = normalizeReasonAssertionMarksInJson(next[key]);
+    }
+    return next;
+  }
+  return value;
+}
+
 function saveFile(path, content) {
-  state.generatedFiles[path] = content;
+  let finalContent = content;
+  if (typeof finalContent === 'string' && /\.json$/i.test(path)) {
+    try {
+      finalContent = JSON.stringify(normalizeReasonAssertionMarksInJson(JSON.parse(finalContent)), null, 2);
+    } catch (_) {
+      finalContent = finalContent
+        .replace(/"marks"\s*:\s*"1"/g, '"marks": "2"')
+        .replace(/"questionType"\s*:\s*"VSA"/g, '"questionType": "VSA"')
+        .replace(/"question_type_tag"\s*:\s*"Reason-Assertion Description"/g, '"question_type_tag": "Reason-Assertion Description"');
+    }
+  }
+  state.generatedFiles[path] = finalContent;
 }
 
 // ============================================================
@@ -5778,6 +5736,18 @@ function saveFile(path, content) {
 // ============================================================
 function renderDownloadPage() {
   const files = state.generatedFiles;
+  for (const path of Object.keys(files)) {
+    if (/\.json$/i.test(path) && typeof files[path] === 'string') {
+      try {
+        files[path] = JSON.stringify(normalizeReasonAssertionMarksInJson(JSON.parse(files[path])), null, 2);
+      } catch (_) {
+        files[path] = files[path]
+          .replace(/"marks"\s*:\s*"1"/g, '"marks": "2"')
+          .replace(/"questionType"\s*:\s*"VSA"/g, '"questionType": "VSA"')
+          .replace(/"question_type_tag"\s*:\s*"Reason-Assertion Description"/g, '"question_type_tag": "Reason-Assertion Description"');
+      }
+    }
+  }
   const fkeys = Object.keys(files);
 
   document.getElementById('dlStatTotal').textContent = fkeys.length;
@@ -5835,7 +5805,18 @@ function renderTree(node, depth) {
 }
 
 function downloadFile(path) {
-  const content = state.generatedFiles[path];
+  let content = state.generatedFiles[path];
+  if (typeof content === 'string' && /\.json$/i.test(path)) {
+    try {
+      content = JSON.stringify(normalizeReasonAssertionMarksInJson(JSON.parse(content)), null, 2);
+    } catch (_) {
+      content = content
+        .replace(/"marks"\s*:\s*"1"/g, '"marks": "2"')
+        .replace(/"questionType"\s*:\s*"VSA"/g, '"questionType": "VSA"')
+        .replace(/"question_type_tag"\s*:\s*"Reason-Assertion Description"/g, '"question_type_tag": "Reason-Assertion Description"');
+    }
+    state.generatedFiles[path] = content;
+  }
   const name = path.split('/').pop();
   const blob = new Blob([content], { type: 'text/plain' });
   const a = document.createElement('a');
@@ -5867,7 +5848,19 @@ async function downloadAll() {
   try {
     const zip = new JSZip();
     for (const path of paths) {
-      zip.file(path, files[path]);
+      let content = files[path];
+      if (typeof content === 'string' && /\.json$/i.test(path)) {
+        try {
+          content = JSON.stringify(normalizeReasonAssertionMarksInJson(JSON.parse(content)), null, 2);
+        } catch (_) {
+          content = content
+            .replace(/"marks"\s*:\s*"1"/g, '"marks": "2"')
+            .replace(/"questionType"\s*:\s*"VSA"/g, '"questionType": "VSA"')
+            .replace(/"question_type_tag"\s*:\s*"Reason-Assertion Description"/g, '"question_type_tag": "Reason-Assertion Description"');
+        }
+        files[path] = content;
+      }
+      zip.file(path, content);
     }
 
     const blob = await zip.generateAsync({
