@@ -2841,10 +2841,11 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const prereqOnly    = state.genMode === 'prereq';
   const glossaryOnly  = state.genMode === 'glossary';
   const singleStepMode = questionsOnly || pltOnly || prereqOnly || glossaryOnly;
-  const isRADOnly    = questionsOnly && state.questionsType === 'rad';
-  const isMTFScqOnly = questionsOnly && state.questionsType === 'mtfScq';
-  const isMTFSubOnly = questionsOnly && state.questionsType === 'mtfSub';
-  const isMTFMultiOnly = questionsOnly && state.questionsType === 'mtfMulti';
+  const selectedQuestionMode = questionsOnly ? getSelectedQuestionGenerationMode() : '';
+  const isRADOnly    = questionsOnly && selectedQuestionMode === 'rad';
+  const isMTFScqOnly = questionsOnly && selectedQuestionMode === 'mtfScq';
+  const isMTFSubOnly = questionsOnly && selectedQuestionMode === 'mtfSub';
+  const isMTFMultiOnly = questionsOnly && selectedQuestionMode === 'mtfMulti';
   const isMTFMode    = isMTFScqOnly || isMTFSubOnly || isMTFMultiOnly;
   const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
   const isSocialRADOnly = isSocialCBSERADOnlySubject();
@@ -2852,9 +2853,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const objectiveMetaTypes = getObjectiveMetaTypes();
   const hasObjectiveMeta = hasObjectiveMetadata();
   const hasSubjectiveMeta = hasSubjectiveMetadata();
-  const subjectiveOnlyMode = state.questionsType === 'subjective';
-  const doObjective  = !isSocialRADOnly && !isEnglishCBSEGrammar && !subjectiveOnlyMode && (!singleStepMode || (questionsOnly && !isRADOnly && !isMTFMode)) && hasObjectiveMeta;
-  const doSubjective = !isSocialRADOnly && !isSocialSubjUnavailable && (!singleStepMode || (questionsOnly && state.questionsType !== 'objective' && !isRADOnly && !isMTFMode)) && hasSubjectiveMeta;
+  const doObjective  = !isSocialRADOnly && !isEnglishCBSEGrammar && hasObjectiveMeta && (!questionsOnly || selectedQuestionMode === 'objective') && (!singleStepMode || (questionsOnly && !isRADOnly && !isMTFMode));
+  const doSubjective = !isSocialRADOnly && !isSocialSubjUnavailable && hasSubjectiveMeta && (!questionsOnly || selectedQuestionMode === 'subjective') && (!singleStepMode || (questionsOnly && !isRADOnly && !isMTFMode));
 
   // Geo / History / Civics ICSE special logic
   const isGeoHistCivICSE = ['Geography', 'History', 'Civics'].includes(state.subject) && state.curriculum === 'ICSE';
@@ -3617,13 +3617,14 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
   const prereqOnly    = state.genMode === 'prereq';
   const glossaryOnly  = state.genMode === 'glossary';
   const singleStepMode = questionsOnly || pltOnly || prereqOnly || glossaryOnly;
-  const isRADOnly     = state.questionsType === 'rad';
+  const selectedQuestionMode = questionsOnly ? getSelectedQuestionGenerationMode() : '';
+  const isRADOnly     = questionsOnly && selectedQuestionMode === 'rad';
   const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
   const socialRADOnly = isSocialCBSERADOnlySubject();
   const socialSubjUnavailable = isSocialCBSESubjectiveUnavailable();
   const objectiveMetaTypes = getObjectiveMetaTypes();
-  const doObjective   = !socialRADOnly && !isEnglishCBSEGrammar && state.questionsType !== 'subjective' && (state.questionsType === 'both' || state.questionsType === 'objective') && hasObjectiveMetadata();
-  const doSubjective  = !socialRADOnly && !socialSubjUnavailable && (state.questionsType === 'both' || state.questionsType === 'subjective') && hasSubjectiveMetadata();
+  const doObjective   = !socialRADOnly && !isEnglishCBSEGrammar && hasObjectiveMetadata() && (!questionsOnly || selectedQuestionMode === 'objective');
+  const doSubjective  = !socialRADOnly && !socialSubjUnavailable && hasSubjectiveMetadata() && (!questionsOnly || selectedQuestionMode === 'subjective');
   const isRADExpected = isRADSupportedSubject();
   const isRTCMode     = state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType === 'RTC';
   const isGeoHistCivICSE = ['Geography', 'History', 'Civics'].includes(state.subject) && state.curriculum === 'ICSE';
@@ -5482,27 +5483,36 @@ function assertEnglishICSESubjectiveTextCounts(text, metadataText) {
   }
   return true;
 }
+function getSelectedQuestionGenerationMode() {
+  if (state.genMode !== 'questions') return '';
+  const mode = state.questionsType || 'both';
+  if (mode !== 'both') return mode;
+  if (hasObjectiveMetadata()) return 'objective';
+  if (hasSubjectiveMetadata()) return 'subjective';
+  if (metadataHasAnyQuestionType(state.radMetadata, RAD_META_TYPES)) return 'rad';
+  return 'objective';
+}
 function getQuestionGenerationMetadataError() {
   if (state.genMode !== 'questions') return '';
-  const objectiveMetaTypes = getObjectiveMetaTypes();
+  const selectedMode = getSelectedQuestionGenerationMode();
   const hasObjective = hasObjectiveMetadata();
   const hasSubjective = hasSubjectiveMetadata();
   const hasRAD = metadataHasAnyQuestionType(state.radMetadata, RAD_META_TYPES);
   if (isSocialCBSERADOnlySubject()) {
     return hasRAD ? '' : 'For Social CBSE, enter explicit RAD counts on Page 3 before generating, for example: Application Medium Questions: RA:4.';
   }
-  if (state.questionsType === 'subjective' && isSocialCBSESubjectiveUnavailable()) {
+  if (selectedMode === 'subjective' && isSocialCBSESubjectiveUnavailable()) {
     return 'Social CBSE Subjective prompt has not been added yet. Use Objective Only or RAD Only for now.';
   }
-  if (state.questionsType === 'objective') {
+  if (selectedMode === 'objective') {
     return hasObjective ? '' : 'Objective Only needs explicit Objective metadata on Page 3, for example: Understanding Easy Questions: SCQ:4.';
   }
-  if (state.questionsType === 'subjective') {
+  if (selectedMode === 'subjective') {
     return hasSubjective ? '' : (state.subject === 'English'
       ? 'Subjective Only needs English count metadata on Page 3, for example: Understanding Easy Questions: 2.'
       : 'Subjective Only needs explicit Subjective metadata on Page 3, for example: Understanding Easy Questions: VSA:2; SA:1.');
   }
-  if (state.questionsType === 'rad') {
+  if (selectedMode === 'rad') {
     return hasRAD ? '' : 'RAD Only needs explicit RAD metadata on Page 3, for example: Application Medium Questions: RA:4.';
   }
   if (state.questionsType === 'both' && !hasObjective && !hasSubjective) {
