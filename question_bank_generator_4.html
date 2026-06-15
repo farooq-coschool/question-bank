@@ -2657,13 +2657,14 @@ function renderCountsTable() {
       </tr>`;
     entries.forEach(({label, value, key}) => {
       const safeKey = key.replace(/"/g, '&quot;');
-      const current = state.promptCounts.hasOwnProperty(key) ? state.promptCounts[key] : value;
+      const current = state.promptCounts.hasOwnProperty(key) ? state.promptCounts[key] : '';
       t += `<tr>
         <td style="padding:6px 12px;border-bottom:1px solid var(--border);color:var(--text)">${label}</td>
         <td style="padding:4px 8px;border-bottom:1px solid var(--border)">
           <input type="text" value="${current.replace(/"/g,'&quot;')}"
+            placeholder="Enter your count"
             data-key="${safeKey}"
-            onchange="state.promptCounts[this.dataset.key]=this.value.trim()"
+            onchange="if(this.value.trim()){state.promptCounts[this.dataset.key]=this.value.trim()}else{delete state.promptCounts[this.dataset.key]}"
             style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);font-weight:600;background:transparent;border:1px solid transparent;border-radius:4px;padding:3px 6px;outline:none;transition:border-color .15s"
             onfocus="this.style.borderColor='var(--accent)';this.style.background='var(--surface)'"
             onblur="this.style.borderColor='transparent';this.style.background='transparent'">
@@ -4569,11 +4570,8 @@ function buildObjectivePrompt(conceptName, item, masterPrompt, includeRA, loText
   const countsText = (state.objMetadata || '').trim();
   const isEnglish = state.subject === 'English';
   const englishObjectiveCountMode = isEnglish && hasEnglishCountMetadata(countsText) && !metadataHasAnyQuestionType(countsText, getObjectiveMetaTypes());
-  // When user has provided their own counts, strip [Number of ...] lines from the template
-  // so there is no conflict — METADATA INPUT counts become the sole source of truth.
-  if (countsText) {
-    section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
-  }
+  // Prompt-store count examples are never a source of truth; Page 3 input is.
+  section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
 
   let extraFields = '';
   if (isEnglish) {
@@ -4721,9 +4719,7 @@ function buildCommerceObjectivePrompt(conceptName, item, masterPrompt, loText) {
   const rawSection = extractSection(masterPrompt, 'OBJECTIVE_CREATION_PROMPT') || masterPrompt;
   let section = applyPromptCountEdits(fillPlaceholders(rawSection, conceptName, item, loText));
   const countsText = (state.objMetadata || '').trim();
-  if (countsText) {
-    section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
-  }
+  section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
   const nanoList = item && item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
   const metaBlock = `
 
@@ -5044,18 +5040,12 @@ Generate the output in the following JSON format:
     if (cleanParts.length) {
       countsText = cleanParts.join('\n');
     } else {
-      const allCountLines = (section.match(/\[Number of [^\]]+\]:\s*[^\n\r]+/g) || []).join('\n');
-      const t2 = extractVSASALA(allCountLines);
-      const p2 = Object.entries(t2).filter(([, v]) => v > 0).map(([k, v]) => `${k}: ${v}`);
-      countsText = p2.join('\n');
+      countsText = '';
     }
   }
 
-  // Strip [Number of ...] lines from the prompt section so they don't conflict with the
-  // METADATA INPUT counts we're about to inject. Applies to all subjects when counts are set.
-  if (countsText) {
-    section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
-  }
+  // Prompt-store count examples are never a source of truth; Page 3 input is.
+  section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
   const gradeNum = parseInt((state.grade || '').replace(/\D/g, ''), 10);
   const isBioFIB = state.subject === 'Biology' && gradeNum >= 6 && gradeNum <= 10;
   const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
