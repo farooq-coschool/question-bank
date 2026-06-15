@@ -3543,38 +3543,46 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     const englishCBSEGrammarSubjective = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
     if (isEnglishICSESubtype && !isEnglishICSEGrammar) {
       const expandedSpecs = expandEnglishSubjectiveCountSpecs(state.subjMetadata);
-      if (!expandedSpecs.length) throw new Error('English ICSE subjective needs count metadata on Page 3, for example: Understanding Easy Questions: 2.');
-      const blockResults = [];
-      for (let i = 0; i < expandedSpecs.length; i++) {
-        const spec = expandedSpecs[i];
-        const singleMetadata = getEnglishSubjectiveSingleMetadata(spec);
-        const singlePrompt = buildSubjectivePrompt(name, item, masterPrompt, subjLoText, singleMetadata) + `
+      if (expandedSpecs.length) {
+        const blockResults = [];
+        for (let i = 0; i < expandedSpecs.length; i++) {
+          const spec = expandedSpecs[i];
+          const singleMetadata = getEnglishSubjectiveSingleMetadata(spec);
+          const singlePrompt = buildSubjectivePrompt(name, item, masterPrompt, subjLoText, singleMetadata) + `
 
 BLOCK GENERATION CONTROL: Generate only block ${i + 1} of ${expandedSpecs.length} for this concept. This API call must return exactly ONE plain-text block for Cognitive Level: ${spec.cognitiveLevel} | Difficulty Level: ${spec.difficultyLevel}. Do not generate any other block, level, or difficulty.`;
-        const singleMaxTokens = getEnglishICSESubjectiveMaxTokens(singleMetadata);
-        const singleOptions = { attempts: 5, retryDelayMs: 2400 };
-        let textResult = (await callForItem(singlePrompt, singleMaxTokens, MODELS.SUBJECTIVE, '', singleOptions) || '').trim();
-        try {
-          assertEnglishICSESubjectiveTextCounts(textResult, singleMetadata);
-        } catch (countErr) {
-          const retryPrompt = singlePrompt + `
+          const singleMaxTokens = getEnglishICSESubjectiveMaxTokens(singleMetadata);
+          const singleOptions = { attempts: 5, retryDelayMs: 2400 };
+          let textResult = (await callForItem(singlePrompt, singleMaxTokens, MODELS.SUBJECTIVE, '', singleOptions) || '').trim();
+          try {
+            assertEnglishICSESubjectiveTextCounts(textResult, singleMetadata);
+          } catch (countErr) {
+            const retryPrompt = singlePrompt + `
 
 IMPORTANT RETRY FEEDBACK: The previous English ICSE subjective block failed validation: ${countErr.message}
 Regenerate exactly ONE complete plain-text block now. The block must include exactly one header line in this form: Cognitive Level: ${spec.cognitiveLevel} | Difficulty Level: ${spec.difficultyLevel}. Do not use JSON or markdown code fences.`;
-          textResult = (await callForItem(retryPrompt, singleMaxTokens, MODELS.SUBJECTIVE, '', singleOptions) || '').trim();
-          assertEnglishICSESubjectiveTextCounts(textResult, singleMetadata);
+            textResult = (await callForItem(retryPrompt, singleMaxTokens, MODELS.SUBJECTIVE, '', singleOptions) || '').trim();
+            assertEnglishICSESubjectiveTextCounts(textResult, singleMetadata);
+          }
+          if (!textResult) throw new Error('English ICSE subjective returned empty output for ' + spec.cognitiveLevel + ' ' + spec.difficultyLevel + '. Click Retry.');
+          blockResults.push(textResult);
         }
-        if (!textResult) throw new Error('English ICSE subjective returned empty output for ' + spec.cognitiveLevel + ' ' + spec.difficultyLevel + '. Click Retry.');
-        blockResults.push(textResult);
+        const textResult = blockResults.join('\n\n');
+        assertEnglishICSESubjectiveTextCounts(textResult, state.subjMetadata);
+        saveFile(fp('Subjective.txt'), textResult);
+        const legacyPath = fp('Subjective.json');
+        if (state.generatedFiles[legacyPath] !== undefined) delete state.generatedFiles[legacyPath];
+        const expectedEnglishTextCount = expandedSpecs.length;
+        logStep(scopeLabel, 'Subjective Questions', '\u2699\uFE0F', 'done', expectedEnglishTextCount + ' requested set(s)');
+        return expectedEnglishTextCount;
       }
-      const textResult = blockResults.join('\n\n');
-      assertEnglishICSESubjectiveTextCounts(textResult, state.subjMetadata);
+      const textResult = (await callForItem(buildSubjectivePrompt(name, item, masterPrompt, subjLoText), 64000, MODELS.SUBJECTIVE, '') || '').trim();
+      if (!textResult) throw new Error('English ICSE subjective returned empty output. Click Retry.');
       saveFile(fp('Subjective.txt'), textResult);
       const legacyPath = fp('Subjective.json');
       if (state.generatedFiles[legacyPath] !== undefined) delete state.generatedFiles[legacyPath];
-      const expectedEnglishTextCount = expandedSpecs.length;
-      logStep(scopeLabel, 'Subjective Questions', '\u2699\uFE0F', 'done', expectedEnglishTextCount + ' requested set(s)');
-      return expectedEnglishTextCount;
+      logStep(scopeLabel, 'Subjective Questions', '\u2699\uFE0F', 'done', countLines(textResult) + ' lines');
+      return countLines(textResult);
     }
     const subjectivePrompt = buildSubjectivePrompt(name, item, masterPrompt, subjLoText);
     const rawResult = await callForItem(subjectivePrompt, 64000, MODELS.SUBJECTIVE, '[');
@@ -3587,9 +3595,16 @@ Regenerate exactly ONE complete plain-text block now. The block must include exa
       return parseJSON(candidate);
     };
     let parsed = parseSubjectiveResult(rawResult);
-    const validateSubjectiveCounts = (items) => (state.subject === 'English' && hasEnglishSubjectiveCountMetadata(state.subjMetadata))
-      ? assertGeneratedEnglishSubjectiveCounts(items, state.subjMetadata, 'Subjective')
-      : assertGeneratedQuestionCounts(items, state.subjMetadata, SUBJECTIVE_META_TYPES, 'Subjective');
+    const validateSubjectiveCounts = (items) => {
+      if (state.subject === 'English' && hasEnglishSubjectiveCountMetadata(state.subjMetadata)) {
+        return assertGeneratedEnglishSubjectiveCounts(items, state.subjMetadata, 'Subjective');
+      }
+      if (metadataHasAnyQuestionType(state.subjMetadata, SUBJECTIVE_META_TYPES)) {
+        return assertGeneratedQuestionCounts(items, state.subjMetadata, SUBJECTIVE_META_TYPES, 'Subjective');
+      }
+      if (!Array.isArray(items)) throw new Error('Subjective did not return a JSON array. Click Retry.');
+      return items;
+    };
     try {
       parsed = validateSubjectiveCounts(parsed);
     } catch (countErr) {
@@ -5039,8 +5054,6 @@ Generate the output in the following JSON format:
     const cleanParts = Object.entries(totals).filter(([, v]) => v > 0).map(([k, v]) => `${k}: ${v}`);
     if (cleanParts.length) {
       countsText = cleanParts.join('\n');
-    } else {
-      countsText = '';
     }
   }
 
@@ -5170,6 +5183,16 @@ For FIB with more sub-parts (LA):
   "marks": "5"
 }`;
 
+  const hasStructuredSubjectiveCounts = metadataHasAnyQuestionType(countsText, SUBJECTIVE_META_TYPES) || hasEnglishSubjectiveCountMetadata(countsText);
+  const subjectiveGenerationControl = hasStructuredSubjectiveCounts
+    ? `?? STRICT COUNT COMPLIANCE (NON-NEGOTIABLE): The counts in the METADATA INPUT above are the ABSOLUTE source of truth. You MUST generate EXACTLY the number of each question type specified, no more, no less, zero exceptions. Any count values appearing anywhere else in this prompt are completely overridden by the METADATA INPUT.
+
+?? USER METADATA TYPE LOCK: Generate ONLY the question types explicitly listed with non-zero counts in METADATA INPUT. If METADATA INPUT lists only "VSA: 3", generate exactly 3 VSA and 0 SA/LA. If it lists only "SA: 2; LA: 1", generate exactly 2 SA and 1 LA and 0 VSA. Do not generate any absent type, format, or tag.`
+    : `?? USER INPUT MODE: The METADATA INPUT above is free-form user instruction. Do NOT reject it for missing VSA/SA/LA syntax. Interpret and follow whatever the user pasted there, including requested quantities, question style, cognitive level, difficulty level, marks, or special formats. If a detail is not specified, use the subject prompt rules and generate a sensible JSON array within the selected concept scope.`;
+  const subjectiveFinalCheck = hasStructuredSubjectiveCounts
+    ? `?? FINAL COUNT CHECK (MANDATORY): Before returning your answer, count every question in your output by type (VSA / SA / LA). The counts MUST match the METADATA INPUT exactly. If they do not match, fix your output before returning. This is non-negotiable.`
+    : `?? FINAL USER-INSTRUCTION CHECK (MANDATORY): Before returning your answer, ensure the JSON array follows the user's pasted METADATA INPUT as closely as possible. Do not fail or stop because the input is not written in VSA/SA/LA count syntax.`;
+
   const formatSpec = `
 
 ---
@@ -5182,9 +5205,7 @@ Topic/Concept Name: ${conceptName}
 Textbook: ${state.textbook}
 ${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}${countsText ? countsText + '\n' : ''}${chapterScopeNote(item)}
 
-?? STRICT COUNT COMPLIANCE (NON-NEGOTIABLE): The counts in the METADATA INPUT above are the ABSOLUTE source of truth. You MUST generate EXACTLY the number of each question type specified, no more, no less, zero exceptions. Any count values appearing anywhere else in this prompt are completely overridden by the METADATA INPUT.
-
-?? USER METADATA TYPE LOCK: Generate ONLY the question types explicitly listed with non-zero counts in METADATA INPUT. If METADATA INPUT lists only "VSA: 3", generate exactly 3 VSA and 0 SA/LA. If it lists only "SA: 2; LA: 1", generate exactly 2 SA and 1 LA and 0 VSA. Do not generate any absent type, format, or tag.
+${subjectiveGenerationControl}
 
 ?? FINAL OUTPUT FORMAT — This section completely overrides and replaces any output format, JSON structure, field names, or schema mentioned anywhere in the prompt above. Ignore all prior format instructions entirely.
 
@@ -5202,7 +5223,7 @@ ${differentiateExample}
 For MTF (Match the Following) questions — ${isChemICSE ? '?? MUST use HTML table (class=custom-tablemtf1a). Column A = EXACTLY 5 rows (a–e). Column B = EXACTLY 6 rows (1–6), row 6 is a distractor. Count rows before returning — 7 rows is WRONG.' : 'MUST use plain markdown table in "question"; solution is plain text lines (one match per line using —)'}:
 ${mtfExample}
 
-?? FINAL COUNT CHECK (MANDATORY): Before returning your answer, count every question in your output by type (VSA / SA / LA). The counts MUST match the METADATA INPUT exactly. If they do not match, fix your output before returning. This is non-negotiable.
+${subjectiveFinalCheck}
 
 ?? RULE COMPLIANCE: Read every rule in the prompt above before generating. Apply ALL rules — cognitive levels, difficulty levels, question type specifications, solution guidelines, formatting, and content rules — exactly as written. Non-compliance is not acceptable.
 
@@ -5746,6 +5767,10 @@ function isMetaSkip(text) {
   return nums.length === 0 || nums.every(n => n === 0);
 }
 
+function hasMetadataText(text) {
+  return !!(text && text.trim());
+}
+
 function normalizeMetaType(type) {
   return String(type || '')
     .replace(/[\[\]()]/g, ' ')
@@ -5846,10 +5871,7 @@ function hasObjectiveMetadata() {
 }
 
 function hasSubjectiveMetadata() {
-  if (state.subject === 'English') {
-    return hasEnglishSubjectiveCountMetadata(state.subjMetadata) || metadataHasAnyQuestionType(state.subjMetadata, SUBJECTIVE_META_TYPES);
-  }
-  return metadataHasAnyQuestionType(state.subjMetadata, SUBJECTIVE_META_TYPES);
+  return hasMetadataText(state.subjMetadata);
 }
 
 function getEnglishSubjectiveExpectedTotal(text) {
@@ -5949,8 +5971,8 @@ function getQuestionGenerationMetadataError() {
   }
   if (selectedMode === 'subjective') {
     return hasSubjective ? '' : (state.subject === 'English'
-      ? 'Subjective Only needs English count metadata on Page 3, for example: Understanding Easy Questions: 2.'
-      : 'Subjective Only needs explicit Subjective metadata on Page 3, for example: Understanding Easy Questions: VSA:2; SA:1.');
+      ? 'Subjective Only needs some Subjective input on Page 3. Paste the exact instruction you want generated.'
+      : 'Subjective Only needs some Subjective input on Page 3. Paste the exact instruction you want generated.');
   }
   if (selectedMode === 'rad') {
     return hasRAD ? '' : 'RAD Only needs explicit RAD metadata on Page 3, for example: Application Medium Questions: RA:4.';
