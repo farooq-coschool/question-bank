@@ -2896,6 +2896,24 @@ function getPromptKey() {
   return `${state.subject.toUpperCase()}_${state.curriculum}`;
 }
 
+function isBiologyCBSEGrade9() {
+  return state.subject === 'Biology' && state.curriculum === 'CBSE' && state.grade === '09';
+}
+
+function getEffectiveGenerationConcurrency(requestedConcurrency, totalConcepts) {
+  const requested = Math.max(parseInt(requestedConcurrency, 10) || 1, 1);
+  const capped = isBiologyCBSEGrade9() ? Math.min(requested, 3) : requested;
+  return Math.min(capped, totalConcepts || 1);
+}
+
+function getConcurrencyLimitNote(requestedConcurrency, effectiveConcurrency) {
+  const requested = Math.max(parseInt(requestedConcurrency, 10) || 1, 1);
+  if (isBiologyCBSEGrade9() && effectiveConcurrency < requested) {
+    return ' - Biology CBSE Grade 9 auto-limited to ' + effectiveConcurrency + ' workers for reliable completion';
+  }
+  return '';
+}
+
 function resolveSubjectPrompt() {
   const promptKey = getPromptKey();
   const masterPrompt = (state.subject === 'Social' && state.curriculum === 'CBSE')
@@ -3955,7 +3973,7 @@ async function startGeneration() {
   }
   const isEnglish = state.subject === 'English';
   const ch = state.chapterName;
-  const concurrency = parseInt(document.getElementById('concurrencySelect').value, 10) || 10;
+  const requestedConcurrency = parseInt(document.getElementById('concurrencySelect').value, 10) || 10;
 
   if (state.generatedConceptKeys.size === 0) state.generatedFiles = {};
   Object.keys(agentCheckpoints).forEach(k => delete agentCheckpoints[k]);
@@ -3993,16 +4011,17 @@ async function startGeneration() {
     state.generatedConceptKeys.add(makeConceptKey(item));
   });
   const totalConcepts = scopeItems.length;
-  const numWorkers = Math.min(concurrency, totalConcepts);
+  const numWorkers = getEffectiveGenerationConcurrency(requestedConcurrency, totalConcepts);
 
   _genCtx = { masterPrompt, isEnglish, ch };
 
   document.getElementById('generationSubtitle').textContent =
-    totalConcepts + ' concepts - ' + numWorkers + ' workers - dispatching concurrent concept API calls';
+    totalConcepts + ' concepts - ' + numWorkers + ' workers - dispatching concurrent concept API calls' +
+    getConcurrencyLimitNote(requestedConcurrency, numWorkers);
 
   const poolResult = await runConceptAgentsConcurrent(
     scopeItems,
-    concurrency,
+    numWorkers,
     (item) => runConceptAgent(item, masterPrompt, isEnglish, ch, null),
     ({ active, queued, done, failed }) => {
       document.getElementById('agentStatusBar').textContent =
@@ -4229,7 +4248,7 @@ async function repairMissingFilesSilently(scopeItems, masterPrompt, isEnglish, c
       }
     }
     if (missingItems.length === 0) break;
-    const retryConcurrency = Math.min(parseInt(document.getElementById('concurrencySelect').value, 10) || 10, missingItems.length);
+    const retryConcurrency = getEffectiveGenerationConcurrency(parseInt(document.getElementById('concurrencySelect').value, 10) || 10, missingItems.length);
     const bar = document.getElementById('agentStatusBar');
     if (bar) bar.textContent = 'Auto-repairing missing files, round ' + round + ' of ' + rounds + '...';
     await runConceptAgentsConcurrent(
@@ -4297,7 +4316,7 @@ async function checkMissingFiles(scopeItems, masterPrompt, isEnglish, ch) {
       }
 
       // Run missing concept agents concurrently using the selected worker count.
-      const retryConcurrency = parseInt(document.getElementById('concurrencySelect').value, 10) || 10;
+      const retryConcurrency = getEffectiveGenerationConcurrency(parseInt(document.getElementById('concurrencySelect').value, 10) || 10, missingItems.length);
       await runConceptAgentsConcurrent(
         missingItems,
         retryConcurrency,
@@ -5313,6 +5332,24 @@ function fillPlaceholders(text, conceptName, item, loText) {
     .replace(/\{\{ICSE_Chapter_Text\}\}/gi, scriptNote)
     .replace(/\{\{ICSE_PDF\}\}/gi, scriptNote)
     .replace(/\{\{transcript\}\}/gi, scriptNote)
+    .replace(/\{subject\}/gi, state.subject)
+    .replace(/\{curriculum\}/gi, state.curriculum)
+    .replace(/\{grade\}/gi, state.grade)
+    .replace(/\{gradenumber\}/gi, state.grade)
+    .replace(/\{chapter_name\}/gi, state.chapterName)
+    .replace(/\{chaptername\}/gi, state.chapterName)
+    .replace(/\{chapter\}/gi, state.chapterName)
+    .replace(/\{topic_name\}/gi, conceptName || '')
+    .replace(/\{topicname\}/gi, conceptName || '')
+    .replace(/\{topic\}/gi, conceptName || '')
+    .replace(/\{content_cell\}/gi, conceptName || '')
+    .replace(/\{subtopic_name\}/gi, conceptName || '')
+    .replace(/\{subtopicname\}/gi, conceptName || '')
+    .replace(/\{textbook\}/gi, state.textbook)
+    .replace(/\{learning_outcomes\}/gi, lo)
+    .replace(/\{learningoutcomes\}/gi, lo)
+    .replace(/\{script\}/gi, scriptNote)
+    .replace(/\{subconcepts\}/gi, subconcepts)
     // In RTC mode {{chapterType}} should resolve to the sub-type (Prose/Poetry/Drama),
     // not the literal string 'RTC' which is meaningless to the prompt template.
     .replace(/\{\{chapterType\}\}/gi, (state.chapterType === 'RTC' ? (state.rtcSubType || 'Prose') : (state.chapterType || 'Prose')))
