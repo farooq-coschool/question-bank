@@ -1065,6 +1065,7 @@
 <!-- No API modal needed — key is managed server-side -->
 
 <script src="mathematics_cbse_prompts.js"></script>
+<script src="biology_cbse_prompts.js"></script>
 <script>
 // ============================================================
 // EMBEDDED PROMPTS
@@ -1432,6 +1433,16 @@ if (!PROMPTS.MATHEMATICS_CBSE_09_SUBJECTIVE) PROMPTS.MATHEMATICS_CBSE_09_SUBJECT
 if (!PROMPTS.MATHEMATICS_CBSE_09_REASON_ASSERTION) PROMPTS.MATHEMATICS_CBSE_09_REASON_ASSERTION = '';
 if (!PROMPTS.MATHEMATICS_CBSE_09_LEARNING_OUTCOMES_VALIDATION) PROMPTS.MATHEMATICS_CBSE_09_LEARNING_OUTCOMES_VALIDATION = '';
 if (!PROMPTS.MATHEMATICS_CBSE_09_PLT_VALIDATION) PROMPTS.MATHEMATICS_CBSE_09_PLT_VALIDATION = '';
+if (!PROMPTS.BIOLOGY_CBSE_09) PROMPTS.BIOLOGY_CBSE_09 = '';
+if (!PROMPTS.BIOLOGY_CBSE_09_PRE_REQUISITE) PROMPTS.BIOLOGY_CBSE_09_PRE_REQUISITE = '';
+if (!PROMPTS.BIOLOGY_CBSE_09_TERMS_DEFINITIONS) PROMPTS.BIOLOGY_CBSE_09_TERMS_DEFINITIONS = '';
+if (!PROMPTS.BIOLOGY_CBSE_09_LEARNING_OUTCOMES) PROMPTS.BIOLOGY_CBSE_09_LEARNING_OUTCOMES = '';
+if (!PROMPTS.BIOLOGY_CBSE_09_PLT) PROMPTS.BIOLOGY_CBSE_09_PLT = '';
+if (!PROMPTS.BIOLOGY_CBSE_09_GLOSSARY) PROMPTS.BIOLOGY_CBSE_09_GLOSSARY = '';
+if (!PROMPTS.BIOLOGY_CBSE_09_OBJECTIVE) PROMPTS.BIOLOGY_CBSE_09_OBJECTIVE = '';
+if (!PROMPTS.BIOLOGY_CBSE_09_SUBJECTIVE) PROMPTS.BIOLOGY_CBSE_09_SUBJECTIVE = '';
+if (!PROMPTS.BIOLOGY_CBSE_09_LEARNING_OUTCOMES_VALIDATION) PROMPTS.BIOLOGY_CBSE_09_LEARNING_OUTCOMES_VALIDATION = '';
+if (!PROMPTS.BIOLOGY_CBSE_09_PLT_VALIDATION) PROMPTS.BIOLOGY_CBSE_09_PLT_VALIDATION = '';
 
 function applyMathematicsCBSEPromptDocs() {
   const docs = (typeof window !== 'undefined' && Array.isArray(window.MATHEMATICS_CBSE_PROMPT_DOCS))
@@ -1466,6 +1477,50 @@ function applyMathematicsCBSEPromptDocs() {
   setPrompt('MATHEMATICS_CBSE_09_PLT_VALIDATION', 'auto_plt_validation', 'PLT_VALIDATION_PROMPT');
 }
 applyMathematicsCBSEPromptDocs();
+
+function applyBiologyCBSEPromptDocs() {
+  const docs = (typeof window !== 'undefined' && Array.isArray(window.BIOLOGY_CBSE_PROMPT_DOCS))
+    ? window.BIOLOGY_CBSE_PROMPT_DOCS
+    : [];
+  if (!docs.length) return;
+
+  const byTitle = {};
+  docs.forEach(doc => {
+    if (!doc || doc.isActive === false || doc.subject !== 'Biology' || doc.curriculum !== 'CBSE') return;
+    byTitle[String(doc.title || '').trim()] = String(doc.data || '').trim();
+  });
+
+  const setPrompt = (targetKey, title, sectionName) => {
+    const body = byTitle[title];
+    if (!body) return;
+    PROMPTS[targetKey] = '## ' + sectionName + '\n' + body;
+  };
+
+  // Grade 9 Biology CBSE workflow order:
+  // Pre-requisite -> Terms -> Learning Outcomes -> PLT -> Glossary -> Objective -> Subjective.
+  setPrompt('BIOLOGY_CBSE_09_PRE_REQUISITE', 'auto_prerequisites', 'PRE_REQUISITE_CREATION_PROMPT');
+  setPrompt('BIOLOGY_CBSE_09_TERMS_DEFINITIONS', 'auto_terms', 'TERMS_DEFINITIONS_CREATION_PROMPT');
+  setPrompt('BIOLOGY_CBSE_09_LEARNING_OUTCOMES', 'auto_learning_outcomes', 'LEARNING_OUTCOMES_CREATION_PROMPT');
+  setPrompt('BIOLOGY_CBSE_09_PLT', 'auto_plt_creation', 'PLT_CREATION_PROMPT');
+  setPrompt('BIOLOGY_CBSE_09_GLOSSARY', 'auto_glossary', 'GLOSSARY_CREATION_PROMPT');
+  setPrompt('BIOLOGY_CBSE_09_OBJECTIVE', 'auto_objective_questions', 'OBJECTIVE_CREATION_PROMPT');
+  setPrompt('BIOLOGY_CBSE_09_SUBJECTIVE', 'auto_subjective_questions', 'SUBJECTIVE_CREATION_PROMPT');
+
+  // Stored for future validation-stage wiring; not included in generation prompt bundle.
+  setPrompt('BIOLOGY_CBSE_09_LEARNING_OUTCOMES_VALIDATION', 'auto_learning_outcomes_validation', 'LO_VALIDATION_PROMPT');
+  setPrompt('BIOLOGY_CBSE_09_PLT_VALIDATION', 'auto_plt_validation', 'PLT_VALIDATION_PROMPT');
+
+  PROMPTS.BIOLOGY_CBSE_09 = [
+    PROMPTS.BIOLOGY_CBSE_09_PRE_REQUISITE,
+    PROMPTS.BIOLOGY_CBSE_09_TERMS_DEFINITIONS,
+    PROMPTS.BIOLOGY_CBSE_09_LEARNING_OUTCOMES,
+    PROMPTS.BIOLOGY_CBSE_09_PLT,
+    PROMPTS.BIOLOGY_CBSE_09_GLOSSARY,
+    PROMPTS.BIOLOGY_CBSE_09_OBJECTIVE,
+    PROMPTS.BIOLOGY_CBSE_09_SUBJECTIVE,
+  ].filter(Boolean).join('\n\n---\n\n');
+}
+applyBiologyCBSEPromptDocs();
 
 // ============================================================
 // STATE
@@ -2778,6 +2833,7 @@ function getPromptKey() {
   if (state.subject === 'English' && state.curriculum === 'CBSE') return 'ENGLISH_CBSE';
   if (state.subject === 'English' && state.chapterType === 'RTC') return 'ENGLISH_ICSE_RTC';
   if (state.subject === 'English') return 'ENGLISH_ICSE';
+  if (state.subject === 'Biology' && state.curriculum === 'CBSE' && state.grade === '09') return 'BIOLOGY_CBSE_09';
   if (state.subject === 'Mathematics' && state.curriculum === 'CBSE' && state.grade === '09') return 'MATHEMATICS_CBSE_09';
   if (state.subject === 'Biology' && state.curriculum === 'ICSE' && (state.grade === '06' || state.grade === '07')) return 'BIOLOGY_ICSE_67';
   return `${state.subject.toUpperCase()}_${state.curriculum}`;
