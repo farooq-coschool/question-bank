@@ -1411,6 +1411,24 @@ Generate the output in following JSON format:
 
 // Economics must have its own prompt. Do not silently reuse Commerce rules.
 if (!PROMPTS.ECONOMICS_ICSE) PROMPTS.ECONOMICS_ICSE = '';
+if (!PROMPTS.MATHEMATICS_CBSE) PROMPTS.MATHEMATICS_CBSE = '';
+if (!PROMPTS.MATHEMATICS_CBSE_PRE_REQUISITE) PROMPTS.MATHEMATICS_CBSE_PRE_REQUISITE = '';
+if (!PROMPTS.MATHEMATICS_CBSE_TERMS_DEFINITIONS) PROMPTS.MATHEMATICS_CBSE_TERMS_DEFINITIONS = '';
+if (!PROMPTS.MATHEMATICS_CBSE_LEARNING_OUTCOMES) PROMPTS.MATHEMATICS_CBSE_LEARNING_OUTCOMES = '';
+if (!PROMPTS.MATHEMATICS_CBSE_PLT) PROMPTS.MATHEMATICS_CBSE_PLT = '';
+if (!PROMPTS.MATHEMATICS_CBSE_GLOSSARY) PROMPTS.MATHEMATICS_CBSE_GLOSSARY = '';
+if (!PROMPTS.MATHEMATICS_CBSE_OBJECTIVE) PROMPTS.MATHEMATICS_CBSE_OBJECTIVE = '';
+if (!PROMPTS.MATHEMATICS_CBSE_SUBJECTIVE) PROMPTS.MATHEMATICS_CBSE_SUBJECTIVE = '';
+if (!PROMPTS.MATHEMATICS_CBSE_REASON_ASSERTION) PROMPTS.MATHEMATICS_CBSE_REASON_ASSERTION = '';
+if (!PROMPTS.MATHEMATICS_CBSE_09) PROMPTS.MATHEMATICS_CBSE_09 = '';
+if (!PROMPTS.MATHEMATICS_CBSE_09_PRE_REQUISITE) PROMPTS.MATHEMATICS_CBSE_09_PRE_REQUISITE = '';
+if (!PROMPTS.MATHEMATICS_CBSE_09_TERMS_DEFINITIONS) PROMPTS.MATHEMATICS_CBSE_09_TERMS_DEFINITIONS = '';
+if (!PROMPTS.MATHEMATICS_CBSE_09_LEARNING_OUTCOMES) PROMPTS.MATHEMATICS_CBSE_09_LEARNING_OUTCOMES = '';
+if (!PROMPTS.MATHEMATICS_CBSE_09_PLT) PROMPTS.MATHEMATICS_CBSE_09_PLT = '';
+if (!PROMPTS.MATHEMATICS_CBSE_09_GLOSSARY) PROMPTS.MATHEMATICS_CBSE_09_GLOSSARY = '';
+if (!PROMPTS.MATHEMATICS_CBSE_09_OBJECTIVE) PROMPTS.MATHEMATICS_CBSE_09_OBJECTIVE = '';
+if (!PROMPTS.MATHEMATICS_CBSE_09_SUBJECTIVE) PROMPTS.MATHEMATICS_CBSE_09_SUBJECTIVE = '';
+if (!PROMPTS.MATHEMATICS_CBSE_09_REASON_ASSERTION) PROMPTS.MATHEMATICS_CBSE_09_REASON_ASSERTION = '';
 
 // ============================================================
 // STATE
@@ -1487,6 +1505,85 @@ function getSocialCBSESubjectivePrompt() {
 
 function getSocialCBSEPromptBundle() {
   return [getSocialCBSEObjectivePrompt(), getSocialCBSESubjectivePrompt()].filter(Boolean).join('\n\n---\n\n');
+}
+
+function isMathematicsCBSE() {
+  return state.subject === 'Mathematics' && state.curriculum === 'CBSE';
+}
+
+function getMathematicsCBSEPromptBase() {
+  return getPromptKey();
+}
+
+function getMathematicsCBSESplitPrompt(suffix) {
+  return String(PROMPTS[getMathematicsCBSEPromptBase() + '_' + suffix] || '').trim();
+}
+
+function getMathematicsCBSEPromptParts() {
+  return [
+    getMathematicsCBSESplitPrompt('PRE_REQUISITE'),
+    getMathematicsCBSESplitPrompt('TERMS_DEFINITIONS'),
+    getMathematicsCBSESplitPrompt('LEARNING_OUTCOMES'),
+    getMathematicsCBSESplitPrompt('PLT'),
+    getMathematicsCBSESplitPrompt('GLOSSARY'),
+    getMathematicsCBSESplitPrompt('OBJECTIVE'),
+    getMathematicsCBSESplitPrompt('SUBJECTIVE'),
+    getMathematicsCBSESplitPrompt('REASON_ASSERTION'),
+  ].filter(Boolean);
+}
+
+function getMathematicsCBSEPromptBundle() {
+  const parts = getMathematicsCBSEPromptParts();
+  const master = String(PROMPTS[getMathematicsCBSEPromptBase()] || '').trim();
+  return parts.length ? parts.join('\n\n---\n\n') : master;
+}
+
+function getMathematicsCBSEStagePrompt(suffix, masterPrompt, sectionNames) {
+  const splitPrompt = getMathematicsCBSESplitPrompt(suffix);
+  if (splitPrompt) return splitPrompt;
+  const source = String(masterPrompt || '').trim();
+  for (const sectionName of sectionNames) {
+    const section = extractSection(source, sectionName);
+    if (section) return section.trim();
+  }
+  // If this subject still uses one old master prompt, keep that fallback.
+  return getMathematicsCBSEPromptParts().length ? '' : source;
+}
+
+function hasMathematicsCBSEStagePrompt(suffix, masterPrompt, sectionNames) {
+  return !isMathematicsCBSE() || !!getMathematicsCBSEStagePrompt(suffix, masterPrompt, sectionNames);
+}
+
+function getMathematicsCBSEPrereqPrompt(masterPrompt) {
+  return getMathematicsCBSEStagePrompt('PRE_REQUISITE', masterPrompt, ['PRE_REQUISITE_CREATION_PROMPT']);
+}
+
+function getMathematicsCBSETermsPrompt(masterPrompt) {
+  return getMathematicsCBSEStagePrompt('TERMS_DEFINITIONS', masterPrompt, ['TERMS_DEFINITIONS_CREATION_PROMPT', 'TERMS_AND_DEFINITIONS_CREATION_PROMPT', 'TERMS_AND_DEFINITIONS', 'TERMS_DEFINITIONS', 'TERMS']);
+}
+
+function getMathematicsCBSELOPrompt(masterPrompt) {
+  return getMathematicsCBSEStagePrompt('LEARNING_OUTCOMES', masterPrompt, ['LEARNING_OUTCOMES_CREATION_PROMPT', 'LEARNING_OUTCOMES']);
+}
+
+function getMathematicsCBSEPLTPrompt(masterPrompt) {
+  return getMathematicsCBSEStagePrompt('PLT', masterPrompt, ['PLT_CREATION_PROMPT']);
+}
+
+function getMathematicsCBSEGlossaryPrompt(masterPrompt) {
+  return getMathematicsCBSEStagePrompt('GLOSSARY', masterPrompt, ['GLOSSARY_CREATION_PROMPT']);
+}
+
+function getMathematicsCBSEObjectivePrompt(masterPrompt) {
+  return getMathematicsCBSEStagePrompt('OBJECTIVE', masterPrompt, ['OBJECTIVE_CREATION_PROMPT']);
+}
+
+function getMathematicsCBSESubjectivePrompt(masterPrompt) {
+  return getMathematicsCBSEStagePrompt('SUBJECTIVE', masterPrompt, ['SUBJECTIVE_CREATION_PROMPT']);
+}
+
+function getMathematicsCBSERADPrompt(masterPrompt) {
+  return getMathematicsCBSEStagePrompt('REASON_ASSERTION', masterPrompt, ['REASON_ASSERTION_CREATION_PROMPT']);
 }
 
 function isSocialCBSERADOnlySubject() {
@@ -2374,7 +2471,9 @@ function renderCountsTable() {
     return;
   }
   if (qCountSection) qCountSection.style.display = '';
-  const masterPrompt = PROMPTS[getPromptKey()] || '';
+  const masterPrompt = isMathematicsCBSE()
+    ? getMathematicsCBSEPromptBundle()
+    : (PROMPTS[getPromptKey()] || '');
   const isEnglishCBSE = state.subject === 'English' && state.curriculum === 'CBSE';
   const chapterTypeLower = (state.chapterType || 'prose').toLowerCase();
   // For English CBSE/ICSE: objective counts come from the selected prose/poetry/grammar/drama prompt.
@@ -2383,10 +2482,10 @@ function renderCountsTable() {
     ? (chapterTypeLower === 'poetry'
         ? extractSection(masterPrompt, 'POETRY_OBJECTIVE_CREATION_PROMPT')
         : extractSection(masterPrompt, 'PROSE_OBJECTIVE_CREATION_PROMPT'))
-    : extractSection(objectivePromptText, 'OBJECTIVE_CREATION_PROMPT');
+    : (isMathematicsCBSE() ? objectivePromptText : extractSection(objectivePromptText, 'OBJECTIVE_CREATION_PROMPT'));
   const subjPromptText = getSubjectivePromptText(masterPrompt);
-  const subjSection = extractSection(subjPromptText, 'SUBJECTIVE_CREATION_PROMPT');
-  const raSection   = extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT');
+  const subjSection = isMathematicsCBSE() ? subjPromptText : extractSection(subjPromptText, 'SUBJECTIVE_CREATION_PROMPT');
+  const raSection   = isMathematicsCBSE() ? getMathematicsCBSERADPrompt(masterPrompt) : extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT');
 
   const extractCounts = (section) => {
     const results = [];
@@ -2642,6 +2741,7 @@ function getPromptKey() {
   if (state.subject === 'English' && state.curriculum === 'CBSE') return 'ENGLISH_CBSE';
   if (state.subject === 'English' && state.chapterType === 'RTC') return 'ENGLISH_ICSE_RTC';
   if (state.subject === 'English') return 'ENGLISH_ICSE';
+  if (state.subject === 'Mathematics' && state.curriculum === 'CBSE' && state.grade === '09') return 'MATHEMATICS_CBSE_09';
   if (state.subject === 'Biology' && state.curriculum === 'ICSE' && (state.grade === '06' || state.grade === '07')) return 'BIOLOGY_ICSE_67';
   return `${state.subject.toUpperCase()}_${state.curriculum}`;
 }
@@ -2650,9 +2750,14 @@ function resolveSubjectPrompt() {
   const promptKey = getPromptKey();
   const masterPrompt = (state.subject === 'Social' && state.curriculum === 'CBSE')
     ? getSocialCBSEPromptBundle()
-    : (PROMPTS[promptKey] || '');
+    : isMathematicsCBSE()
+      ? getMathematicsCBSEPromptBundle()
+      : (PROMPTS[promptKey] || '');
   if (!masterPrompt.trim() || isPlaceholderPrompt(masterPrompt)) {
-    throw new Error('Missing prompt for ' + state.subject + ' ' + state.curriculum + '. Expected PROMPTS["' + promptKey + '"].');
+    const splitHint = isMathematicsCBSE()
+      ? ' Paste one or more Mathematics CBSE prompts into PROMPTS.' + promptKey + '_* keys, for example ' + promptKey + '_OBJECTIVE or ' + promptKey + '_SUBJECTIVE.'
+      : '';
+    throw new Error('Missing prompt for ' + state.subject + ' ' + state.curriculum + '. Expected PROMPTS["' + promptKey + '"].' + splitHint);
   }
   return { promptKey, masterPrompt };
 }
@@ -2693,6 +2798,9 @@ function getObjectivePromptText(masterPrompt) {
   if (state.subject === 'Social' && state.curriculum === 'CBSE') {
     return getSocialCBSEObjectivePrompt();
   }
+  if (isMathematicsCBSE()) {
+    return getMathematicsCBSEObjectivePrompt(masterPrompt);
+  }
   if (state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType !== 'RTC') {
     const key = getEnglishICSEObjectivePromptKey();
     return PROMPTS[key] || '';
@@ -2703,6 +2811,9 @@ function getObjectivePromptText(masterPrompt) {
 function getSubjectivePromptText(masterPrompt) {
   if (state.subject === 'Social' && state.curriculum === 'CBSE') {
     return getSocialCBSESubjectivePrompt();
+  }
+  if (isMathematicsCBSE()) {
+    return getMathematicsCBSESubjectivePrompt(masterPrompt);
   }
   if (isEnglishICSESubtypeSubjective()) {
     const key = getEnglishICSESubjectivePromptKey();
@@ -3005,8 +3116,17 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const objectiveMetaTypes = getObjectiveMetaTypes();
   const hasObjectiveMeta = hasObjectiveMetadata();
   const hasSubjectiveMeta = hasSubjectiveMetadata();
-  const doObjective  = !isSocialRADOnly && !isEnglishCBSEGrammar && hasObjectiveMeta && (!questionsOnly || selectedQuestionMode === 'objective') && (!singleStepMode || (questionsOnly && !isRADOnly && !isMTFMode));
-  const doSubjective = !isSocialRADOnly && !isSocialSubjUnavailable && hasSubjectiveMeta && (!questionsOnly || selectedQuestionMode === 'subjective') && (!singleStepMode || (questionsOnly && !isRADOnly && !isMTFMode));
+  const baseMasterPrompt = masterPrompt;
+  const hasMathPrereqPrompt = hasMathematicsCBSEStagePrompt('PRE_REQUISITE', baseMasterPrompt, ['PRE_REQUISITE_CREATION_PROMPT']);
+  const hasMathTermsPrompt = hasMathematicsCBSEStagePrompt('TERMS_DEFINITIONS', baseMasterPrompt, ['TERMS_DEFINITIONS_CREATION_PROMPT', 'TERMS_AND_DEFINITIONS_CREATION_PROMPT', 'TERMS_AND_DEFINITIONS', 'TERMS_DEFINITIONS', 'TERMS']);
+  const hasMathLOPrompt = hasMathematicsCBSEStagePrompt('LEARNING_OUTCOMES', baseMasterPrompt, ['LEARNING_OUTCOMES_CREATION_PROMPT', 'LEARNING_OUTCOMES']);
+  const hasMathPLTPrompt = hasMathematicsCBSEStagePrompt('PLT', baseMasterPrompt, ['PLT_CREATION_PROMPT']);
+  const hasMathGlossaryPrompt = hasMathematicsCBSEStagePrompt('GLOSSARY', baseMasterPrompt, ['GLOSSARY_CREATION_PROMPT']);
+  const hasMathObjectivePrompt = !isMathematicsCBSE() || !!getObjectivePromptText(baseMasterPrompt);
+  const hasMathSubjectivePrompt = !isMathematicsCBSE() || !!getSubjectivePromptText(baseMasterPrompt);
+  const hasMathRADPrompt = !isMathematicsCBSE() || !!getMathematicsCBSERADPrompt(baseMasterPrompt);
+  const doObjective  = hasMathObjectivePrompt && !isSocialRADOnly && !isEnglishCBSEGrammar && hasObjectiveMeta && (!questionsOnly || selectedQuestionMode === 'objective') && (!singleStepMode || (questionsOnly && !isRADOnly && !isMTFMode));
+  const doSubjective = hasMathSubjectivePrompt && !isSocialRADOnly && !isSocialSubjUnavailable && hasSubjectiveMeta && (!questionsOnly || selectedQuestionMode === 'subjective') && (!singleStepMode || (questionsOnly && !isRADOnly && !isMTFMode));
 
   // Geo / History / Civics ICSE special logic
   const isGeoHistCivICSE = ['Geography', 'History', 'Civics'].includes(state.subject) && state.curriculum === 'ICSE';
@@ -3019,7 +3139,6 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // BIOLOGY_ICSE_67 now has all sections; use masterPrompt for everything
   const isBio67 = state.subject === 'Biology' && state.curriculum === 'ICSE' && (state.grade === '06' || state.grade === '07');
   const isCommerce = state.subject === 'Commerce';
-  const baseMasterPrompt = masterPrompt;
   const callForItem = (prompt, maxTokens, model, prefill, callOptions) =>
     callClaude(prompt, maxTokens, model, prefill, { ...(callOptions || {}), sourceItem: item });
 
@@ -3173,21 +3292,21 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   });
 
   // PREREQ — runs in full mode (chapter only) OR in prereqOnly mode (chapter only)
-  await runStep('prereq', 'Pre-requisites', '\u2699\uFE0F', isChapter && !isEnglish && !isCommerce && (!singleStepMode || prereqOnly), async () => {
+  await runStep('prereq', 'Pre-requisites', '\u2699\uFE0F', isChapter && !isEnglish && !isCommerce && hasMathPrereqPrompt && (!singleStepMode || prereqOnly), async () => {
     const result = await callForItem(buildPrereqPrompt(name, baseMasterPrompt), 40000);
     saveFile(ch + '/' + ch + '/' + ch + '_Prerequisites.json', result);
     logStep(scopeLabel, 'Pre-requisites', '\u2699\uFE0F', 'done', countLines(result) + ' lines');
   });
 
   // TERMS — skipped for English, single-step modes, and GeoHistCivICSE subtopic Case B
-  await runStep('terms', 'Terms and Definition', '\u2699\uFE0F', !singleStepMode && !isEnglish && !isGeoSubtopicCaseB, async () => {
+  await runStep('terms', 'Terms and Definition', '\u2699\uFE0F', !singleStepMode && !isEnglish && !isGeoSubtopicCaseB && hasMathTermsPrompt, async () => {
     const result = stripMarkdownFormatting(await callForItem(buildTermsPrompt(name, item, baseMasterPrompt), 40000));
     saveFile(fp('Terms.txt'), result);
     logStep(scopeLabel, 'Terms and Definition', '\u2699\uFE0F', 'done');
   });
 
   // LEARNING OUTCOMES — capture for PLT; skipped in single-step modes and GeoHistCivICSE subtopic Case B
-  const loRes = await runStep('lo', 'Learning Outcomes', '\u2699\uFE0F', !singleStepMode && !isGeoSubtopicCaseB, async () => {
+  const loRes = await runStep('lo', 'Learning Outcomes', '\u2699\uFE0F', !singleStepMode && !isGeoSubtopicCaseB && hasMathLOPrompt, async () => {
     const result = stripMarkdownFormatting(await callForItem(buildLOPrompt(name, item, baseMasterPrompt), 40000));
     saveFile(fp('LO.txt'), result);
     logStep(scopeLabel, 'Learning Outcomes', '\u2699\uFE0F', 'done');
@@ -3198,7 +3317,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // PLT — skipped for English and GeoHistCivICSE subtopic Case B; mandatory for nano; runs for chapter, subtopic (if PLT enabled), PLT-only mode
   // In PLT-only mode, also require that there is actually an LO available for this concept
   const pltHasLO = !pltOnly || !!loResult;
-  const doPLT = pltHasLO && !isEnglish && !isGeoSubtopicCaseB && !questionsOnly && !prereqOnly && !glossaryOnly && (isNano || pltOnly || (!singleStepMode && (isChapter || item.level === 'subtopic')));
+  const doPLT = hasMathPLTPrompt && pltHasLO && !isEnglish && !isGeoSubtopicCaseB && !questionsOnly && !prereqOnly && !glossaryOnly && (isNano || pltOnly || (!singleStepMode && (isChapter || item.level === 'subtopic')));
   await runStep('plt', 'PLT', '\u2699\uFE0F', doPLT, async () => {
     const loLines = (loResult || '').split('\n').filter(l => /LO\d+|^\s*\d+[\.\)]/i.test(l.trim()));
     const loCount = loLines.length || 10;
@@ -3208,7 +3327,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   });
 
   // GLOSSARY — runs in full mode (chapter only) OR in glossaryOnly mode (chapter only)
-  const hasGlossarySection = !!extractSection(baseMasterPrompt, 'GLOSSARY_CREATION_PROMPT');
+  const hasGlossarySection = hasMathGlossaryPrompt && !!(isMathematicsCBSE() ? getMathematicsCBSEGlossaryPrompt(baseMasterPrompt) : extractSection(baseMasterPrompt, 'GLOSSARY_CREATION_PROMPT'));
   await runStep('glossary', 'Glossary', '\u2699\uFE0F', isChapter && !isEnglish && !isCommerce && hasGlossarySection && (!singleStepMode || glossaryOnly), async () => {
     const result = stripMarkdownFormatting(await callForItem(buildGlossaryPrompt(name, baseMasterPrompt), 40000));
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
@@ -3404,7 +3523,7 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
   const isBioICSERAD  = state.subject === 'Biology' && state.curriculum === 'ICSE';
   const isSocialCBSERAD = state.subject === 'Social' && state.curriculum === 'CBSE';
   const hasRADInput = metadataHasAnyQuestionType(state.radMetadata, RAD_META_TYPES);
-  const doRAD = (isMathCBSERAD || isChemCBSERAD || isPhysCBSERAD || isBioICSERAD || isSocialCBSERAD) && hasRADInput;
+  const doRAD = hasMathRADPrompt && (isMathCBSERAD || isChemCBSERAD || isPhysCBSERAD || isBioICSERAD || isSocialCBSERAD) && hasRADInput;
   const raQ = await runStep('reason_assertion', 'Reason-Assertion Descriptive', '\u2696\uFE0F',
     doRAD, async () => {
     const radLoText = (state.radLOText || state.globalLOText || '').trim() || loResult;
@@ -3792,6 +3911,14 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
   const isGeoHistCivICSE = ['Geography', 'History', 'Civics'].includes(state.subject) && state.curriculum === 'ICSE';
   const hasPrereqSection = !!extractSection(masterPrompt, 'PRE_REQUISITE_CREATION_PROMPT');
   const hasGlossarySection = !!extractSection(masterPrompt, 'GLOSSARY_CREATION_PROMPT');
+  const hasMathPrereqPrompt = hasMathematicsCBSEStagePrompt('PRE_REQUISITE', masterPrompt, ['PRE_REQUISITE_CREATION_PROMPT']);
+  const hasMathTermsPrompt = hasMathematicsCBSEStagePrompt('TERMS_DEFINITIONS', masterPrompt, ['TERMS_DEFINITIONS_CREATION_PROMPT', 'TERMS_AND_DEFINITIONS_CREATION_PROMPT', 'TERMS_AND_DEFINITIONS', 'TERMS_DEFINITIONS', 'TERMS']);
+  const hasMathLOPrompt = hasMathematicsCBSEStagePrompt('LEARNING_OUTCOMES', masterPrompt, ['LEARNING_OUTCOMES_CREATION_PROMPT', 'LEARNING_OUTCOMES']);
+  const hasMathPLTPrompt = hasMathematicsCBSEStagePrompt('PLT', masterPrompt, ['PLT_CREATION_PROMPT']);
+  const hasMathGlossaryPrompt = hasMathematicsCBSEStagePrompt('GLOSSARY', masterPrompt, ['GLOSSARY_CREATION_PROMPT']);
+  const hasMathObjectivePrompt = !isMathematicsCBSE() || !!getObjectivePromptText(masterPrompt);
+  const hasMathSubjectivePrompt = !isMathematicsCBSE() || !!getSubjectivePromptText(masterPrompt);
+  const hasMathRADPrompt = !isMathematicsCBSE() || !!getMathematicsCBSERADPrompt(masterPrompt);
 
   const expected = []; // { path, label, item }
 
@@ -3812,29 +3939,29 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
     const scopeLabel = isChapter ? name : (isNano ? name + ' (nano)' : name + ' (subtopic)');
 
     // Prereq
-    if (isChapter && !isEnglish && (!singleStepMode || prereqOnly))
+    if (isChapter && !isEnglish && hasMathPrereqPrompt && (!singleStepMode || prereqOnly))
       expected.push({ path: ch + '/' + ch + '/' + ch + '_Prerequisites.json', label: scopeLabel + ' - Prerequisites', item });
 
     // Terms
-    if (!singleStepMode && !isEnglish && !isGeoSubtopicCaseB)
+    if (!singleStepMode && !isEnglish && !isGeoSubtopicCaseB && hasMathTermsPrompt)
       expected.push({ path: fp('Terms.txt'), label: scopeLabel + ' - Terms & Definitions', item });
 
     // LO
-    if (!singleStepMode && !isGeoSubtopicCaseB)
+    if (!singleStepMode && !isGeoSubtopicCaseB && hasMathLOPrompt)
       expected.push({ path: fp('LO.txt'), label: scopeLabel + ' - Learning Outcomes', item });
 
     // PLT
     const pltHasLO = !pltOnly || !!(getLOForConcept(item.name));
-    const doPLT = pltHasLO && !isEnglish && !isGeoSubtopicCaseB && !questionsOnly && !prereqOnly && !glossaryOnly && (isNano || pltOnly || (!singleStepMode && (isChapter || item.level === 'subtopic')));
+    const doPLT = hasMathPLTPrompt && pltHasLO && !isEnglish && !isGeoSubtopicCaseB && !questionsOnly && !prereqOnly && !glossaryOnly && (isNano || pltOnly || (!singleStepMode && (isChapter || item.level === 'subtopic')));
     if (doPLT)
       expected.push({ path: fp('PLT.txt'), label: scopeLabel + ' - PLT', item });
 
     // Glossary
-    if (isChapter && !isEnglish && hasGlossarySection && (!singleStepMode || glossaryOnly))
+    if (isChapter && !isEnglish && hasMathGlossaryPrompt && (isMathematicsCBSE() ? !!getMathematicsCBSEGlossaryPrompt(masterPrompt) : hasGlossarySection) && (!singleStepMode || glossaryOnly))
       expected.push({ path: ch + '/' + ch + '/' + ch + '_Glossary.txt', label: scopeLabel + ' - Glossary', item });
 
     // Objective
-    const doObjFinal = doObjective && !isGeoSubtopicCaseB;
+    const doObjFinal = hasMathObjectivePrompt && doObjective && !isGeoSubtopicCaseB;
     if (doObjFinal)
       expected.push({ path: fp('Objective.json'), label: scopeLabel + ' - Objective Questions', item });
 
@@ -3848,7 +3975,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
     }
 
     // Subjective
-    const doSubjFinal = isGeoSubtopicCaseB ? doSubjective : (doSubjective && !isGeoNano);
+    const doSubjFinal = isGeoSubtopicCaseB ? (hasMathSubjectivePrompt && doSubjective) : (hasMathSubjectivePrompt && doSubjective && !isGeoNano);
     if (doSubjFinal) {
       const isEngCBSE_ce = state.subject === 'English' && state.curriculum === 'CBSE';
       const isEngICSESubtype_ce = isEnglishICSESubtypeSubjective();
@@ -3872,7 +3999,7 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
     }
 
     // RAD
-    if (isRADExpected && metadataHasAnyQuestionType(state.radMetadata, RAD_META_TYPES))
+    if (hasMathRADPrompt && isRADExpected && metadataHasAnyQuestionType(state.radMetadata, RAD_META_TYPES))
       expected.push({ path: fp('ReasonAssertion.json'), label: scopeLabel + ' - Reason-Assertion', item });
 
     // RTC
@@ -4069,7 +4196,8 @@ function chapterScopeNote(item) {
 }
 
 function buildPrereqPrompt(conceptName, masterPrompt) {
-  const section = fillPlaceholders(extractSection(masterPrompt, 'PRE_REQUISITE_CREATION_PROMPT') || masterPrompt, conceptName, null, '');
+  const raw = isMathematicsCBSE() ? getMathematicsCBSEPrereqPrompt(masterPrompt) : (extractSection(masterPrompt, 'PRE_REQUISITE_CREATION_PROMPT') || masterPrompt);
+  const section = fillPlaceholders(raw, conceptName, null, '');
   return `${section}
 
 ---
@@ -4135,7 +4263,9 @@ Generate pre-requisite questions as per the prompt above.`;
 }
 
 function buildTermsPrompt(conceptName, item, masterPrompt) {
-  const raw = extractSection(masterPrompt, 'TERMS_DEFINITIONS_CREATION_PROMPT') || extractSection(masterPrompt, 'TERMS_AND_DEFINITIONS_CREATION_PROMPT') || extractSection(masterPrompt, 'TERMS_AND_DEFINITIONS') || extractSection(masterPrompt, 'TERMS_DEFINITIONS') || extractSection(masterPrompt, 'TERMS') || masterPrompt;
+  const raw = isMathematicsCBSE()
+    ? getMathematicsCBSETermsPrompt(masterPrompt)
+    : extractSection(masterPrompt, 'TERMS_DEFINITIONS_CREATION_PROMPT') || extractSection(masterPrompt, 'TERMS_AND_DEFINITIONS_CREATION_PROMPT') || extractSection(masterPrompt, 'TERMS_AND_DEFINITIONS') || extractSection(masterPrompt, 'TERMS_DEFINITIONS') || extractSection(masterPrompt, 'TERMS') || masterPrompt;
   console.log('[buildTermsPrompt] promptKey:', getPromptKey(), '| section starts:', (raw||'').substring(0,80));
   const section = fillPlaceholders(raw, conceptName, item, '');
   const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
@@ -4155,7 +4285,9 @@ Generate terms and definitions as per the prompt above.${NO_ASTERISK_RULE}`;
 }
 
 function buildLOPrompt(conceptName, item, masterPrompt) {
-  const loRaw = extractSection(masterPrompt, 'LEARNING_OUTCOMES_CREATION_PROMPT') || extractSection(masterPrompt, 'LEARNING_OUTCOMES') || masterPrompt;
+  const loRaw = isMathematicsCBSE()
+    ? getMathematicsCBSELOPrompt(masterPrompt)
+    : extractSection(masterPrompt, 'LEARNING_OUTCOMES_CREATION_PROMPT') || extractSection(masterPrompt, 'LEARNING_OUTCOMES') || masterPrompt;
   console.log('[buildLOPrompt] promptKey:', getPromptKey(), '| section starts:', (loRaw||'').substring(0,80));
   const section = fillPlaceholders(loRaw, conceptName, item, '');
   return `${section}
@@ -4173,7 +4305,8 @@ Generate learning outcomes as per the prompt above.${NO_ASTERISK_RULE}`;
 }
 
 function buildPLTPrompt(conceptName, item, masterPrompt, loText) {
-  const section = fillPlaceholders(extractSection(masterPrompt, 'PLT_CREATION_PROMPT') || masterPrompt, conceptName, item, loText);
+  const raw = isMathematicsCBSE() ? getMathematicsCBSEPLTPrompt(masterPrompt) : (extractSection(masterPrompt, 'PLT_CREATION_PROMPT') || masterPrompt);
+  const section = fillPlaceholders(raw, conceptName, item, loText);
   return `${section}
 
 ---
@@ -4191,7 +4324,8 @@ Generate PLT (Proficiency Level Transcript) as per the prompt above.${NO_ASTERIS
 }
 
 function buildGlossaryPrompt(conceptName, masterPrompt) {
-  const section = fillPlaceholders(extractSection(masterPrompt, 'GLOSSARY_CREATION_PROMPT') || masterPrompt, conceptName, null, '');
+  const raw = isMathematicsCBSE() ? getMathematicsCBSEGlossaryPrompt(masterPrompt) : (extractSection(masterPrompt, 'GLOSSARY_CREATION_PROMPT') || masterPrompt);
+  const section = fillPlaceholders(raw, conceptName, null, '');
   return `${section}
 
 ---
@@ -5196,7 +5330,9 @@ function buildRADescPrompt(conceptName, item, masterPrompt, loText, overrideSpec
     ? buildChemistryCBSERADPrompt()
     : (state.subject === 'Social' && state.curriculum === 'CBSE')
       ? buildSocialCBSERADPrompt()
-      : extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT');
+      : isMathematicsCBSE()
+        ? getMathematicsCBSERADPrompt(masterPrompt)
+        : extractSection(masterPrompt, 'REASON_ASSERTION_CREATION_PROMPT');
   if (!raw) {
     throw new Error('Missing ' + state.subject + ' ' + state.curriculum + ' Reason-Assertion prompt. Add REASON_ASSERTION_CREATION_PROMPT to PROMPTS["' + getPromptKey() + '"].');
   }
