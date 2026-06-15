@@ -3183,7 +3183,6 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
       throw new Error('Subjective returned 0 questions - raw response preview: ' + preview + ' - click Retry');
     }
     // English CBSE: split output into separate VSA/SA/LA files. All others: single Subjective.json
-    const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
     const isEnglishGrammarSubjective = isEnglishICSEGrammar || isEnglishCBSEGrammar;
     const normalized = isEnglishGrammarSubjective ? parsed.map(q => {
       const questionText = q && q.question != null ? String(q.question) : '';
