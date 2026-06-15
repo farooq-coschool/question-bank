@@ -5631,7 +5631,11 @@ function assertGeneratedQuestionCounts(items, metadataText, allowedTypes, label)
   const unexpected = [];
 
   items.forEach((q, idx) => {
-    const key = preferredGeneratedQuestionTypeKey(q);
+    const preferredKey = preferredGeneratedQuestionTypeKey(q);
+    const generatedKeys = generatedQuestionTypeKeys(q);
+    const key = expectedKeys.includes(preferredKey)
+      ? preferredKey
+      : expectedKeys.find(k => generatedKeys.has(k));
     if (!expectedKeys.includes(key)) {
       unexpected.push((q && q.question_type_tag) || (q && q.questionType) || ('item ' + (idx + 1)));
       return;
