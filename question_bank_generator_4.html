@@ -1477,12 +1477,24 @@ function isRADSupportedSubject() {
          (state.curriculum === 'ICSE' && state.subject === 'Biology');
 }
 
+function getSocialCBSEObjectivePrompt() {
+  return (PROMPTS.SOCIAL_CBSE_OBJECTIVE || extractSection(PROMPTS.SOCIAL_CBSE || '', 'OBJECTIVE_CREATION_PROMPT') || '').trim();
+}
+
+function getSocialCBSESubjectivePrompt() {
+  return (PROMPTS.SOCIAL_CBSE_SUBJECTIVE || extractSection(PROMPTS.SOCIAL_CBSE || '', 'SUBJECTIVE_CREATION_PROMPT') || '').trim();
+}
+
+function getSocialCBSEPromptBundle() {
+  return [getSocialCBSEObjectivePrompt(), getSocialCBSESubjectivePrompt()].filter(Boolean).join('\n\n---\n\n');
+}
+
 function isSocialCBSERADOnlySubject() {
-  return state.subject === 'Social' && state.curriculum === 'CBSE' && !PROMPTS.SOCIAL_CBSE_OBJECTIVE && !PROMPTS.SOCIAL_CBSE_SUBJECTIVE;
+  return state.subject === 'Social' && state.curriculum === 'CBSE' && !getSocialCBSEObjectivePrompt() && !getSocialCBSESubjectivePrompt();
 }
 
 function isSocialCBSESubjectiveUnavailable() {
-  return state.subject === 'Social' && state.curriculum === 'CBSE' && !(PROMPTS.SOCIAL_CBSE_SUBJECTIVE || '').trim();
+  return state.subject === 'Social' && state.curriculum === 'CBSE' && !getSocialCBSESubjectivePrompt();
 }
 
 const OBJECTIVE_META_TYPES = ['SCQ', 'RA'];
@@ -2636,7 +2648,9 @@ function getPromptKey() {
 
 function resolveSubjectPrompt() {
   const promptKey = getPromptKey();
-  const masterPrompt = PROMPTS[promptKey] || '';
+  const masterPrompt = (state.subject === 'Social' && state.curriculum === 'CBSE')
+    ? getSocialCBSEPromptBundle()
+    : (PROMPTS[promptKey] || '');
   if (!masterPrompt.trim() || isPlaceholderPrompt(masterPrompt)) {
     throw new Error('Missing prompt for ' + state.subject + ' ' + state.curriculum + '. Expected PROMPTS["' + promptKey + '"].');
   }
@@ -2677,7 +2691,7 @@ function isEnglishICSEGrammarSubjective() {
 
 function getObjectivePromptText(masterPrompt) {
   if (state.subject === 'Social' && state.curriculum === 'CBSE') {
-    return PROMPTS.SOCIAL_CBSE_OBJECTIVE || '';
+    return getSocialCBSEObjectivePrompt();
   }
   if (state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType !== 'RTC') {
     const key = getEnglishICSEObjectivePromptKey();
@@ -2688,7 +2702,7 @@ function getObjectivePromptText(masterPrompt) {
 
 function getSubjectivePromptText(masterPrompt) {
   if (state.subject === 'Social' && state.curriculum === 'CBSE') {
-    return PROMPTS.SOCIAL_CBSE_SUBJECTIVE || '';
+    return getSocialCBSESubjectivePrompt();
   }
   if (isEnglishICSESubtypeSubjective()) {
     const key = getEnglishICSESubjectivePromptKey();
