@@ -3117,6 +3117,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     }
     const isEnglishICSESubtype = isEnglishICSESubtypeSubjective();
     const isEnglishICSEGrammar = isEnglishICSEGrammarSubjective();
+    const englishCBSEGrammarSubjective = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
     if (isEnglishICSESubtype && !isEnglishICSEGrammar) {
       const expandedSpecs = expandEnglishSubjectiveCountSpecs(state.subjMetadata);
       if (!expandedSpecs.length) throw new Error('English ICSE subjective needs count metadata on Page 3, for example: Understanding Easy Questions: 2.');
@@ -3169,7 +3170,7 @@ Regenerate exactly ONE complete plain-text block now. The block must include exa
     try {
       parsed = validateSubjectiveCounts(parsed);
     } catch (countErr) {
-      if (!isEnglishICSEGrammar && !isEnglishCBSEGrammar) throw countErr;
+      if (!isEnglishICSEGrammar && !englishCBSEGrammarSubjective) throw countErr;
       const retryPrompt = subjectivePrompt + `
 
 IMPORTANT RETRY FEEDBACK: The previous English Grammar subjective output failed validation: ${countErr.message}
@@ -3183,7 +3184,7 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
       throw new Error('Subjective returned 0 questions - raw response preview: ' + preview + ' - click Retry');
     }
     // English CBSE: split output into separate VSA/SA/LA files. All others: single Subjective.json
-    const isEnglishGrammarSubjective = isEnglishICSEGrammar || isEnglishCBSEGrammar;
+    const isEnglishGrammarSubjective = isEnglishICSEGrammar || englishCBSEGrammarSubjective;
     const normalized = isEnglishGrammarSubjective ? parsed.map(q => {
       const questionText = q && q.question != null ? String(q.question) : '';
       const rawTag = q && q.question_type_tag != null ? String(q.question_type_tag).trim() : '';
@@ -3205,7 +3206,7 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
       // questionType / marks values seen: VSA/SA/LA labels, "1"/"3"/"6" strings, or numbers
       const buckets = { VSA: [], SA: [], LA: [] };
       const bucketOf = (q) => {
-        if (isEnglishCBSEGrammar) return 'SA';
+        if (englishCBSEGrammarSubjective) return 'SA';
         const qt = (q && q.questionType != null ? String(q.questionType) : '').trim().toUpperCase();
         const mk = (q && q.marks != null ? String(q.marks) : '').trim();
         if (qt === 'VSA' || qt === '1' || mk === '1') return 'VSA';
