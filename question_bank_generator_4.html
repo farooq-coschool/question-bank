@@ -1064,6 +1064,7 @@
 
 <!-- No API modal needed — key is managed server-side -->
 
+<script src="mathematics_cbse_prompts.js"></script>
 <script>
 // ============================================================
 // EMBEDDED PROMPTS
@@ -1429,6 +1430,42 @@ if (!PROMPTS.MATHEMATICS_CBSE_09_GLOSSARY) PROMPTS.MATHEMATICS_CBSE_09_GLOSSARY 
 if (!PROMPTS.MATHEMATICS_CBSE_09_OBJECTIVE) PROMPTS.MATHEMATICS_CBSE_09_OBJECTIVE = '';
 if (!PROMPTS.MATHEMATICS_CBSE_09_SUBJECTIVE) PROMPTS.MATHEMATICS_CBSE_09_SUBJECTIVE = '';
 if (!PROMPTS.MATHEMATICS_CBSE_09_REASON_ASSERTION) PROMPTS.MATHEMATICS_CBSE_09_REASON_ASSERTION = '';
+if (!PROMPTS.MATHEMATICS_CBSE_09_LEARNING_OUTCOMES_VALIDATION) PROMPTS.MATHEMATICS_CBSE_09_LEARNING_OUTCOMES_VALIDATION = '';
+if (!PROMPTS.MATHEMATICS_CBSE_09_PLT_VALIDATION) PROMPTS.MATHEMATICS_CBSE_09_PLT_VALIDATION = '';
+
+function applyMathematicsCBSEPromptDocs() {
+  const docs = (typeof window !== 'undefined' && Array.isArray(window.MATHEMATICS_CBSE_PROMPT_DOCS))
+    ? window.MATHEMATICS_CBSE_PROMPT_DOCS
+    : [];
+  if (!docs.length) return;
+
+  const byTitle = {};
+  docs.forEach(doc => {
+    if (!doc || doc.isActive === false || doc.subject !== 'Mathematics' || doc.curriculum !== 'CBSE') return;
+    byTitle[String(doc.title || '').trim()] = String(doc.data || '').trim();
+  });
+
+  const setPrompt = (targetKey, title, sectionName) => {
+    const body = byTitle[title];
+    if (!body) return;
+    PROMPTS[targetKey] = '## ' + sectionName + '\n' + body;
+  };
+
+  // Grade 9 Math CBSE workflow order:
+  // Pre-requisite -> Terms -> Learning Outcomes -> PLT -> Glossary -> Objective -> Subjective.
+  setPrompt('MATHEMATICS_CBSE_09_PRE_REQUISITE', 'auto_prerequisites', 'PRE_REQUISITE_CREATION_PROMPT');
+  setPrompt('MATHEMATICS_CBSE_09_TERMS_DEFINITIONS', 'auto_terms', 'TERMS_DEFINITIONS_CREATION_PROMPT');
+  setPrompt('MATHEMATICS_CBSE_09_LEARNING_OUTCOMES', 'auto_learning_outcomes', 'LEARNING_OUTCOMES_CREATION_PROMPT');
+  setPrompt('MATHEMATICS_CBSE_09_PLT', 'auto_plt_creation', 'PLT_CREATION_PROMPT');
+  setPrompt('MATHEMATICS_CBSE_09_GLOSSARY', 'auto_glossary', 'GLOSSARY_CREATION_PROMPT');
+  setPrompt('MATHEMATICS_CBSE_09_OBJECTIVE', 'auto_objective_questions', 'OBJECTIVE_CREATION_PROMPT');
+  setPrompt('MATHEMATICS_CBSE_09_SUBJECTIVE', 'auto_subjective_questions', 'SUBJECTIVE_CREATION_PROMPT');
+
+  // Stored for future validation-stage wiring; not included in generation prompt bundle.
+  setPrompt('MATHEMATICS_CBSE_09_LEARNING_OUTCOMES_VALIDATION', 'auto_learning_outcomes_validation', 'LO_VALIDATION_PROMPT');
+  setPrompt('MATHEMATICS_CBSE_09_PLT_VALIDATION', 'auto_plt_validation', 'PLT_VALIDATION_PROMPT');
+}
+applyMathematicsCBSEPromptDocs();
 
 // ============================================================
 // STATE
