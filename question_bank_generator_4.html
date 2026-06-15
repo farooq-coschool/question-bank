@@ -1433,6 +1433,8 @@ const state = {
   textbookPdfs: [],         // [{base64, name}] — supports multiple PDFs
   textbookImages: [],       // [{base64, mimeType, name}] for image-mode uploads
   textbookText: '',         // user-pasted plain text as textbook source
+  textbookExtractedParts: [],
+  textbookExtractionPending: 0,
   counts: {},
   promptCounts: {},
   objMetadata: '',   // user-editable objective metadata text (empty = skip)
@@ -1728,17 +1730,48 @@ function removeImage() {
   document.querySelector('.img-upload-sub').textContent = 'Supports JPG, PNG, WEBP, GIF — screenshots, photos of textbooks, PDFs printed as images';
 }
 
+async function extractTextbookFileToText(file, index) {
+  if (!file) return;
+  state.textbookExtractionPending = (state.textbookExtractionPending || 0) + 1;
+  const statusEl = document.getElementById('pdfStatus');
+  if (statusEl) {
+    statusEl.innerHTML = `<span style="color:var(--text2)">Extracting reusable text from uploaded source${state.textbookExtractionPending > 1 ? 's' : ''} to reduce generation cost...</span>`;
+  }
+  try {
+    const form = new FormData();
+    form.append('file', file);
+    const resp = await fetch('/api/extract', { method: 'POST', body: form });
+    if (!resp.ok) throw new Error('Extraction failed with HTTP ' + resp.status);
+    const data = await resp.json();
+    const text = (data && data.text ? String(data.text) : '').trim();
+    if (text) {
+      state.textbookExtractedParts[index] = `--- SOURCE: ${file.name || ('Upload ' + (index + 1))} ---\n${text}`;
+      state.textbookText = state.textbookExtractedParts.filter(Boolean).join('\n\n');
+    }
+  } catch (err) {
+    console.warn('[textbook extract] failed', file && file.name, err);
+  } finally {
+    state.textbookExtractionPending = Math.max(0, (state.textbookExtractionPending || 1) - 1);
+    if (statusEl && state.textbookExtractionPending === 0 && state.textbookText && state.textbookText.trim()) {
+      statusEl.innerHTML = `<span style="color:var(--success)">&#10003; Text extracted for lower-cost generation (${state.textbookText.length.toLocaleString()} chars)</span>`;
+    }
+  }
+}
+
 function loadTextbookPdfs(files) {
   if (!files || !files.length) return;
   const MAX_PDF_BYTES = 100 * 1024 * 1024;
   state.textbookPdfs = [];   // array of {base64, name}
   state.textbookPdfBase64 = null;
   state.textbookPdfName = null;
+  state.textbookText = '';
+  state.textbookExtractedParts = [];
+  state.textbookExtractionPending = 0;
   const listEl = document.getElementById('pdfListPreview');
   if (listEl) listEl.innerHTML = '';
   let loaded = 0;
   const allFiles = Array.from(files);
-  allFiles.forEach(file => {
+  allFiles.forEach((file, fileIndex) => {
     if (file.size > MAX_PDF_BYTES) {
       alert(`${file.name} is too large (${(file.size/1024/1024).toFixed(1)} MB). Max is 100 MB — skipped.`);
       return;
@@ -1762,10 +1795,17 @@ function loadTextbookPdfs(files) {
       }
       if (loaded === allFiles.length) {
         document.getElementById('pdfUploadText').textContent = `\u2713 ${loaded} PDF${loaded > 1 ? 's' : ''} loaded - click to replace`;
-        document.getElementById('pdfStatus').innerHTML = `<span style="color:var(--success)">&#10003; ${loaded} PDF${loaded > 1 ? 's' : ''} ready - Claude will read all pages</span>`;
+        if (state.textbookExtractionPending > 0) {
+          document.getElementById('pdfStatus').innerHTML = `<span style="color:var(--text2)">PDF loaded. Extracting reusable text to reduce generation cost...</span>`;
+        } else if (state.textbookText && state.textbookText.trim()) {
+          document.getElementById('pdfStatus').innerHTML = `<span style="color:var(--success)">&#10003; Text extracted for lower-cost generation (${state.textbookText.length.toLocaleString()} chars)</span>`;
+        } else {
+          document.getElementById('pdfStatus').innerHTML = `<span style="color:var(--success)">&#10003; ${loaded} PDF${loaded > 1 ? 's' : ''} ready</span>`;
+        }
       }
     };
     reader.readAsDataURL(file);
+    extractTextbookFileToText(file, fileIndex);
   });
 }
 
@@ -1773,6 +1813,8 @@ function onTbModeChange(mode) {
   document.getElementById('tbPdfArea').style.display = mode === 'pdf' ? '' : 'none';
   document.getElementById('tbImagesArea').style.display = mode === 'images' ? '' : 'none';
   document.getElementById('tbTextArea').style.display = mode === 'text' ? '' : 'none';
+  state.textbookExtractedParts = [];
+  state.textbookExtractionPending = 0;
   if (mode === 'pdf') { state.textbookImages = []; state.textbookText = ''; }
   else if (mode === 'images') { state.textbookPdfBase64 = null; state.textbookPdfName = null; state.textbookPdfs = []; state.textbookText = ''; }
   else if (mode === 'text') { state.textbookPdfBase64 = null; state.textbookPdfName = null; state.textbookPdfs = []; state.textbookImages = []; }
@@ -1781,6 +1823,9 @@ function onTbModeChange(mode) {
 function loadTextbookImages(files) {
   if (!files || !files.length) return;
   state.textbookImages = [];
+  state.textbookText = '';
+  state.textbookExtractedParts = [];
+  state.textbookExtractionPending = 0;
   const MAX = 5 * 1024 * 1024;
   const preview = document.getElementById('tbImagesPreview');
   preview.innerHTML = '';
@@ -1799,22 +1844,96 @@ function loadTextbookImages(files) {
       preview.appendChild(thumb);
       if (loaded === files.length) {
         document.getElementById('tbImagesUploadText').textContent = `\u2713 ${loaded} image${loaded > 1 ? 's' : ''} loaded - click to replace`;
-        document.getElementById('pdfStatus').innerHTML = `<span style="color:var(--success)">&#10003; ${loaded} image${loaded > 1 ? 's' : ''} ready for Claude</span>`;
+        if (state.textbookExtractionPending > 0) {
+          document.getElementById('pdfStatus').innerHTML = `<span style="color:var(--text2)">Image source loaded. Extracting reusable text to reduce generation cost...</span>`;
+        } else if (state.textbookText && state.textbookText.trim()) {
+          document.getElementById('pdfStatus').innerHTML = `<span style="color:var(--success)">&#10003; Text extracted for lower-cost generation (${state.textbookText.length.toLocaleString()} chars)</span>`;
+        } else {
+          document.getElementById('pdfStatus').innerHTML = `<span style="color:var(--success)">&#10003; ${loaded} image${loaded > 1 ? 's' : ''} ready</span>`;
+        }
       }
     };
     reader.readAsDataURL(file);
+    extractTextbookFileToText(file, i);
   });
 }
 
 /**
  * Generic Claude API caller — pass a model explicitly.
- * Used for text-only prompts. Automatically includes textbook PDF if uploaded.
+ * Used for text prompts. Prefers extracted/scoped textbook text; falls back to attachments.
  */
+function normalizeForSearch(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function findLooseIndex(haystack, needle) {
+  const rawNeedle = String(needle || '').trim();
+  if (!haystack || !rawNeedle) return -1;
+  const lowerHaystack = haystack.toLowerCase();
+  const direct = lowerHaystack.indexOf(rawNeedle.toLowerCase());
+  if (direct >= 0) return direct;
+  const words = normalizeForSearch(rawNeedle).split(/\s+/).filter(w => w.length > 2);
+  if (!words.length) return -1;
+  const first = words[0];
+  let pos = lowerHaystack.indexOf(first);
+  while (pos >= 0) {
+    const windowText = normalizeForSearch(haystack.slice(pos, pos + Math.max(800, rawNeedle.length * 8)));
+    if (words.every(w => windowText.includes(w))) return pos;
+    pos = lowerHaystack.indexOf(first, pos + first.length);
+  }
+  return -1;
+}
+
+function getScopedTextbookText(item, text) {
+  const source = String(text || '').trim();
+  if (!source || !item || item.level === 'chapter') return source;
+  const maxChars = item.level === 'nano' ? 24000 : 36000;
+  const beforeChars = item.level === 'nano' ? 2500 : 3500;
+  const names = [item.name, item.subtopicName, ...(item.nanoConcepts || [])].filter(Boolean);
+  let firstHit = -1;
+  for (const name of names) {
+    const hit = findLooseIndex(source, name);
+    if (hit >= 0 && (firstHit < 0 || hit < firstHit)) firstHit = hit;
+  }
+  if (firstHit < 0) {
+    return source.length > maxChars ? source.slice(0, maxChars) : source;
+  }
+  const start = Math.max(0, firstHit - beforeChars);
+  let end = Math.min(source.length, start + maxChars);
+  const subtopics = (state.parsedStructure && state.parsedStructure.subtopics) || [];
+  const laterHeadings = [];
+  for (const st of subtopics) {
+    if (st && st.name && st.name !== item.name && st.name !== item.subtopicName) laterHeadings.push(st.name);
+    for (const nc of (st && st.nanoConcepts) || []) {
+      if (nc && nc !== item.name) laterHeadings.push(nc);
+    }
+  }
+  for (const heading of laterHeadings) {
+    const relativeIdx = findLooseIndex(source.slice(firstHit + 1), heading);
+    const absoluteIdx = relativeIdx >= 0 ? firstHit + 1 + relativeIdx : -1;
+    if (absoluteIdx > firstHit + 500 && absoluteIdx < end) end = absoluteIdx;
+  }
+  const scoped = source.slice(start, end).trim();
+  return scoped || source.slice(0, maxChars);
+}
+
+function getTextbookTextForCall(item, opts) {
+  if (opts && opts.textbookTextOverride != null) return String(opts.textbookTextOverride || '').trim();
+  const text = String(state.textbookText || '').trim();
+  if (!text) return '';
+  if (opts && opts.disableSourceScoping) return text;
+  return getScopedTextbookText(item, text);
+}
+
 async function callClaude(userText, maxTokens, model, prefill, options) {
   const content = [];
   const opts = options || {};
   const skipTextbookSource = !!opts.skipTextbookSource;
-  if (!skipTextbookSource && state.textbookPdfs && state.textbookPdfs.length) {
+  const sourceText = skipTextbookSource ? '' : getTextbookTextForCall(opts.sourceItem, opts);
+  const hasTextSource = !!sourceText;
+  if (hasTextSource) {
+    content.push({ type: 'text', text: `--- TEXTBOOK CONTENT START ---\n${sourceText}\n--- TEXTBOOK CONTENT END ---` });
+  } else if (!skipTextbookSource && state.textbookPdfs && state.textbookPdfs.length) {
     for (const pdf of state.textbookPdfs) {
       content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdf.base64 } });
     }
@@ -1825,12 +1944,8 @@ async function callClaude(userText, maxTokens, model, prefill, options) {
       content.push({ type: 'image', source: { type: 'base64', media_type: img.mimeType, data: img.base64 } });
     }
   }
-  const hasTextSource = !skipTextbookSource && !!(state.textbookText && state.textbookText.trim());
-  if (hasTextSource) {
-    content.push({ type: 'text', text: `--- TEXTBOOK CONTENT START ---\n${state.textbookText.trim()}\n--- TEXTBOOK CONTENT END ---` });
-  }
-  const hasAttachment = !skipTextbookSource && ((state.textbookPdfs && state.textbookPdfs.length) || state.textbookPdfBase64 || (state.textbookImages && state.textbookImages.length));
-  const hasImages = !skipTextbookSource && state.textbookImages && state.textbookImages.length > 0;
+  const hasAttachment = !hasTextSource && !skipTextbookSource && ((state.textbookPdfs && state.textbookPdfs.length) || state.textbookPdfBase64 || (state.textbookImages && state.textbookImages.length));
+  const hasImages = !hasTextSource && !skipTextbookSource && state.textbookImages && state.textbookImages.length > 0;
   const attachmentInstruction = hasTextSource
     ? 'IMPORTANT: You must generate ALL content based STRICTLY and EXCLUSIVELY on the textbook content provided above between the TEXTBOOK CONTENT START and END markers. Do NOT use any external knowledge, prior training data, or assumptions beyond what is present in that text.\n\n'
     : hasAttachment
@@ -2435,6 +2550,11 @@ function page3Next() {
     errEl.style.display = 'block';
     return;
   }
+  if ((state.textbookExtractionPending || 0) > 0) {
+    errEl.textContent = 'Please wait while the uploaded textbook source is converted to reusable text. This reduces generation input cost.';
+    errEl.style.display = 'block';
+    return;
+  }
   if (state.subject === 'English' && !state.chapterType) {
     errEl.textContent = 'Please select Prose, Poetry, Grammar, Drama, or RTC for English.';
     errEl.style.display = 'block';
@@ -2610,15 +2730,17 @@ function setupGenerationSteps() {
 function renderConceptCheckboxes() {
   const list = document.getElementById('conceptCheckboxList');
   const scope = state.generationScope;
+  const autoSelectConcepts = state.genMode !== 'questions';
   if (!scope || !scope.subtopics || !scope.subtopics.length) {
     list.innerHTML = '<div style="color:var(--muted);font-size:13px">No concepts available.</div>';
     return;
   }
 
   const chapterDone = state.generatedConceptKeys.has('chapter:' + state.chapterName);
+  const chapterChecked = autoSelectConcepts && !chapterDone;
   const chapterRow = `
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:9px 12px;border-radius:7px;background:var(--surface2);border:1px solid var(--accent);transition:border-color .15s;">
-      <input type="checkbox" class="concept-cb" data-type="chapter" onchange="updateSelectAll()" ${chapterDone ? '' : 'checked'} style="accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;cursor:pointer;">
+      <input type="checkbox" class="concept-cb" data-type="chapter" onchange="updateSelectAll()" ${chapterChecked ? 'checked' : ''} style="accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;cursor:pointer;">
       <span style="font-size:13px;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
         <strong style="color:var(--accent);">&#128218;</strong>${state.chapterName}
         ${chapterDone ? '<span style="color:#22c55e;font-size:11px;font-weight:600;">&#10003; Already generated</span>' : ''}
@@ -2629,13 +2751,15 @@ function renderConceptCheckboxes() {
   const subtopicRows = scope.subtopics.map((st, si) => {
     const stDone = state.generatedConceptKeys.has('subtopic:' + st.name);
     const nanos = st.nanoConcepts || [];
+    const stChecked = autoSelectConcepts && !stDone;
 
     const nanoRows = nanos.map((nc, ni) => {
       const nanoDone = state.generatedConceptKeys.has('nano:' + st.name + ':' + nc);
+      const nanoChecked = autoSelectConcepts && !nanoDone;
       return `
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:7px 12px 7px 36px;border-radius:6px;background:var(--bg);border:1px solid var(--border);transition:border-color .15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
         <input type="checkbox" class="concept-cb nano-cb" data-type="nano" data-st-idx="${si}" data-nano-idx="${ni}"
-          onchange="onNanoCbChange(${si}, ${ni})" ${nanoDone ? '' : 'checked'}
+          onchange="onNanoCbChange(${si}, ${ni})" ${nanoChecked ? 'checked' : ''}
           style="accent-color:var(--accent);width:13px;height:13px;flex-shrink:0;cursor:pointer;">
         <span style="font-size:12px;color:var(--text2);display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
           &#128313; ${nc}
@@ -2648,7 +2772,7 @@ function renderConceptCheckboxes() {
     <div style="margin-bottom:4px;">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:9px 12px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);transition:border-color .15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
         <input type="checkbox" class="concept-cb subtopic-cb" data-type="subtopic" data-st-idx="${si}"
-          onchange="onSubtopicCbChange(${si})" ${stDone ? '' : 'checked'}
+          onchange="onSubtopicCbChange(${si})" ${stChecked ? 'checked' : ''}
           style="accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;cursor:pointer;">
         <span style="font-size:13px;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
           <strong style="color:var(--muted);">${si + 1}.</strong>${st.name}
@@ -2665,6 +2789,10 @@ function renderConceptCheckboxes() {
 
 function onSubtopicCbChange(si) {
   const stCb = document.querySelector(`.subtopic-cb[data-st-idx="${si}"]`);
+  if (state.genMode === 'questions') {
+    updateSelectAll();
+    return;
+  }
   document.querySelectorAll(`.nano-cb[data-st-idx="${si}"]`).forEach(cb => {
     cb.checked = stCb.checked;
   });
@@ -2878,6 +3006,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const isBio67 = state.subject === 'Biology' && state.curriculum === 'ICSE' && (state.grade === '06' || state.grade === '07');
   const isCommerce = state.subject === 'Commerce';
   const baseMasterPrompt = masterPrompt;
+  const callForItem = (prompt, maxTokens, model, prefill, callOptions) =>
+    callClaude(prompt, maxTokens, model, prefill, { ...(callOptions || {}), sourceItem: item });
 
   // In questions-only or PLT-only mode, use provided LO instead of generating it
   if (questionsOnly || pltOnly) {
@@ -3011,7 +3141,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
           '===============================================================\n\n';
 
         const fullPrompt = combinationHeader + basePrompt + prevContext + formatInstruction;
-        const result = await callClaude(fullPrompt, 50000);
+        const result = await callForItem(fullPrompt, 50000);
         prevResults.push(result);
         const fileName = fp('RTC_' + rtcIdx + '.txt');
         saveFile(fileName, result);
@@ -3023,28 +3153,28 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
 
   // COMMERCE GLOSSARY — runs at chapter level before Terms (Commerce ICSE only)
   await runStep('commerce_glossary', 'Glossary', '\u2699\uFE0F', isCommerce && isChapter && !singleStepMode, async () => {
-    const result = stripMarkdownFormatting(await callClaude(buildGlossaryPrompt(name, baseMasterPrompt), 40000));
+    const result = stripMarkdownFormatting(await callForItem(buildGlossaryPrompt(name, baseMasterPrompt), 40000));
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
     logStep(scopeLabel, 'Glossary', '\u2699\uFE0F', 'done');
   });
 
   // PREREQ — runs in full mode (chapter only) OR in prereqOnly mode (chapter only)
   await runStep('prereq', 'Pre-requisites', '\u2699\uFE0F', isChapter && !isEnglish && !isCommerce && (!singleStepMode || prereqOnly), async () => {
-    const result = await callClaude(buildPrereqPrompt(name, baseMasterPrompt), 40000);
+    const result = await callForItem(buildPrereqPrompt(name, baseMasterPrompt), 40000);
     saveFile(ch + '/' + ch + '/' + ch + '_Prerequisites.json', result);
     logStep(scopeLabel, 'Pre-requisites', '\u2699\uFE0F', 'done', countLines(result) + ' lines');
   });
 
   // TERMS — skipped for English, single-step modes, and GeoHistCivICSE subtopic Case B
   await runStep('terms', 'Terms and Definition', '\u2699\uFE0F', !singleStepMode && !isEnglish && !isGeoSubtopicCaseB, async () => {
-    const result = stripMarkdownFormatting(await callClaude(buildTermsPrompt(name, item, baseMasterPrompt), 40000));
+    const result = stripMarkdownFormatting(await callForItem(buildTermsPrompt(name, item, baseMasterPrompt), 40000));
     saveFile(fp('Terms.txt'), result);
     logStep(scopeLabel, 'Terms and Definition', '\u2699\uFE0F', 'done');
   });
 
   // LEARNING OUTCOMES — capture for PLT; skipped in single-step modes and GeoHistCivICSE subtopic Case B
   const loRes = await runStep('lo', 'Learning Outcomes', '\u2699\uFE0F', !singleStepMode && !isGeoSubtopicCaseB, async () => {
-    const result = stripMarkdownFormatting(await callClaude(buildLOPrompt(name, item, baseMasterPrompt), 40000));
+    const result = stripMarkdownFormatting(await callForItem(buildLOPrompt(name, item, baseMasterPrompt), 40000));
     saveFile(fp('LO.txt'), result);
     logStep(scopeLabel, 'Learning Outcomes', '\u2699\uFE0F', 'done');
     return result;
@@ -3058,7 +3188,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   await runStep('plt', 'PLT', '\u2699\uFE0F', doPLT, async () => {
     const loLines = (loResult || '').split('\n').filter(l => /LO\d+|^\s*\d+[\.\)]/i.test(l.trim()));
     const loCount = loLines.length || 10;
-    const result = stripMarkdownFormatting(await callClaude(buildPLTPrompt(name, item, baseMasterPrompt, loResult), 40000));
+    const result = stripMarkdownFormatting(await callForItem(buildPLTPrompt(name, item, baseMasterPrompt, loResult), 40000));
     saveFile(fp('PLT.txt'), result);
     logStep(scopeLabel, 'PLT', '\u2699\uFE0F', 'done', loCount + ' LOs covered');
   });
@@ -3066,7 +3196,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // GLOSSARY — runs in full mode (chapter only) OR in glossaryOnly mode (chapter only)
   const hasGlossarySection = !!extractSection(baseMasterPrompt, 'GLOSSARY_CREATION_PROMPT');
   await runStep('glossary', 'Glossary', '\u2699\uFE0F', isChapter && !isEnglish && !isCommerce && hasGlossarySection && (!singleStepMode || glossaryOnly), async () => {
-    const result = stripMarkdownFormatting(await callClaude(buildGlossaryPrompt(name, baseMasterPrompt), 40000));
+    const result = stripMarkdownFormatting(await callForItem(buildGlossaryPrompt(name, baseMasterPrompt), 40000));
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
     logStep(scopeLabel, 'Glossary', '\u2699\uFE0F', 'done');
   });
@@ -3078,8 +3208,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     const objectiveTypeCounts = parseQuestionTypeCounts(state.objMetadata, objectiveMetaTypes);
     const includeRA = (objectiveTypeCounts.RA || 0) > 0;
     const result = isCommerce
-      ? await callClaude(buildCommerceObjectivePrompt(name, item, masterPrompt, loResult), 40000)
-      : await callClaude(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 40000);
+      ? await callForItem(buildCommerceObjectivePrompt(name, item, masterPrompt, loResult), 40000)
+      : await callForItem(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 40000);
     let parsed = parseJSON(result);
     parsed = (state.subject === 'English' && hasEnglishCountMetadata(state.objMetadata) && !metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes))
       ? assertGeneratedEnglishQuestionLevelCounts(parsed, state.objMetadata, 'Objective')
@@ -3140,7 +3270,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
 BLOCK GENERATION CONTROL: Generate only block ${i + 1} of ${expandedSpecs.length} for this concept. This API call must return exactly ONE plain-text block for Cognitive Level: ${spec.cognitiveLevel} | Difficulty Level: ${spec.difficultyLevel}. Do not generate any other block, level, or difficulty.`;
         const singleMaxTokens = getEnglishICSESubjectiveMaxTokens(singleMetadata);
         const singleOptions = { attempts: 5, retryDelayMs: 2400 };
-        let textResult = (await callClaude(singlePrompt, singleMaxTokens, MODELS.SUBJECTIVE, '', singleOptions) || '').trim();
+        let textResult = (await callForItem(singlePrompt, singleMaxTokens, MODELS.SUBJECTIVE, '', singleOptions) || '').trim();
         try {
           assertEnglishICSESubjectiveTextCounts(textResult, singleMetadata);
         } catch (countErr) {
@@ -3148,7 +3278,7 @@ BLOCK GENERATION CONTROL: Generate only block ${i + 1} of ${expandedSpecs.length
 
 IMPORTANT RETRY FEEDBACK: The previous English ICSE subjective block failed validation: ${countErr.message}
 Regenerate exactly ONE complete plain-text block now. The block must include exactly one header line in this form: Cognitive Level: ${spec.cognitiveLevel} | Difficulty Level: ${spec.difficultyLevel}. Do not use JSON or markdown code fences.`;
-          textResult = (await callClaude(retryPrompt, singleMaxTokens, MODELS.SUBJECTIVE, '', singleOptions) || '').trim();
+          textResult = (await callForItem(retryPrompt, singleMaxTokens, MODELS.SUBJECTIVE, '', singleOptions) || '').trim();
           assertEnglishICSESubjectiveTextCounts(textResult, singleMetadata);
         }
         if (!textResult) throw new Error('English ICSE subjective returned empty output for ' + spec.cognitiveLevel + ' ' + spec.difficultyLevel + '. Click Retry.');
@@ -3164,7 +3294,7 @@ Regenerate exactly ONE complete plain-text block now. The block must include exa
       return expectedEnglishTextCount;
     }
     const subjectivePrompt = buildSubjectivePrompt(name, item, masterPrompt, subjLoText);
-    const rawResult = await callClaude(subjectivePrompt, 64000, MODELS.SUBJECTIVE, '[');
+    const rawResult = await callForItem(subjectivePrompt, 64000, MODELS.SUBJECTIVE, '[');
     // Claude continues from the '[' prefill, so prepend it back before parsing.
     const parseSubjectiveResult = (txt) => {
       const raw = txt || '';
@@ -3185,7 +3315,7 @@ Regenerate exactly ONE complete plain-text block now. The block must include exa
 
 IMPORTANT RETRY FEEDBACK: The previous English Grammar subjective output failed validation: ${countErr.message}
 Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page 3 metadata is count-only, match cognitiveLevel and difficultyLevel exactly for each requested count and choose only the allowed English Grammar subjective formats from the prompt. If FIB is used, return questionType "SA" with question_type_tag "FIB". If Passage Based FIB is used, return questionType "SA" with question_type_tag "Passage Based FIB". For plain SA, return questionType "SA" with question_type_tag "" or omit question_type_tag. Every English Grammar subjective object must use questionType "SA" and marks "4". Return exactly the requested counts, no extra types, no markdown.`;
-      const retryRaw = await callClaude(retryPrompt, 64000, MODELS.SUBJECTIVE, '[');
+      const retryRaw = await callForItem(retryPrompt, 64000, MODELS.SUBJECTIVE, '[');
       parsed = parseSubjectiveResult(retryRaw);
       parsed = validateSubjectiveCounts(parsed);
     }
@@ -3304,7 +3434,7 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
       const radPrompt = buildRADescPrompt(name, item, masterPrompt, radLoText, chunkSpecs, startIndex);
       const expectedCount = chunkSpecs.length;
       const radMaxTokens = Math.min(24000, Math.max(10000, expectedCount * 3000));
-      const rawResult = await callClaude(radPrompt, radMaxTokens, MODELS.RAD, null, { ...radCallOptions, label: `${state.subject} RAD` });
+      const rawResult = await callForItem(radPrompt, radMaxTokens, MODELS.RAD, null, { ...radCallOptions, label: `${state.subject} RAD` });
       const parsed = normalizeRADItems(parseRADArray(rawResult));
       let qCount = Array.isArray(parsed) ? parsed.length : 0;
       if (qCount !== expectedCount) {
@@ -3337,7 +3467,7 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
   const mtfLO = (state.mtfLOText || '').trim() || loResult || '';
   const mtfScqQ = await runStep('mtf_scq', 'MTF SCQ', '\u2699\uFE0F',
     isBioICSE && isMTFScqOnly, async () => {
-    const rawResult = await callClaude(buildMTFObjectivePrompt(name, item, mtfLO), 40000, undefined, '[');
+    const rawResult = await callForItem(buildMTFObjectivePrompt(name, item, mtfLO), 40000, undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('MTF_SCQ.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
@@ -3349,7 +3479,7 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
   // MTF Subjective — Biology ICSE only
   const mtfSubQ = await runStep('mtf_sub', 'MTF Subjective', '\u2699\uFE0F',
     isBioICSE && isMTFSubOnly, async () => {
-    const rawResult = await callClaude(buildMTFSubjectivePrompt(name, item, mtfLO), 40000, undefined, '[');
+    const rawResult = await callForItem(buildMTFSubjectivePrompt(name, item, mtfLO), 40000, undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('MTF_Subjective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
@@ -3360,7 +3490,7 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
 
   const mtfMultiQ = await runStep('mtf_multi', 'MTF Multistatement SCQ', '\u2699\uFE0F',
     isBioICSE && isMTFMultiOnly, async () => {
-    const rawResult = await callClaude(buildMTFMultiStatementPrompt(name, item, mtfLO), 40000, undefined, '[');
+    const rawResult = await callForItem(buildMTFMultiStatementPrompt(name, item, mtfLO), 40000, undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('MTF_MultiStatement.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
@@ -6068,6 +6198,8 @@ function startOver() {
   state.textbookImages = [];
   state.textbookPdfs = [];
   state.textbookText = '';
+  state.textbookExtractedParts = [];
+  state.textbookExtractionPending = 0;
   uploadedImageBase64 = null;
   uploadedImageMimeType = null;
   document.getElementById('imgPreviewWrap').style.display = 'none';
