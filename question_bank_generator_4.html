@@ -1611,6 +1611,7 @@ const state = {
   generatedConceptKeys: new Set(),
   downloadedFilePaths: new Set(),
   lastClaudeUsage: null,
+  generationErrors: [],
   currentPage: 1,
   genMode: 'full',          // 'full' | 'questions'
   questionsType: 'both',    // 'both' | 'objective' | 'subjective'
@@ -2914,6 +2915,20 @@ function getConcurrencyLimitNote(requestedConcurrency, effectiveConcurrency) {
   return '';
 }
 
+function getSubjectiveRequestedCount(metadataText) {
+  const subjectiveCounts = parseQuestionTypeCounts(metadataText || '', SUBJECTIVE_META_TYPES);
+  const typedTotal = Object.values(subjectiveCounts).reduce((sum, n) => sum + n, 0);
+  const englishTotal = getEnglishSubjectiveExpectedTotal(metadataText || '');
+  return Math.max(typedTotal, englishTotal);
+}
+
+function getSubjectiveMaxTokens(metadataText) {
+  if (!isBiologyCBSEGrade9()) return 64000;
+  const requestedCount = getSubjectiveRequestedCount(metadataText);
+  if (!requestedCount) return 16000;
+  return Math.min(32000, Math.max(10000, requestedCount * 2200 + 4000));
+}
+
 function resolveSubjectPrompt() {
   const promptKey = getPromptKey();
   const masterPrompt = (state.subject === 'Social' && state.curriculum === 'CBSE')
@@ -3260,6 +3275,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     } catch (e) {
       clearTimeout(timeoutId);
       const errMsg = e.message || 'API error';
+      state.generationErrors.push(scopeLabel + ' - ' + stepName + ': ' + errMsg);
       logStep(scopeLabel, stepName, stepIcon, 'error', errMsg + retryBtn);
       // Do NOT re-throw — log the error and continue to next steps.
       // The missing-files checker will catch anything that wasn't generated.
@@ -3606,7 +3622,8 @@ Regenerate exactly ONE complete plain-text block now. The block must include exa
       return countLines(textResult);
     }
     const subjectivePrompt = buildSubjectivePrompt(name, item, masterPrompt, subjLoText);
-    const rawResult = await callForItem(subjectivePrompt, 64000, MODELS.SUBJECTIVE, '[');
+    const subjectiveMaxTokens = getSubjectiveMaxTokens(state.subjMetadata);
+    const rawResult = await callForItem(subjectivePrompt, subjectiveMaxTokens, MODELS.SUBJECTIVE, '[', { label: state.subject + ' Subjective' });
     // Claude continues from the '[' prefill, so prepend it back before parsing.
     const parseSubjectiveResult = (txt) => {
       const raw = txt || '';
@@ -3629,14 +3646,24 @@ Regenerate exactly ONE complete plain-text block now. The block must include exa
     try {
       parsed = validateSubjectiveCounts(parsed);
     } catch (countErr) {
-      if (!isEnglishICSEGrammar && !englishCBSEGrammarSubjective) throw countErr;
+      if (isBiologyCBSEGrade9()) {
+        const retryPrompt = subjectivePrompt + `
+
+IMPORTANT RETRY FEEDBACK: The previous Biology CBSE subjective output failed validation: ${countErr.message}
+Regenerate now as ONE valid JSON array only. Keep the output concise. If the user did not provide explicit VSA/SA/LA counts, generate exactly 3 questions: 1 VSA, 1 SA and 1 LA. Do not return markdown, explanation, headings, or text outside JSON.`;
+        const retryRaw = await callForItem(retryPrompt, Math.min(subjectiveMaxTokens, 18000), MODELS.SUBJECTIVE, '[', { attempts: 3, retryDelayMs: 2000, label: 'Biology CBSE Subjective retry' });
+        parsed = parseSubjectiveResult(retryRaw);
+        parsed = validateSubjectiveCounts(parsed);
+      } else {
+        if (!isEnglishICSEGrammar && !englishCBSEGrammarSubjective) throw countErr;
       const retryPrompt = subjectivePrompt + `
 
 IMPORTANT RETRY FEEDBACK: The previous English Grammar subjective output failed validation: ${countErr.message}
 Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page 3 metadata is count-only, match cognitiveLevel and difficultyLevel exactly for each requested count and choose only the allowed English Grammar subjective formats from the prompt. If FIB is used, return questionType "SA" with question_type_tag "FIB". If Passage Based FIB is used, return questionType "SA" with question_type_tag "Passage Based FIB". For plain SA, return questionType "SA" with question_type_tag "" or omit question_type_tag. Every English Grammar subjective object must use questionType "SA" and marks "4". Return exactly the requested counts, no extra types, no markdown.`;
-      const retryRaw = await callForItem(retryPrompt, 64000, MODELS.SUBJECTIVE, '[');
+      const retryRaw = await callForItem(retryPrompt, subjectiveMaxTokens, MODELS.SUBJECTIVE, '[');
       parsed = parseSubjectiveResult(retryRaw);
       parsed = validateSubjectiveCounts(parsed);
+      }
     }
     if (!Array.isArray(parsed) || parsed.length === 0) {
       const preview = (rawResult || '').substring(0, 500);
@@ -3948,6 +3975,7 @@ async function runConceptAgentsConcurrent(scopeItems, concurrency, runItem, onUp
 async function startGeneration() {
   syncQuestionMetadataFromInputs();
   if (state.genMode === 'questions' && state.questionsType === 'subjective') state.objMetadata = '';
+  state.generationErrors = [];
   if (!state.subject) { alert('Please select a subject first.'); return; }
   const checkedConcepts = document.querySelectorAll('.concept-cb:checked');
   if (checkedConcepts.length === 0) {
@@ -4071,7 +4099,20 @@ async function startGeneration() {
   } else {
     document.getElementById('startGenBtn').style.display = '';
     document.getElementById('genError').style.display = 'flex';
-    document.getElementById('genErrorMsg').textContent = 'Generation could not create the required files after automatic retries. Please reduce workers to 3 or 5 and retry this concept.';
+    const recentErrors = (state.generationErrors || []).slice(-3).join(' | ');
+    remainingMissing.forEach(entry => {
+      const item = entry.item || {};
+      const scopeLabel = item.level === 'chapter'
+        ? ('\uD83D\uDCD8 ' + item.name)
+        : item.level === 'nano'
+          ? ('\uD83D\uDD39 ' + item.name)
+          : ('\uD83D\uDCCC ' + item.name);
+      const stepName = /subjective/i.test(entry.label || '') ? 'Subjective Questions' : ((entry.label || '').split(' - ').pop() || 'Generation');
+      logStep(scopeLabel, stepName, '\u2699\uFE0F', 'error', 'Missing file after generation' + (recentErrors ? ': ' + recentErrors : ''));
+    });
+    document.getElementById('genErrorMsg').textContent =
+      'Generation could not create the required files after automatic retries. Please reduce workers to 3 or 5 and retry this concept.' +
+      (recentErrors ? ' Last error: ' + recentErrors : '');
     document.getElementById('agentStatusBar').textContent = 'Still missing: ' + remainingMissing.length + ' file(s) after automatic repair attempts.';
   }
 }
@@ -5213,7 +5254,7 @@ For FIB with more sub-parts (LA):
     ? `?? STRICT COUNT COMPLIANCE (NON-NEGOTIABLE): The counts in the METADATA INPUT above are the ABSOLUTE source of truth. You MUST generate EXACTLY the number of each question type specified, no more, no less, zero exceptions. Any count values appearing anywhere else in this prompt are completely overridden by the METADATA INPUT.
 
 ?? USER METADATA TYPE LOCK: Generate ONLY the question types explicitly listed with non-zero counts in METADATA INPUT. If METADATA INPUT lists only "VSA: 3", generate exactly 3 VSA and 0 SA/LA. If it lists only "SA: 2; LA: 1", generate exactly 2 SA and 1 LA and 0 VSA. Do not generate any absent type, format, or tag.`
-    : `?? USER INPUT MODE: The METADATA INPUT above is free-form user instruction. Do NOT reject it for missing VSA/SA/LA syntax. Interpret and follow whatever the user pasted there, including requested quantities, question style, cognitive level, difficulty level, marks, or special formats. If a detail is not specified, use the subject prompt rules and generate a sensible JSON array within the selected concept scope.`;
+    : `?? USER INPUT MODE: The METADATA INPUT above is free-form user instruction. Do NOT reject it for missing VSA/SA/LA syntax. Interpret and follow whatever the user pasted there, including requested quantities, question style, cognitive level, difficulty level, marks, or special formats. If no quantity is specified, generate exactly 3 subjective questions: 1 VSA, 1 SA and 1 LA. If another detail is not specified, use the subject prompt rules and generate a sensible JSON array within the selected concept scope.`;
   const subjectiveFinalCheck = hasStructuredSubjectiveCounts
     ? `?? FINAL COUNT CHECK (MANDATORY): Before returning your answer, count every question in your output by type (VSA / SA / LA). The counts MUST match the METADATA INPUT exactly. If they do not match, fix your output before returning. This is non-negotiable.`
     : `?? FINAL USER-INSTRUCTION CHECK (MANDATORY): Before returning your answer, ensure the JSON array follows the user's pasted METADATA INPUT as closely as possible. Do not fail or stop because the input is not written in VSA/SA/LA count syntax.`;
