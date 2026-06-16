@@ -2865,11 +2865,6 @@ function page3Next() {
     errEl.style.display = 'block';
     return;
   }
-  if ((state.textbookExtractionPending || 0) > 0) {
-    errEl.textContent = 'Please wait while the uploaded textbook source is converted to reusable text. This reduces generation input cost.';
-    errEl.style.display = 'block';
-    return;
-  }
   if (state.subject === 'English' && !state.chapterType) {
     errEl.textContent = 'Please select Prose, Poetry, Grammar, Drama, or RTC for English.';
     errEl.style.display = 'block';
@@ -3768,15 +3763,22 @@ Regenerate now as ONE valid JSON array only. Keep the output concise. If the use
         const retryRaw = await callForItem(retryPrompt, Math.min(subjectiveMaxTokens, 14000), MODELS.SUBJECTIVE, '[', { attempts: 3, retryDelayMs: 2000, label: 'Biology CBSE Subjective retry' });
         parsed = parseSubjectiveResult(retryRaw);
         parsed = validateSubjectiveCounts(parsed);
-      } else {
-        if (!isEnglishICSEGrammar && !englishCBSEGrammarSubjective) throw countErr;
-      const retryPrompt = subjectivePrompt + `
+      } else if (isEnglishICSEGrammar || englishCBSEGrammarSubjective) {
+        const retryPrompt = subjectivePrompt + `
 
 IMPORTANT RETRY FEEDBACK: The previous English Grammar subjective output failed validation: ${countErr.message}
 Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page 3 metadata is count-only, match cognitiveLevel and difficultyLevel exactly for each requested count and choose only the allowed English Grammar subjective formats from the prompt. If FIB is used, return questionType "SA" with question_type_tag "FIB". If Passage Based FIB is used, return questionType "SA" with question_type_tag "Passage Based FIB". For plain SA, return questionType "SA" with question_type_tag "" or omit question_type_tag. Every English Grammar subjective object must use questionType "SA" and marks "4". Return exactly the requested counts, no extra types, no markdown.`;
-      const retryRaw = await callForItem(retryPrompt, Math.min(subjectiveMaxTokens, 16000), MODELS.SUBJECTIVE, '[');
-      parsed = parseSubjectiveResult(retryRaw);
-      parsed = validateSubjectiveCounts(parsed);
+        const retryRaw = await callForItem(retryPrompt, Math.min(subjectiveMaxTokens, 16000), MODELS.SUBJECTIVE, '[');
+        parsed = parseSubjectiveResult(retryRaw);
+        parsed = validateSubjectiveCounts(parsed);
+      } else {
+        const retryPrompt = subjectivePrompt + `
+
+IMPORTANT RETRY FEEDBACK: The previous subjective output failed validation: ${countErr.message}
+Regenerate now as ONE valid JSON array only, using the same schema and same requested output already specified. Do not return markdown, explanations, headings, labels, or any text outside the JSON array. If Page 3 metadata does not include explicit VSA/SA/LA counts, generate exactly 3 questions: 1 VSA, 1 SA and 1 LA.`;
+        const retryRaw = await callForItem(retryPrompt, Math.min(subjectiveMaxTokens, 16000), MODELS.SUBJECTIVE, '[', { attempts: 2, retryDelayMs: 1800, label: state.subject + ' Subjective retry' });
+        parsed = parseSubjectiveResult(retryRaw);
+        parsed = validateSubjectiveCounts(parsed);
       }
     }
     if (!Array.isArray(parsed) || parsed.length === 0) {
