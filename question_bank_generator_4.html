@@ -2929,6 +2929,26 @@ function getSubjectiveMaxTokens(metadataText) {
   return Math.min(32000, Math.max(10000, requestedCount * 2200 + 4000));
 }
 
+function normalizeSubjectiveMetadataForGeneration(metadataText) {
+  const text = String(metadataText || '').trim();
+  if (!text) return '';
+  if (isMathematicsCBSE()) {
+    const totals = { VSA: 0, SA: 0, LA: 0 };
+    ['VSA', 'SA', 'LA'].forEach(type => {
+      [...text.matchAll(new RegExp('\\b' + type + '[:\\-]\\s*(\\d+)', 'g'))].forEach(match => {
+        totals[type] += parseInt(match[1], 10);
+      });
+    });
+    const isPromptDefaultBlock = /\[Number of [^\]]+\]/i.test(text) && totals.VSA === 28 && totals.SA === 20 && totals.LA === 20;
+    if (isPromptDefaultBlock) return '';
+    const cleanParts = Object.entries(totals)
+      .filter(([, value]) => value > 0)
+      .map(([type, value]) => `${type}: ${value}`);
+    if (cleanParts.length) return cleanParts.join('\n');
+  }
+  return text;
+}
+
 function resolveSubjectPrompt() {
   const promptKey = getPromptKey();
   const masterPrompt = (state.subject === 'Social' && state.curriculum === 'CBSE')
@@ -3622,7 +3642,8 @@ Regenerate exactly ONE complete plain-text block now. The block must include exa
       return countLines(textResult);
     }
     const subjectivePrompt = buildSubjectivePrompt(name, item, masterPrompt, subjLoText);
-    const subjectiveMaxTokens = getSubjectiveMaxTokens(state.subjMetadata);
+    const effectiveSubjMetadata = normalizeSubjectiveMetadataForGeneration(state.subjMetadata);
+    const subjectiveMaxTokens = getSubjectiveMaxTokens(effectiveSubjMetadata);
     const rawResult = await callForItem(subjectivePrompt, subjectiveMaxTokens, MODELS.SUBJECTIVE, '[', { label: state.subject + ' Subjective' });
     // Claude continues from the '[' prefill, so prepend it back before parsing.
     const parseSubjectiveResult = (txt) => {
@@ -3634,11 +3655,11 @@ Regenerate exactly ONE complete plain-text block now. The block must include exa
     };
     let parsed = parseSubjectiveResult(rawResult);
     const validateSubjectiveCounts = (items) => {
-      if (state.subject === 'English' && hasEnglishSubjectiveCountMetadata(state.subjMetadata)) {
-        return assertGeneratedEnglishSubjectiveCounts(items, state.subjMetadata, 'Subjective');
+      if (state.subject === 'English' && hasEnglishSubjectiveCountMetadata(effectiveSubjMetadata)) {
+        return assertGeneratedEnglishSubjectiveCounts(items, effectiveSubjMetadata, 'Subjective');
       }
-      if (metadataHasAnyQuestionType(state.subjMetadata, SUBJECTIVE_META_TYPES)) {
-        return assertGeneratedQuestionCounts(items, state.subjMetadata, SUBJECTIVE_META_TYPES, 'Subjective');
+      if (metadataHasAnyQuestionType(effectiveSubjMetadata, SUBJECTIVE_META_TYPES)) {
+        return assertGeneratedQuestionCounts(items, effectiveSubjMetadata, SUBJECTIVE_META_TYPES, 'Subjective');
       }
       if (!Array.isArray(items)) throw new Error('Subjective did not return a JSON array. Click Retry.');
       return items;
@@ -4943,7 +4964,7 @@ Generate the output in the following JSON format:
     throw new Error('Missing English ICSE ' + (state.chapterType || 'Prose') + ' subjective prompt. Paste it into PROMPTS["' + getEnglishICSESubjectivePromptKey() + '"].');
   }
   let section = applyPromptCountEdits(fillPlaceholders(rawSection, conceptName, item, loText));
-  let countsText = (metadataOverride != null ? metadataOverride : (state.subjMetadata || '')).trim();
+  let countsText = normalizeSubjectiveMetadataForGeneration(metadataOverride != null ? metadataOverride : (state.subjMetadata || ''));
 
   if (isEnglishCBSEGrammar) {
     const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
@@ -5114,14 +5135,7 @@ Generate the output in the following JSON format:
     return totals;
   };
 
-  // For Math CBSE: sum all VSA/SA/LA values from the user's textarea into clean totals.
-  if (isMathCBSE && countsText) {
-    const totals = extractVSASALA(countsText);
-    const cleanParts = Object.entries(totals).filter(([, v]) => v > 0).map(([k, v]) => `${k}: ${v}`);
-    if (cleanParts.length) {
-      countsText = cleanParts.join('\n');
-    }
-  }
+  // Math CBSE metadata is normalised once above so prompt defaults never become Page 3 counts.
 
   // Prompt-store count examples are never a source of truth; Page 3 input is.
   section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
