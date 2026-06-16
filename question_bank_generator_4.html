@@ -3293,8 +3293,11 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   const hasMathObjectivePrompt = !isMathematicsCBSE() || !!getObjectivePromptText(baseMasterPrompt);
   const hasMathSubjectivePrompt = !isMathematicsCBSE() || !!getSubjectivePromptText(baseMasterPrompt);
   const hasMathRADPrompt = !isMathematicsCBSE() || !!getMathematicsCBSERADPrompt(baseMasterPrompt);
+  const subjectiveRequestedForMode = questionsOnly
+    ? (hasSubjectiveMeta && selectedQuestionMode === 'subjective')
+    : true;
   const doObjective  = hasMathObjectivePrompt && !isSocialRADOnly && !isEnglishCBSEGrammar && hasObjectiveMeta && (!questionsOnly || selectedQuestionMode === 'objective') && (!singleStepMode || (questionsOnly && !isRADOnly && !isMTFMode));
-  const doSubjective = hasMathSubjectivePrompt && !isSocialRADOnly && !isSocialSubjUnavailable && hasSubjectiveMeta && (!questionsOnly || selectedQuestionMode === 'subjective') && (!singleStepMode || (questionsOnly && !isRADOnly && !isMTFMode));
+  const doSubjective = hasMathSubjectivePrompt && !isSocialRADOnly && !isSocialSubjUnavailable && subjectiveRequestedForMode && (!singleStepMode || (questionsOnly && !isRADOnly && !isMTFMode));
 
   // Geo / History / Civics ICSE special logic
   const isGeoHistCivICSE = ['Geography', 'History', 'Civics'].includes(state.subject) && state.curriculum === 'ICSE';
@@ -4089,7 +4092,10 @@ function computeExpectedFiles(scopeItems, masterPrompt, isEnglish, ch) {
   const socialSubjUnavailable = isSocialCBSESubjectiveUnavailable();
   const objectiveMetaTypes = getObjectiveMetaTypes();
   const doObjective   = !socialRADOnly && !isEnglishCBSEGrammar && hasObjectiveMetadata() && (!questionsOnly || selectedQuestionMode === 'objective');
-  const doSubjective  = !socialRADOnly && !socialSubjUnavailable && hasSubjectiveMetadata() && (!questionsOnly || selectedQuestionMode === 'subjective');
+  const subjectiveRequestedForMode = questionsOnly
+    ? (hasSubjectiveMetadata() && selectedQuestionMode === 'subjective')
+    : true;
+  const doSubjective  = !socialRADOnly && !socialSubjUnavailable && subjectiveRequestedForMode;
   const isRADExpected = isRADSupportedSubject();
   const isRTCMode     = state.subject === 'English' && state.curriculum === 'ICSE' && state.chapterType === 'RTC';
   const isGeoHistCivICSE = ['Geography', 'History', 'Civics'].includes(state.subject) && state.curriculum === 'ICSE';
@@ -4900,7 +4906,7 @@ Generate the output in the following JSON format:
 
   if (isEnglishCBSEGrammar) {
     const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
-    const grammarCounts = (countsText || '').trim();
+    const grammarCounts = (countsText || '').trim() || (state.genMode === 'questions' ? '' : 'Understanding Easy Questions: 1');
     if (!grammarCounts) {
       throw new Error('Subjective metadata is required for English CBSE Grammar. Enter count-only Page 3 metadata such as Understanding Easy Questions: 2.');
     }
