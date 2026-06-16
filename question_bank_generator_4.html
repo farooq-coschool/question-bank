@@ -2290,7 +2290,7 @@ MANDATORY QUALITY RULES — apply to every item you generate:
   const body = {
     model: model || MODELS.GENERATION,
     max_tokens: maxTokens || 1500,
-    system: systemPrompt,
+    system: systemPrompt + ' Output budget: return only the requested final content, keep every field concise, and avoid restating rules, headings, notes, or explanations outside the required output structure.',
     messages,
   };
 
@@ -2978,11 +2978,48 @@ function getSubjectiveRequestedCount(metadataText) {
   return Math.max(typedTotal, englishTotal);
 }
 
+function clampTokenBudget(value, min, max) {
+  return Math.min(max, Math.max(min, Math.ceil(value)));
+}
+
+function sumQuestionTypeCounts(metadataText, allowedTypes) {
+  const counts = parseQuestionTypeCounts(metadataText || '', allowedTypes);
+  return Object.values(counts).reduce((sum, n) => sum + n, 0);
+}
+
+function getObjectiveMaxTokens(metadataText, allowedTypes) {
+  const total = sumQuestionTypeCounts(metadataText || '', allowedTypes || getObjectiveMetaTypes());
+  if (!total) return 9000;
+  return clampTokenBudget(total * 650 + 3000, 5000, 22000);
+}
+
 function getSubjectiveMaxTokens(metadataText) {
-  if (!isBiologyCBSEGrade9()) return 64000;
-  const requestedCount = getSubjectiveRequestedCount(metadataText);
-  if (!requestedCount) return 16000;
-  return Math.min(32000, Math.max(10000, requestedCount * 2200 + 4000));
+  const counts = parseQuestionTypeCounts(metadataText || '', SUBJECTIVE_META_TYPES);
+  const typedTotal = Object.values(counts).reduce((sum, n) => sum + n, 0);
+  const englishTotal = getEnglishSubjectiveExpectedTotal(metadataText || '');
+  const requestedCount = Math.max(typedTotal, englishTotal);
+  if (!requestedCount) return isBiologyCBSEGrade9() ? 9000 : 10000;
+  const weighted =
+    (counts.VSA || 0) * 550 +
+    (counts.SA || 0) * 950 +
+    (counts.LA || 0) * 1500 +
+    Math.max(0, requestedCount - ((counts.VSA || 0) + (counts.SA || 0) + (counts.LA || 0))) * 950 +
+    3500;
+  return clampTokenBudget(weighted, 6000, isBiologyCBSEGrade9() ? 22000 : 28000);
+}
+
+function getEnglishICSESubjectiveFallbackMaxTokens(metadataText) {
+  const total = getEnglishSubjectiveExpectedTotal(metadataText || '');
+  return total ? clampTokenBudget(total * 2200 + 4000, 9000, 28000) : 18000;
+}
+
+function getRADMaxTokens(expectedCount) {
+  return clampTokenBudget((expectedCount || 1) * 1300 + 2500, 4500, 14000);
+}
+
+function getMTFMaxTokens() {
+  const total = parseMTFMetadata().length || 1;
+  return clampTokenBudget(total * 1300 + 2500, 4500, 14000);
 }
 
 function normalizeSubjectiveMetadataForGeneration(metadataText) {
@@ -3537,7 +3574,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
           '===============================================================\n\n';
 
         const fullPrompt = combinationHeader + basePrompt + prevContext + formatInstruction;
-        const result = await callForItem(fullPrompt, 50000);
+        const result = await callForItem(fullPrompt, 22000);
         prevResults.push(result);
         const fileName = fp('RTC_' + rtcIdx + '.txt');
         saveFile(fileName, result);
@@ -3549,28 +3586,28 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
 
   // COMMERCE GLOSSARY — runs at chapter level before Terms (Commerce ICSE only)
   await runStep('commerce_glossary', 'Glossary', '\u2699\uFE0F', isCommerce && isChapter && !singleStepMode, async () => {
-    const result = stripMarkdownFormatting(await callForItem(buildGlossaryPrompt(name, baseMasterPrompt), 40000));
+    const result = stripMarkdownFormatting(await callForItem(buildGlossaryPrompt(name, baseMasterPrompt), 14000));
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
     logStep(scopeLabel, 'Glossary', '\u2699\uFE0F', 'done');
   });
 
   // PREREQ — runs in full mode (chapter only) OR in prereqOnly mode (chapter only)
   await runStep('prereq', 'Pre-requisites', '\u2699\uFE0F', isChapter && !isEnglish && !isCommerce && hasMathPrereqPrompt && (!singleStepMode || prereqOnly), async () => {
-    const result = await callForItem(buildPrereqPrompt(name, baseMasterPrompt), 40000);
+    const result = await callForItem(buildPrereqPrompt(name, baseMasterPrompt), 14000);
     saveFile(ch + '/' + ch + '/' + ch + '_Prerequisites.json', result);
     logStep(scopeLabel, 'Pre-requisites', '\u2699\uFE0F', 'done', countLines(result) + ' lines');
   });
 
   // TERMS — skipped for English, single-step modes, and GeoHistCivICSE subtopic Case B
   await runStep('terms', 'Terms and Definition', '\u2699\uFE0F', !singleStepMode && !isEnglish && !isGeoSubtopicCaseB && hasMathTermsPrompt, async () => {
-    const result = stripMarkdownFormatting(await callForItem(buildTermsPrompt(name, item, baseMasterPrompt), 40000));
+    const result = stripMarkdownFormatting(await callForItem(buildTermsPrompt(name, item, baseMasterPrompt), 12000));
     saveFile(fp('Terms.txt'), result);
     logStep(scopeLabel, 'Terms and Definition', '\u2699\uFE0F', 'done');
   });
 
   // LEARNING OUTCOMES — capture for PLT; skipped in single-step modes and GeoHistCivICSE subtopic Case B
   const loRes = await runStep('lo', 'Learning Outcomes', '\u2699\uFE0F', !singleStepMode && !isGeoSubtopicCaseB && hasMathLOPrompt, async () => {
-    const result = stripMarkdownFormatting(await callForItem(buildLOPrompt(name, item, baseMasterPrompt), 40000));
+    const result = stripMarkdownFormatting(await callForItem(buildLOPrompt(name, item, baseMasterPrompt), 8000));
     saveFile(fp('LO.txt'), result);
     logStep(scopeLabel, 'Learning Outcomes', '\u2699\uFE0F', 'done');
     return result;
@@ -3584,7 +3621,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   await runStep('plt', 'PLT', '\u2699\uFE0F', doPLT, async () => {
     const loLines = (loResult || '').split('\n').filter(l => /LO\d+|^\s*\d+[\.\)]/i.test(l.trim()));
     const loCount = loLines.length || 10;
-    const result = stripMarkdownFormatting(await callForItem(buildPLTPrompt(name, item, baseMasterPrompt, loResult), 40000));
+    const result = stripMarkdownFormatting(await callForItem(buildPLTPrompt(name, item, baseMasterPrompt, loResult), 12000));
     saveFile(fp('PLT.txt'), result);
     logStep(scopeLabel, 'PLT', '\u2699\uFE0F', 'done', loCount + ' LOs covered');
   });
@@ -3592,7 +3629,7 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
   // GLOSSARY — runs in full mode (chapter only) OR in glossaryOnly mode (chapter only)
   const hasGlossarySection = hasMathGlossaryPrompt && !!(isMathematicsCBSE() ? getMathematicsCBSEGlossaryPrompt(baseMasterPrompt) : extractSection(baseMasterPrompt, 'GLOSSARY_CREATION_PROMPT'));
   await runStep('glossary', 'Glossary', '\u2699\uFE0F', isChapter && !isEnglish && !isCommerce && hasGlossarySection && (!singleStepMode || glossaryOnly), async () => {
-    const result = stripMarkdownFormatting(await callForItem(buildGlossaryPrompt(name, baseMasterPrompt), 40000));
+    const result = stripMarkdownFormatting(await callForItem(buildGlossaryPrompt(name, baseMasterPrompt), 14000));
     saveFile(ch + '/' + ch + '/' + ch + '_Glossary.txt', result);
     logStep(scopeLabel, 'Glossary', '\u2699\uFE0F', 'done');
   });
@@ -3604,8 +3641,8 @@ async function runConceptAgent(item, masterPrompt, isEnglish, ch, existingCp) {
     const objectiveTypeCounts = parseQuestionTypeCounts(state.objMetadata, objectiveMetaTypes);
     const includeRA = (objectiveTypeCounts.RA || 0) > 0;
     const result = isCommerce
-      ? await callForItem(buildCommerceObjectivePrompt(name, item, masterPrompt, loResult), 40000)
-      : await callForItem(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), 40000);
+      ? await callForItem(buildCommerceObjectivePrompt(name, item, masterPrompt, loResult), getObjectiveMaxTokens(state.objMetadata, objectiveMetaTypes))
+      : await callForItem(buildObjectivePrompt(name, item, masterPrompt, includeRA, loResult), getObjectiveMaxTokens(state.objMetadata, objectiveMetaTypes));
     let parsed = parseJSON(result);
     parsed = (state.subject === 'English' && hasEnglishCountMetadata(state.objMetadata) && !metadataHasAnyQuestionType(state.objMetadata, objectiveMetaTypes))
       ? assertGeneratedEnglishQuestionLevelCounts(parsed, state.objMetadata, 'Objective')
@@ -3689,7 +3726,7 @@ Regenerate exactly ONE complete plain-text block now. The block must include exa
         logStep(scopeLabel, 'Subjective Questions', '\u2699\uFE0F', 'done', expectedEnglishTextCount + ' requested set(s)');
         return expectedEnglishTextCount;
       }
-      const textResult = (await callForItem(buildSubjectivePrompt(name, item, masterPrompt, subjLoText), 64000, MODELS.SUBJECTIVE, '') || '').trim();
+      const textResult = (await callForItem(buildSubjectivePrompt(name, item, masterPrompt, subjLoText), getEnglishICSESubjectiveFallbackMaxTokens(state.subjMetadata), MODELS.SUBJECTIVE, '') || '').trim();
       if (!textResult) throw new Error('English ICSE subjective returned empty output. Click Retry.');
       saveFile(fp('Subjective.txt'), textResult);
       const legacyPath = fp('Subjective.json');
@@ -3728,7 +3765,7 @@ Regenerate exactly ONE complete plain-text block now. The block must include exa
 
 IMPORTANT RETRY FEEDBACK: The previous Biology CBSE subjective output failed validation: ${countErr.message}
 Regenerate now as ONE valid JSON array only. Keep the output concise. If the user did not provide explicit VSA/SA/LA counts, generate exactly 3 questions: 1 VSA, 1 SA and 1 LA. Do not return markdown, explanation, headings, or text outside JSON.`;
-        const retryRaw = await callForItem(retryPrompt, Math.min(subjectiveMaxTokens, 18000), MODELS.SUBJECTIVE, '[', { attempts: 3, retryDelayMs: 2000, label: 'Biology CBSE Subjective retry' });
+        const retryRaw = await callForItem(retryPrompt, Math.min(subjectiveMaxTokens, 14000), MODELS.SUBJECTIVE, '[', { attempts: 3, retryDelayMs: 2000, label: 'Biology CBSE Subjective retry' });
         parsed = parseSubjectiveResult(retryRaw);
         parsed = validateSubjectiveCounts(parsed);
       } else {
@@ -3737,7 +3774,7 @@ Regenerate now as ONE valid JSON array only. Keep the output concise. If the use
 
 IMPORTANT RETRY FEEDBACK: The previous English Grammar subjective output failed validation: ${countErr.message}
 Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page 3 metadata is count-only, match cognitiveLevel and difficultyLevel exactly for each requested count and choose only the allowed English Grammar subjective formats from the prompt. If FIB is used, return questionType "SA" with question_type_tag "FIB". If Passage Based FIB is used, return questionType "SA" with question_type_tag "Passage Based FIB". For plain SA, return questionType "SA" with question_type_tag "" or omit question_type_tag. Every English Grammar subjective object must use questionType "SA" and marks "4". Return exactly the requested counts, no extra types, no markdown.`;
-      const retryRaw = await callForItem(retryPrompt, subjectiveMaxTokens, MODELS.SUBJECTIVE, '[');
+      const retryRaw = await callForItem(retryPrompt, Math.min(subjectiveMaxTokens, 16000), MODELS.SUBJECTIVE, '[');
       parsed = parseSubjectiveResult(retryRaw);
       parsed = validateSubjectiveCounts(parsed);
       }
@@ -3856,7 +3893,7 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
     async function generateRADChunk(chunkSpecs, startIndex) {
       const radPrompt = buildRADescPrompt(name, item, masterPrompt, radLoText, chunkSpecs, startIndex);
       const expectedCount = chunkSpecs.length;
-      const radMaxTokens = Math.min(24000, Math.max(10000, expectedCount * 3000));
+      const radMaxTokens = getRADMaxTokens(expectedCount);
       const rawResult = await callForItem(radPrompt, radMaxTokens, MODELS.RAD, null, { ...radCallOptions, label: `${state.subject} RAD` });
       const parsed = normalizeRADItems(parseRADArray(rawResult));
       let qCount = Array.isArray(parsed) ? parsed.length : 0;
@@ -3890,7 +3927,7 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
   const mtfLO = (state.mtfLOText || '').trim() || loResult || '';
   const mtfScqQ = await runStep('mtf_scq', 'MTF SCQ', '\u2699\uFE0F',
     isBioICSE && isMTFScqOnly, async () => {
-    const rawResult = await callForItem(buildMTFObjectivePrompt(name, item, mtfLO), 40000, undefined, '[');
+    const rawResult = await callForItem(buildMTFObjectivePrompt(name, item, mtfLO), getMTFMaxTokens(), undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('MTF_SCQ.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
@@ -3902,7 +3939,7 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
   // MTF Subjective — Biology ICSE only
   const mtfSubQ = await runStep('mtf_sub', 'MTF Subjective', '\u2699\uFE0F',
     isBioICSE && isMTFSubOnly, async () => {
-    const rawResult = await callForItem(buildMTFSubjectivePrompt(name, item, mtfLO), 40000, undefined, '[');
+    const rawResult = await callForItem(buildMTFSubjectivePrompt(name, item, mtfLO), getMTFMaxTokens(), undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('MTF_Subjective.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
@@ -3913,7 +3950,7 @@ Regenerate the full JSON array now. Use ONLY the Page 3 metadata counts. If Page
 
   const mtfMultiQ = await runStep('mtf_multi', 'MTF Multistatement SCQ', '\u2699\uFE0F',
     isBioICSE && isMTFMultiOnly, async () => {
-    const rawResult = await callForItem(buildMTFMultiStatementPrompt(name, item, mtfLO), 40000, undefined, '[');
+    const rawResult = await callForItem(buildMTFMultiStatementPrompt(name, item, mtfLO), getMTFMaxTokens(), undefined, '[');
     const parsed = parseJSON('[' + (rawResult || ''));
     saveFile(fp('MTF_MultiStatement.json'), typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     const qCount = Array.isArray(parsed) ? parsed.length : 0;
