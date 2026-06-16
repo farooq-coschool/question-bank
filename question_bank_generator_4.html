@@ -2290,7 +2290,7 @@ MANDATORY QUALITY RULES — apply to every item you generate:
   const body = {
     model: model || MODELS.GENERATION,
     max_tokens: maxTokens || 1500,
-    system: systemPrompt + ' Output budget: return only the requested final content, keep every field concise, and avoid restating rules, headings, notes, or explanations outside the required output structure.',
+    system: systemPrompt,
     messages,
   };
 
@@ -2998,16 +2998,6 @@ function getSubjectiveMaxTokens(metadataText) {
   const typedTotal = Object.values(counts).reduce((sum, n) => sum + n, 0);
   const englishTotal = getEnglishSubjectiveExpectedTotal(metadataText || '');
   const requestedCount = Math.max(typedTotal, englishTotal);
-  if (state.subject === 'Chemistry' && state.curriculum === 'CBSE') {
-    if (!requestedCount) return 4500;
-    const chemWeighted =
-      (counts.VSA || 0) * 350 +
-      (counts.SA || 0) * 650 +
-      (counts.LA || 0) * 1000 +
-      Math.max(0, requestedCount - ((counts.VSA || 0) + (counts.SA || 0) + (counts.LA || 0))) * 700 +
-      2200;
-    return clampTokenBudget(chemWeighted, 4000, 12000);
-  }
   if (!requestedCount) return isBiologyCBSEGrade9() ? 9000 : 10000;
   const weighted =
     (counts.VSA || 0) * 550 +
@@ -4888,8 +4878,6 @@ ${objectiveTypeRestriction}
 
 ?? FINAL OUTPUT FORMAT — This section completely overrides and replaces any output format, JSON structure, field names, or schema mentioned anywhere in the prompt above. Ignore all prior format instructions entirely.
 
-${chemistryCompactOutputRules}
-
 Return ONLY a valid JSON array. No markdown code fences, no explanation, no text outside the array.
 
 Every element MUST use EXACTLY this schema — no other field names are permitted:
@@ -5061,7 +5049,6 @@ Generate the output in the following JSON format:
   }
 
   const isMathCBSE = state.subject === 'Mathematics' && state.curriculum === 'CBSE';
-  const isChemistryCBSE = state.subject === 'Chemistry' && state.curriculum === 'CBSE';
   const isEnglishCBSEGrammar = state.subject === 'English' && state.curriculum === 'CBSE' && state.chapterType === 'Grammar';
   const isEnglishICSESubjective = isEnglishICSESubtypeSubjective();
   const subjectivePromptText = getSubjectivePromptText(masterPrompt);
@@ -5245,12 +5232,6 @@ Generate the output in the following JSON format:
 
   // Prompt-store count examples are never a source of truth; Page 3 input is.
   section = section.replace(/\[Number of [^\]]+\]:[^\n\r]*/g, '').replace(/\n{3,}/g, '\n\n');
-  if (isChemistryCBSE) {
-    const outputFormatIndex = section.search(/\n\s*Output format\s*:/i);
-    if (outputFormatIndex > 0) {
-      section = section.slice(0, outputFormatIndex).trim();
-    }
-  }
   const gradeNum = parseInt((state.grade || '').replace(/\D/g, ''), 10);
   const isBioFIB = state.subject === 'Biology' && gradeNum >= 6 && gradeNum <= 10;
   const nanoList = item.level === 'subtopic' ? (item.nanoConcepts || []).join(', ') : '';
@@ -5384,16 +5365,6 @@ For FIB with more sub-parts (LA):
   const subjectiveFinalCheck = hasStructuredSubjectiveCounts
     ? `?? FINAL COUNT CHECK (MANDATORY): Before returning your answer, count every question in your output by type (VSA / SA / LA). The counts MUST match the METADATA INPUT exactly. If they do not match, fix your output before returning. This is non-negotiable.`
     : `?? FINAL USER-INSTRUCTION CHECK (MANDATORY): Before returning your answer, ensure the JSON array follows the user's pasted METADATA INPUT as closely as possible. Do not fail or stop because the input is not written in VSA/SA/LA count syntax.`;
-  const chemistryCompactOutputRules = isChemistryCBSE ? `
-
-CHEMISTRY CBSE OUTPUT COST GUARD (MANDATORY):
-- Ignore any sample output objects, example questions, or default counts from the stored Chemistry prompt. They are style references only, never quantity instructions.
-- Generate only the exact count requested in METADATA INPUT. If METADATA INPUT has no quantity, generate exactly 3 questions total: 1 VSA, 1 SA, and 1 LA.
-- Keep solutions concise while preserving correctness: VSA solution max 2 short lines, SA solution max 4 short lines, LA solution max 8 short lines.
-- For numerical questions, show only Given, Formula, Substitution, Final Answer, and one necessary calculation line when needed.
-- For Lab Experiment LA, use only one compact line each for Aim, Materials, Procedure, Observation, and Conclusion.
-- Do not add extra explanatory paragraphs, repeated theory, prefaces, summaries, or validation notes.` : '';
-
   const formatSpec = `
 
 ---
@@ -5408,7 +5379,6 @@ ${nanoList ? 'Nano Concepts: ' + nanoList + '\n' : ''}${countsText ? countsText 
 
 ${subjectiveGenerationControl}
 
-${chemistryCompactOutputRules}
 
 ?? FINAL OUTPUT FORMAT — This section completely overrides and replaces any output format, JSON structure, field names, or schema mentioned anywhere in the prompt above. Ignore all prior format instructions entirely.
 
