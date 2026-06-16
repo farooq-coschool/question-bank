@@ -2,8 +2,9 @@
 
 Web app for generating ICSE/CBSE question banks (Objective, Subjective, RTC, RAD, MTF, Glossary, LO, PLT) for Biology, Physics, Chemistry, Mathematics, English, Civics, Geography, History, and Commerce.
 
-- **Frontend:** single-file `question_bank_generator_4.html`
-- **Backend:** `server.py` — proxy that injects Anthropic API keys server-side based on subject
+- **Frontend:** `question_bank_generator_4.html`
+- **Prompt files:** CBSE Grade 9 Biology, Chemistry, Mathematics, and Physics prompts live in separate `*_cbse_prompts.js` files
+- **Backend:** `server.py` - proxy that injects Anthropic API keys server-side based on subject and resolves only the selected CBSE prompt bundle
 - **Hosting:** Render (auto-deploys on push to `main`)
 
 ## Local development

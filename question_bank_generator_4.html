@@ -1064,10 +1064,6 @@
 
 <!-- No API modal needed — key is managed server-side -->
 
-<script src="mathematics_cbse_prompts.js"></script>
-<script src="biology_cbse_prompts.js"></script>
-<script src="chemistry_cbse_prompts.js"></script>
-<script src="physics_cbse_prompts.js"></script>
 <script>
 // ============================================================
 // EMBEDDED PROMPTS
@@ -1672,7 +1668,40 @@ const state = {
   questionsType: 'both',    // 'both' | 'objective' | 'subjective'
   providedLOs: {},          // conceptName -> loText (questions-only mode)
   globalLOText: '',         // manual LO textarea content
+  promptResolverCache: {},  // selected CBSE prompt bundles loaded from the backend
 };
+
+const EXTERNAL_CBSE_PROMPT_SUBJECTS = new Set(['Biology', 'Chemistry', 'Mathematics', 'Physics']);
+
+function getPromptResolverCacheKey() {
+  return [state.curriculum, state.subject || '', state.grade || '09'].join('|');
+}
+
+function mergeResolvedPrompts(payload) {
+  const prompts = payload && payload.prompts ? payload.prompts : {};
+  Object.keys(prompts).forEach(key => {
+    PROMPTS[key] = String(prompts[key] || '');
+  });
+}
+
+async function ensureSelectedPromptBundleLoaded() {
+  if (state.curriculum !== 'CBSE' || !EXTERNAL_CBSE_PROMPT_SUBJECTS.has(state.subject)) return;
+  const cacheKey = getPromptResolverCacheKey();
+  if (state.promptResolverCache[cacheKey]) return;
+
+  const params = new URLSearchParams({
+    subject: state.subject,
+    curriculum: state.curriculum,
+    grade: state.grade || '09',
+  });
+  const resp = await fetch('/api/prompts/resolve?' + params.toString(), { cache: 'no-store' });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    throw new Error((data && data.error) || 'Could not load selected subject prompts.');
+  }
+  mergeResolvedPrompts(data);
+  state.promptResolverCache[cacheKey] = true;
+}
 
 // ============================================================
 // SUBJECT CONFIG
@@ -1965,9 +1994,19 @@ function enableNav(n) {
 // ============================================================
 // PAGE 1
 // ============================================================
-function page1Next() {
+async function page1Next() {
+  const errEl = document.getElementById('subjectError');
   if (!state.subject) {
-    document.getElementById('subjectError').style.display = 'block';
+    errEl.textContent = 'Please select a subject before proceeding.';
+    errEl.style.display = 'block';
+    return;
+  }
+  try {
+    errEl.style.display = 'none';
+    await ensureSelectedPromptBundleLoaded();
+  } catch (err) {
+    errEl.textContent = err.message || 'Could not load selected subject prompts.';
+    errEl.style.display = 'block';
     return;
   }
   enableNav(2);
@@ -4093,6 +4132,14 @@ async function startGeneration() {
   if (state.genMode === 'questions' && state.questionsType === 'subjective') state.objMetadata = '';
   state.generationErrors = [];
   if (!state.subject) { alert('Please select a subject first.'); return; }
+  try {
+    await ensureSelectedPromptBundleLoaded();
+  } catch (promptLoadErr) {
+    document.getElementById('startGenBtn').style.display = '';
+    document.getElementById('genError').style.display = 'flex';
+    document.getElementById('genErrorMsg').textContent = promptLoadErr.message || 'Could not load selected subject prompts.';
+    return;
+  }
   const checkedConcepts = document.querySelectorAll('.concept-cb:checked');
   if (checkedConcepts.length === 0) {
     alert('Please select at least one concept to generate.');
